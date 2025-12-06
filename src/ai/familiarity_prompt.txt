@@ -1,0 +1,69 @@
+For each input word or phrase, which will likely be in ALLCAPS and without spaces (e.g., "SNOWFORT"), perform the following steps:
+
+Step 1: Parse and Normalize
+- Convert the input to standard capitalization and spacing (e.g., "SNOWFORT" becomes "snow fort").
+- Attempt multiple parsings if ambiguous (e.g., "ITSAGO" could be "it's a go" or "it's ago", "AMSTEREO" could be "AM stereo").
+- The sequence of letters, ignoring capitalization and spacing, must remain identical to the input. 
+
+Step 2: Determine Validity
+A word or phrase is valid if it is a single, recognized unit with a conventional or idiomatic meaning. This includes dictionary-defined compound nouns (e.g., "snow fort") or well-established idioms (e.g., "white lie," "watch your step"). A combination of common words that simply conveys a literal meaning (e.g., "this club," "gain a lot") or a grammatically correct but non-idiomatic phrase (e.g., "I did play") should be classified as invalid. 
+
+Examples of invalid words or phrases:
+- Words that are misspelled or non-existent (e.g. "xoner", "becuse", "coresso")
+- Multi-word phrases that don't form a coherent unit, whether it be random words together (e.g. "thing led", "grass plate", "won horse"), valid phrases with superfluous words tacked on (e.g. "the corn", "this clip", "ran because"), or partial sentences (e.g. "I finally", "he was", "I did also").
+
+Invalid words or phrases will score 0 on the rubric.
+
+Step 3: Categorize: Assign the parsed word/phrase to one of the following categories. Select the category that maximizes the familiarity score.
+- Word: Single words (e.g., "quixotic"), including contractions (e.g. I've). Include online slang even if it's not officially a word.
+- Derived Word: A word formed from another word (e.g., "diving" from "dive", "pillars" from "pillar"). Conjugated verbs. Score based on the familiarity of the derived form -- some derived forms are more common than the base word, and some are barely used.
+- Phrase: A well-established idiomatic expression, compound noun, or fixed unit of multiple words. The meaning of a phrase should be more than the literal sum of its parts. Examples include "snow fort" and "white lie."  Include verb-preposition sets if they commonly go together ("give to", "wake up"). Include online slang even it isn't an official.
+- Brand Name: (e.g., "Camelbak")
+- Proper Name: Names of specific people, places, or things (e.g., "Tiger Woods," "Mr. Ed"). Consider solo first names or last names (e.g. "Idris", "Robbie").
+- Acronym: (e.g., "ESPY", "SSN", "LGA").
+- Abbreviation: A shortened form of a word or phrase (e.g., "attn.," "ctr."). Only use if the abbreviation is less common than the original (e.g., "amp" would be "Word" as it's more common than "amplifier" or "ampere"). Also consider plural abbreviations ("ATCs").
+- Prefix/Suffix: (e.g., "tri-," "-ose"). Score based on the familiarity of the prefix/suffix itself.
+- Invalid: Was classified as invalid in Step 2.
+
+Step 4: Score Familiarity: Assign a score from 0 to 5 based on the following rubric. Consider familiarity among native English speakers. Calibrate based on the examples given at each level.
+5 - Extremely fundamental. These are among the first few words learned. No contractions, abbreviations, or acronyms.
+Examples: sit, else, gone, tree, my, thank you, red, less, year
+4.5 - Extremely common but not fundamental. Extremely common phrases. No contractions, abbreviations, or acronyms.
+Examples: oil, song, normal, boss, ones, own, go ahead, come on, comma, toast, star, hobby, trip
+4 - Very Common. In practically everyone's active vocabulary. Very common phrases. The most common contractions, abbreviations, and acronyms.
+Examples: attic, bark, dinosaurs, I've, social media, water bottle, gasp, sleep in, SOS, beat it, etc., OK, scarce
+3.5 - Quite Common: In the active vocabulary of most but not all. Readily understood phrases (even if they aren't in active vocabulary). Well-known names.
+Examples: thrive, cash register, caw, speed trap, malaria, photo booth, alias, AOL, abbr., lol, ASAP, SNL, Jimmy Kimmel, Ben
+3 - Recognized by the majority of speakers, but not necessarily in active vocabulary. Some well-known foreign words. Common names. Easy trivia.
+Examples: SSN, bento, tres, deuce, THC, BTU, USSR, stage name, U-boat, D-list, ID'ed, master gardener, attn., tri-, Big Data, box score, eagled, Melinda, contrite, dear sir, souffle, orcs, Deuteronomy
+2.5 - Recognized by many but not the majority. Less common derivatives. Less common synonyms. Slightly niche. Less common single names. Moderate trivia.
+Examples: udon, e-cig, midis, Elio, accede, event horizon, si si, avow, slier, Emil, disused, REM, girl scout camp, acerbic, Alp, b-days, quixotic, cad
+2 - Limited Familiarity: Known to a smaller segment of the population. Harder trivia. Rare names. Abbreviations not often used. Maybe niche to a specific field. Partial phrases that aren't often seen on their own.
+Examples: Elle, Moondance, Manu, Mekong, persiflage, Mr. Ed, ATCs, Aaron Burr, moment of inertia, Peak TV, Goa, Emerson, Apso, Lipa, tatterdemalion
+1.5 - Generally obscure, known only in very specific contexts. Obscure alternative spellings. Too obscure to make good trivia. Partials that don't work on their own. Rarely used abbreviations. Verb forms almost never seen. Super technical terms. 
+Examples: tsars, ade, plagioclase, Ilana, Erivo, ctr., -ose, Gaussian distribution, OR docs, meeter, Nomo, Entebbe, Sao, tra-las, cdr.
+1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Info is available on the Internet, but everyone has to look it up.
+Examples: Marli Miller, Cantor Set, six seconds, Three Forks
+0.5 - Unused
+0 - Invalid
+
+Step 5: Output
+Present each evaluation in the following strict format, without any introductory or auxiliary text:
+
+<original word/phrase> : <written naturally> : <category> : <score>
+
+Example Outputs:
+quixotic : quixotic : Word : 2.5
+DIVING : diving : Derived Word : 4
+SNOWFORT : snow fort : Phrase : 3.5
+snow tag : snow tag : Invalid : 0
+ATTN : attn. : Abbreviation : 3
+TRI : tri- : Prefix/Suffix : 3
+OSS : OSS : Acronym : 1.5
+CAMELBAK : Camelbak : Brand Name : 2.5
+WHOOPIGOLDBERG : Whoopi Goldberg : Proper Name : 3.5
+IVE : I've : Word : 4
+
+Words/phrases to evaluate:
+
+[[DATA]]

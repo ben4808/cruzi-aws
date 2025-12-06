@@ -1,0 +1,75 @@
+Rate the quality of words and phrases
+
+Assign a score based on quality according to the provided rubric. Calibrate responses based on the provided examples at each level.
+
+How to score in practice:
+The default score is a 3 and the score deviates from there based on the following factors:
+
+Desirable qualities that raise the baseline above 3:
+• Sparks joy, makes the reader feel good
+• Evocative of rich, vivid imagery
+• Is likely to spark conversation, perhaps causing people to tell stories or share opinions.
+• Evokes positive memories, humor, or sensory appeal.
+• Has a unique construction, looks cool, or is fun to say.
+• Alludes to something people find cool.
+• Is interesting, might inspire people to look it up and learn more.
+• Is very topical
+
+Qualities that aren't undesirable but that make it harder to raise the baseline
+• Is less than 6 letters long.
+• Is a single word rather than a phrase.
+
+Undesirable qualties that subtract from the baseline (these can stack):
+• Carries a negative connotation or sounds close to a word with negative connotation or a swear word. Subtract .5
+• Is a derived word instead of a base word, and the derived word is significantly less common than the base word. Or is a plural where the base word in more common. Subtract .5
+• Is an abbreviation or acronym or contraction that is significantly less common than the full version. Subtract .5
+• Is a partial phrase where the full phrase is much more common. Subtract .5
+• Is a single name, rather than a full name ("Bill" rather than "Bill Gates"). Subtract .5
+• There are better/more common ways to say the same thing. Subtract .5
+• Is a foreign word that's not well known in English. Subract .5
+
+Rubric:
+
+5: "Iconic"	- Embodies almost every desirable quality. It's hard to achieve this level.
+Examples: save the date, trick or treat, you had me at hello, the American dream
+
+4.5: "Beloved" - Embodies many desirable qualities 
+Examples: father of the bride, Cybertruck, private jet, sibling rivalry, game on!, bromance
+
+4: "Warm" - Embodies some desirable qualities 
+Examples: PJs, wedding dress, dill pickle, thank you, it's a go!, and done!, beat it, on a tear
+
+3.5 "Interesting" - Embodies at least one desirable quality
+Examples: hadron, twerps, X-ray lab, madly, sleeping bag, sashay, malaria, dairy farm, souffle, Peak TV
+
+3: “Nothing special" - Either have neither positive or negative qualities or has both that are cancelling each other out
+Examples: law, orca, lei, Sony, unit, abuela, MBA, NATO, Goa, cock, burrs, Abel, enamor, herb garden, cash register, ochre
+
+2.5: Embodies probably 1 negative quality
+Examples: "tare" (not very familiar), "Seuss" ("Dr. Seuss" is much better), "puss" (close to "pussy"), "si si" (foreign and not a common contruction), "Alp" ("Alps" is much more common), disused (not very familiar), "b-days" ("birthdays" is better), "slier" (not a common derived form), "Apso" ("Lhasa Apso" is better), "Tasha" (single name), "IRAs" (not common as a plural), "REM" ("REM sleep" is usually said), "sits pat", ("stands pat" is better)
+
+2: Embodies multiple negative qualities.
+Examples: tra-las ("tra-la" is a rare form, and even less plural), OR docs ("OR doc" is worse than "surgeon", and even worse plural), Sao (foreign, and also partial for "Seo Paulo"), oneg ("O-" or "o-negative" is better, plus it's an uncommon abbreviation)
+
+1.5: 3 or more negative qualities
+
+1 Barely coherent. Might feel like a typo or mangled syntax even though it does exist. Might be a partial phrase that makes no sense on its own.
+Examples: O woe, Can't I?
+
+0.5: Unused. Anything below 1 scores a 0.
+
+0: Not a Thing/Incoherent. These are phrases that do not form a recognized unit (e.g. "green thumb" forms a recognized unit, "blue thumb" does not) or words that are nonsensical (e.g., "xoner," "gsuem"). Verb-preposition phrases are valid only if the preposition commonly pairs with the verb.
+Examples: grusm, blue thumb, xoner
+
+
+Input Format:
+
+Input words/phrases will be one word/phrase per line. 
+
+Output Format: (Stick to the output format and don't include any introductory or auxiliary text.)
+
+<original word/phrase> : <quality score>
+
+Words/phrases:
+
+[[DATA]]

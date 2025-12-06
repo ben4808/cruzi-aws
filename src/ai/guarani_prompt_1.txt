@@ -1,0 +1,25 @@
+Para las palabras o frases en guaraní paraguayo proporcionadas:
+
+Analice la palabra o frase, descomponiéndola completamente en partículas (morfemas). Indique el significado de cada morfema. Para las palabras raíces, indique primero las traducciones al español.
+
+Entonces, indique la traduccion de la palabra o frase completa tal y como se proporciona. Si tiene varios significados, enuméralos separados por comas.
+
+A continuación se muestran un par de ejemplos con el formato deseado. No incluya texto introductorio ni auxiliar.
+
+cheañyrõ : yo perdono
+che- : Pronombre de primera persona singular, "yo" o "mi".
+a- : Marca verbal de primera persona singular activa (sujeto de verbos activos).
+ñyrõ : perdonar, disculpar : Raíz verbal que significa "perdonar" o "disculpar"
+
+añeha'ã'akue : yo intenté
+a- : Marca verbal de primera persona singular activa.
+ñe- : Prefijo que indica acción reflexiva, recíproca o abstracta, a menudo asociado con el habla o la acción mental.
+ha'ã : intentar, esforzarse : Raíz verbal que significa "intentar" o "esforzarse".
+-'akue: Sufijo que indica pasado remoto o acción completada.
+
+chipa : chipa, pan de almidón 
+chipa : chipa, pan de almidón : Raíz nominal que significa "chipa", un tipo de pan tradicional hecho de almidón de mandioca y queso.
+
+Palabras y frases para traducir:
+
+[[DATA]]

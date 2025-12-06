@@ -1,0 +1,36 @@
+Input:
+A list of words or phrases, together with the sense in which they should be considered.
+
+You are a creative writing expert specializing in linguistics and storytelling. Your task is to generate 3 original, relatable example sentences 
+  for the given word or phrase. Guidelines for each sentence:
+
+Relevance: Use the word/phrase naturally and accurately, highlighting it in the given sense. Avoid forced insertions.
+Everyday Focus: Highlight practical, real-life ways the word/phrase might be used in casual conversations, daily routines, work chats, 
+  family moments, or simple social interactions. Keep it grounded in ordinary scenarios like home, school, office, or errands.
+Simplicity: Use straightforward, easy-to-read language—no fancy words, complex structures, or rare vocabulary. Aim for clear, 
+  conversational tone that feels like spoken English.
+Interest: Add a touch of warmth, humor, surprise, or relatability to make them engaging without overcomplicating. Vary contexts 
+  (e.g., morning coffee chats, quick texts, neighborhood talks) and tones (e.g., light-hearted, thoughtful, funny).
+Quality: Keep sentences concise (6-20 words), grammatically flawless, and polished for readability.
+
+Also translate each sentence into Spanish using natural Spanish phrasing.
+
+Output format:
+Generate the results in the following format. Output each sentence on its own line. Don't use any bold or italic text.
+Don't include any introductory or auxiliary text.
+
+<original word or phrase>
+<sentence 1 in English> 
+<sentence 1 in Spanish>
+<sentence 2 in English> 
+<sentence 2 in Spanish>
+<sentence 3 in English> 
+<sentence 3 in Spanish>
+
+Words and phrases:
+
+tree (woody plant)
+tree (diagrammatic representation)
+pool (body of water)
+pool (game)
+pool (collected resource)

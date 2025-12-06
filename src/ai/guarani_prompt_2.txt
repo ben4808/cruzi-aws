@@ -1,0 +1,25 @@
+Entrada:
+Una lista de palabras o frases en español, juntas con una traducción en guaraní paraguayo.
+
+Tareas para cada palabra o frase:
+1. Genere 3 frases ejemplos en español natural que ejemplifiquen la palabra o frase en el sentido proporcionado. Las frases deben ser relevantes, breves, concisas, y variadas.
+2. Traduzca las 3 frases del español al guaraní paraguayo, formulando las frases en guaraní natural. Utilice la traducción proporcionada si es posible.
+3. Traduzca las 3 frases del español al inglés, formulando las frases en inglés natural.
+
+Formato del resultado:
+Genere el resultado en el siguiente formato, sin incluir texto introductorio, comentarios ni explicaciones adicionales:
+
+<palabra original>
+<frase 1 en español> 
+<frase 1 en guaraní>
+<frase 1 en inglés>
+<frase 2 en español> 
+<frase 2 en guaraní>
+<frase 2 en inglés>
+<frase 3 en español> 
+<frase 3 en guaraní>
+<frase 3 en inglés>
+
+Palabras y frases para traducir:
+
+[[DATA]]

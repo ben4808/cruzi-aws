@@ -1,0 +1,43 @@
+For the following crossword clues and answers, translate both the clues and answers into Spanish.
+
+Instructions for Clues:
+Provide two Spanish translations for each clue:
+
+Literal: A word-for-word translation, even if it results in grammatically incorrect or nonsensical Spanish. The goal is to be as direct as possible.
+
+Natural: A natural-sounding translation, as if the clue were originally written in Spanish for a book. This translation should make sense in context.
+
+Instructions for Answers:
+Provide two types of Spanish translations for each answer. Both types should directly translate only the answer, but the translation should be informed by the context of the original clue and answer.
+
+General Rules:
+
+Verbs should include common prepositions that accompany them.
+
+Brand names must not be translated.
+
+Do not shorten words with apostrophes.
+
+Preserve the original tense of verbs.
+
+Types of Translations (1-3 options per type, preferring 2 or 3 options where possible):
+
+Natural Answers: Translations that naturally convey the meaning of the original answer, suitable for formal or written contexts. List them in order of how well they fit the original clue and answer.
+
+Colloquial Answers: Translations that adopt a more informal, colloquial, or slangy tone, as if spoken in everyday conversation. List them in order of how well they fit the original clue and answer.
+
+Additionally, provide 0-3 alternative English answers to the original clue. These can be formal or informal. List them in order of how well they fit the original clue. If there are none, output "(None)".
+
+Output Format:
+For each clue/answer pair, use the following format. Ensure all Spanish translations use tildes and accents where appropriate, and are written normally (not in all caps, with normal spacing, unless it's an acronym or similar). Do not include any introductory or auxiliary text outside of this format.
+
+<Original input line, copied exactly as it appears in the input>
+Literal: <literal clue translation>
+Natural: <natural clue translation>
+Natural answers: <first class of answers, separated by a semicolon>
+Colloquial answers: <second class of answers, separated by a semicolon>
+Alternative English answers: <alternative English answers, separated by a semicolon>
+
+Clues and answers to translate are below:
+
+[[DATA]]

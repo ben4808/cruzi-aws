@@ -1,0 +1,40 @@
+WHATABLAST : what a blast : Phrase : 4
+RIGG : Rigg : Proper Name : 2
+HOMEBREWER : homebrewer : Word : 3.5
+ITOO : I too : Phrase : 4.5
+OBOESONATA : oboe sonata : Phrase : 2.5
+VALE : vale : Word : 3
+POSSE : posse : Word : 3.5
+DISC : disc : Word : 4.5
+ALDA : Alda : Proper Name : 3.5
+NEST : nest : Word : 5
+ELLIES : Ellies : Proper Name : 3.5
+STRATA : strata : Word : 3.5
+ECRU : ecru : Word : 3
+ANY : any : Word : 5
+PRIG : prig : Word : 3.5
+REDO : redo : Word : 4
+LINGO : lingo : Word : 3.5
+EAGERLY : eagerly : Word : 4
+BRUNSON : Brunson : Proper Name : 3
+EVADE : evade : Word : 4
+RISE : rise : Word : 5
+GUAM : Guam : Proper Name : 3.5
+DEM : Dem. : Abbreviation : 3
+ADEN : Aden : Proper Name : 2.5
+FEEBLE : feeble : Word : 4
+CLAIRE : Claire : Proper Name : 4
+FIST : fist : Word : 4.5
+HORN : horn : Word : 4.5
+BLOW : blow : Word : 5
+HYENA : hyena : Word : 4
+EGOS : egos : Derived Word : 4
+ROBODIALER : robodialer : Word : 3.5
+SULU : Sulu : Proper Name : 3
+ICONOCLAST : iconoclast : Word : 2.5
+SEEM : seem : Word : 5
+SIXTHSENSE : sixth sense : Phrase : 4
+WHOP : whop : Word : 3
+HOBO : hobo : Word : 4
+AMOS : Amos : Proper Name : 3
+TEES : tees : Derived Word : 4
