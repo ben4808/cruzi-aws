@@ -5,8 +5,8 @@ import addCluesToCollection from "./addCluesToCollection";
 import addTranslateResults from "./addTranslateResults";
 import addObscurityQualityResults from "./addObscurityQualityResults";
 import getEntryInfoQueueTop10 from "./getEntryInfoQueueTop10";
-import upsertEntryInfo from "./upsertEntryInfo";
 import addExampleSentenceQueueEntry, { addExampleSentenceQueueEntries } from "./addExampleSentenceQueueEntry";
+import { upsertEntryInfo } from "./upsertEntryInfo";
 
 class LoaderDao implements ILoaderDao {
     savePuzzle = savePuzzle;

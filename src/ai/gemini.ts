@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import settings from '../../settings.json';
+import * as dotenv from 'dotenv';
 import { Clue } from '../models/Clue';
 import { IAiProvider } from './IAiProvider';
 import { Entry } from '../models/Entry';
@@ -9,8 +9,11 @@ import { getObscurityResults, getQualityResults, getTranslateResults } from './c
 import { TranslateResult } from '../models/TranslateResult';
 import { mock } from 'node:test';
 
+// Load environment variables
+dotenv.config();
+
 export class GeminiAiProvider implements IAiProvider {
-  static genAI = new GoogleGenerativeAI(settings.gemini_api_key);
+  static genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
   static model = GeminiAiProvider.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   sourceAI = 'gemini';
 

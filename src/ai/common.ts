@@ -16,13 +16,13 @@ export async function getTranslateResults(
 ): Promise<TranslateResult[]> {
   let results = [] as TranslateResult[];
   let prompt = await loadTranslatePromptAsync();
-  let clueMap = arrayToMap(clues, clue => clue.entry.get(clue.lang)!.entry);
+  let clueMap = arrayToMap(clues, clue => clue.entry?.entry || '');
 
   try {
     let batches = batchArray(clues, 40);
 
     for (let batch of batches) {
-      let promptData = batch.map(clue => `${clue.clue} : ${clue.entry.get(clue.lang)!.entry}`).join('\n');
+      let promptData = batch.map(clue => `${clue.customClue} : ${clue.entry?.entry || ''}`).join('\n');
       let batchPrompt = prompt.replace('[[DATA]]', promptData);
 
       let resultText = "";

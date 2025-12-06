@@ -1,12 +1,15 @@
 import  { Pool } from 'pg';
 import { PostgresParameter } from './PostgresParameter';
-import settings from '../../settings.json';
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 let pool = new Pool({
-    user: settings.db_user,
-    host: settings.db_host,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
     database: 'cruzi',
-    password: settings.db_password,
+    password: process.env.DB_PASSWORD,
     port: 5432,
 });
 

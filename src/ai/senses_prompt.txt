@@ -6,8 +6,8 @@ Instructions:
 1.  All output should be done in the language of the word or phrase.
 2.  Identify all distinct senses. Treat different parts of speech (e.g., Noun vs. Verb) as separate senses.
 3.  If "Reference Senses" are provided above, indicate which one matches the generated sense.
-4.  Classify the frequency of the sense:
-    * Primary: The single most immediate meaning (One per word).
+4.  Classify the frequency of the sense. One sense must be designated as Primary, even if it is uncommon.
+    * Primary: The single most immediate meaning.
     * Common: Standard and recognizable usage.
     * Uncommon: Rare, archaic, or highly specific usage.
 

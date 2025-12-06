@@ -16,7 +16,7 @@ const addCluesToCollection = async (collectionId: string, clues: Clue[]) => {
         const metadata1 = (clue as any).metadata1 || '';
         const source = (clue as any).source || clue.source || null;
 
-        let entry = clue.entry?.get(clueLang);
+        let entry = clue.entry;
         return {
             clue_id: clue.id,
             order: order++,
@@ -37,7 +37,7 @@ const addCluesToCollection = async (collectionId: string, clues: Clue[]) => {
     let entriesValue = clues.map(clue => {
         // Note: The Clue interface doesn't include lang property
         const clueLang = (clue as any).lang || 'en';
-        let entry = clue.entry?.get(clueLang);
+        let entry = clue.entry;
         if (!entry) return null;
 
         return {

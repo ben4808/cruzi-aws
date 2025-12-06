@@ -20,6 +20,7 @@ Tasks:
   [
     {
       entry: string,
+      display_text: string,
       lang: string,
       existing_sense_summaries: string[],
       example_sentence_count: number,
@@ -165,7 +166,7 @@ export async function entryInfoGenerator(): Promise<void> {
           : '(None)';
 
         let prompt = promptTemplate
-          .replace('[[PHRASE]]', item.entry)
+          .replace('[[PHRASE]]', item.display_text)
           .replace('[[LANGUAGE CODE]]', item.lang)
           .replace('[[REFERECE SENSES]]', referenceSenses);
 
