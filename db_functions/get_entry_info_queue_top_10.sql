@@ -3,6 +3,7 @@ RETURNS TABLE (
     entry text,
     display_text text,
     lang text,
+    existing_sense_ids text[],
     existing_sense_summaries text[],
     example_sentence_count integer
 )
@@ -22,6 +23,7 @@ BEGIN
             te.entry,
             te.display_text,
             te.lang,
+            COALESCE(array_agg(s.id::text) FILTER (WHERE s.id IS NOT NULL), ARRAY[]::text[]) as existing_sense_ids,
             COALESCE(array_agg(st.summary) FILTER (WHERE st.summary IS NOT NULL), ARRAY[]::text[]) as existing_sense_summaries,
             COALESCE(SUM(es_count.count), 0)::integer as example_sentence_count
         FROM top_entries te
@@ -34,7 +36,7 @@ BEGIN
         ) es_count ON es_count.sense_id = s.id
         GROUP BY te.entry, te.display_text, te.lang
     )
-    SELECT ed.entry, ed.display_text, ed.lang, ed.existing_sense_summaries, ed.example_sentence_count
+    SELECT ed.entry, ed.display_text, ed.lang, ed.existing_sense_ids, ed.existing_sense_summaries, ed.example_sentence_count
     FROM entry_data ed;
 
     -- Delete the processed entries from the queue

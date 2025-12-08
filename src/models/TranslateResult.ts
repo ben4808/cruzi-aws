@@ -6,6 +6,6 @@ export interface TranslateResult {
   naturalTranslation: string,
   naturalAnswers: string[],
   colloquialAnswers: string[],
-  alternativeEnglishAnswers: string[],
+  alternativeAnswers: string[],
   sourceAI: string,
 }

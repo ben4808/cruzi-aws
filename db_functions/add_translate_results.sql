@@ -24,8 +24,8 @@ BEGIN
     -- Process and insert colloquial answers into translated_entry and entry tables
     PERFORM _process_answers(p_translate_results, 'colloquial_answers', 'translated_lang');
 
-    -- Process and insert alternative English answers into translated_entry and entry tables
-    PERFORM _process_answers(p_translate_results, 'alternative_english_answers', 'original_lang');
+    -- Process and insert alternative answers into translated_entry and entry tables
+    PERFORM _process_answers(p_translate_results, 'alternative_answers', 'original_lang');
 
 END;
 $$;

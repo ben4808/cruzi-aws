@@ -16,8 +16,8 @@ const addTranslateResults = async (
                 zipArraysFlat(result.naturalAnswers.map(x => entryToAllCaps(x)), result.naturalAnswers).join(";"),
             colloquial_answers: result.colloquialAnswers[0] === "(None)" ? [] :
                 zipArraysFlat(result.colloquialAnswers.map(x => entryToAllCaps(x)), result.colloquialAnswers).join(";"),
-            alternative_english_answers: result.alternativeEnglishAnswers[0] === "(None)" ? [] :
-                zipArraysFlat(result.alternativeEnglishAnswers.map(x => entryToAllCaps(x)), result.alternativeEnglishAnswers).join(";"),
+            alternative_answers: result.alternativeAnswers[0] === "(None)" ? [] :
+                zipArraysFlat(result.alternativeAnswers.map(x => entryToAllCaps(x)), result.alternativeAnswers).join(";"),
             source_ai: result.sourceAI,
         };
     });

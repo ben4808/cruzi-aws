@@ -3,277 +3,277 @@ Literal: Eso fue divertido!
 Natural: ¡Qué divertido fue!; ¡Fue muy divertido!
 Natural answers: ¡Qué maravilla!; ¡Qué explosión!; ¡Qué alegría!
 Colloquial answers: ¡Qué pasada!; ¡Qué guay!; ¡Qué caña!
-Alternative English answers: So much fun!; Great fun!; A real blast!
+Alternative answers: So much fun!; Great fun!; A real blast!
 
 Actress Diana of "All Creatures Great and Small" (2020) : RIGG
 Literal: Actriz Diana de "Todas Criaturas Grandes y Pequeñas" (2020)
 Natural: La actriz Diana de "Todas las criaturas grandes y pequeñas" (2020)
 Natural answers: Rigg; Diana Rigg
 Colloquial answers: Rigg
-Alternative English answers: (None)
+Alternative answers: (None)
 
 One might start fermenting in the kitchen : HOMEBREWER
 Literal: Uno podría empezar fermentando en la cocina
 Natural: Alguien que podría empezar a fermentar en la cocina; Una persona que empieza a fermentar en la cocina
 Natural answers: Cervecero casero; Elaborador de cerveza casera; Hacedor de cerveza casera
 Colloquial answers: Cervecero casero; Chelero casero
-Alternative English answers: Home brewer; Craft brewer; Amateur brewer
+Alternative answers: Home brewer; Craft brewer; Amateur brewer
 
 Classic Langston Hughes poem with a comma in its title : ITOO
 Literal: Clásico Langston Hughes poema con una coma en su título
 Natural: Poema clásico de Langston Hughes con una coma en su título
 Natural answers: Yo, También; Yo También
 Colloquial answers: Yo, También
-Alternative English answers: (None)
+Alternative answers: (None)
 
 It features high wind movements : OBOESONATA
 Literal: Eso presenta altos movimientos de viento
 Natural: Presenta movimientos de viento agudos; Obra con movimientos de instrumentos de viento
 Natural answers: Sonata para oboe; Sonata de oboe
 Colloquial answers: Sonata para oboe; Pieza de oboe
-Alternative English answers: Flute sonata; Wind ensemble; Woodwind piece
+Alternative answers: Flute sonata; Wind ensemble; Woodwind piece
 
 Latin for "goodbye" : VALE
 Literal: Latín para "adiós"
 Natural: Latín para "adiós"
 Natural answers: Vale; Adiós; Despedida
 Colloquial answers: Vale; Chao; Nos vemos
-Alternative English answers: Adieu; Ciao; Farewell
+Alternative answers: Adieu; Ciao; Farewell
 
 What might be seen around a star : POSSE
 Literal: Qué podría ser visto alrededor de una estrella
 Natural: Lo que podría verse alrededor de una estrella; Grupo que acompaña a una estrella
 Natural answers: Séquito; Entorno; Corte
 Colloquial answers: Parche; La banda; La gente de uno
-Alternative English answers: Entourage; Retinue; Crew
+Alternative answers: Entourage; Retinue; Crew
 
 Shape of Saturn's rings : DISC
 Literal: Forma de Saturno anillos
 Natural: La forma de los anillos de Saturno; Forma de los anillos de Saturno
 Natural answers: Disco; Anillo; Forma de disco
 Colloquial answers: Disco; Círculo
-Alternative English answers: Disk; Ring; Annulus
+Alternative answers: Disk; Ring; Annulus
 
 Star of TV and film who wrote the memoir "Never Have Your Dog Stuffed: And Other Things I've Learned" : ALDA
 Literal: Estrella de TV y película quien escribió la memoria "Nunca Tener Tu Perro Relleno: Y Otras Cosas He Aprendido"
 Natural: Estrella de TV y cine que escribió el libro de memorias "Nunca hagas disecar a tu perro: Y otras cosas que he aprendido"
 Natural answers: Alda; Alan Alda
 Colloquial answers: Alda
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Spot for newborn care : NEST
 Literal: Punto para recién nacido cuidado
 Natural: Lugar para el cuidado de recién nacidos; Lugar para cuidar a los recién nacidos
 Natural answers: Nido; Cuna; Hogar
 Colloquial answers: Nido; Casita; Refugio
-Alternative English answers: Crib; Nursery; Cradle
+Alternative answers: Crib; Nursery; Cradle
 
 Awards honoring excellence in magazine publishing : ELLIES
 Literal: Premios honrando excelencia en revista publicando
 Natural: Premios que honran la excelencia en la publicación de revistas
 Natural answers: Ellies; Premios Ellie; Premios a la revista
 Colloquial answers: Ellies
-Alternative English answers: Mag awards; Magazine awards; ASME awards
+Alternative answers: Mag awards; Magazine awards; ASME awards
 
 Earth's crust and others : STRATA
 Literal: Tierra corteza y otros
 Natural: La corteza terrestre y otras capas; Capas de la Tierra y otras
 Natural answers: Estratos; Capas; Formaciones
 Colloquial answers: Estratos; Capas; Niveles
-Alternative English answers: Layers; Beds; Formations
+Alternative answers: Layers; Beds; Formations
 
 Shade akin to bone or eggshell : ECRU
 Literal: Tono parecido a hueso o cáscara de huevo
 Natural: Tono parecido al hueso o a la cáscara de huevo; Color similar al hueso o cáscara de huevo
 Natural answers: Crudo; Color hueso; Beige claro
 Colloquial answers: Crudo; Blanquito; Color hueso
-Alternative English answers: Off-white; Ivory; Cream
+Alternative answers: Off-white; Ivory; Cream
 
 "No preference" : ANY
 Literal: No preferencia
 Natural: Sin preferencia; Me da igual
 Natural answers: Cualquiera; Indiferente; Ninguno en particular
 Colloquial answers: Cualquiera; Da igual; El que sea
-Alternative English answers: Whatever; Either; Indifferent
+Alternative answers: Whatever; Either; Indifferent
 
 Snobby sort : PRIG
 Literal: Esnob tipo
 Natural: Persona esnob; Tipo estirado
 Natural answers: Estirado; Pedante; Puntilloso
 Colloquial answers: Estirado; Prepotente; Fino
-Alternative English answers: Snob; Elitist; Pompous person
+Alternative answers: Snob; Elitist; Pompous person
 
 Bring up to date, perhaps : REDO
 Literal: Traer arriba a fecha, quizás
 Natural: Actualizar, quizás; Volver a hacer, quizás
 Natural answers: Rehacer; Renovar; Actualizar
 Colloquial answers: Rehacer; Darle una lavada de cara; Poner al día
-Alternative English answers: Update; Revise; Remodel
+Alternative answers: Update; Revise; Remodel
 
 Terms of a trade : LINGO
 Literal: Términos de un comercio
 Natural: Términos de un oficio; Vocabulario especializado
 Natural answers: Jerga; Argot; Terminología
 Colloquial answers: Jerga; Lenguaje; La clave
-Alternative English answers: Jargon; Slang; Argot
+Alternative answers: Jargon; Slang; Argot
 
 With 8-Down, like the upcoming release from one's favorite band : EAGERLY
 Literal: Con 8-Abajo, como el próximo lanzamiento de uno favorito banda
 Natural: Con 8-Abajo, con ganas de la próxima publicación de tu banda favorita; Esperando con ansias el próximo lanzamiento de la banda favorita
 Natural answers: Ansiosamente; Con entusiasmo; Con impaciencia
 Colloquial answers: Con ganas; Con ansias; Muerto de ganas
-Alternative English answers: Anticipating; Impatiently; Enthusiastically
+Alternative answers: Anticipating; Impatiently; Enthusiastically
 
 Quinta of "Abbott Elementary" : BRUNSON
 Literal: Quinta de "Abbott Primaria"
 Natural: Quinta de "Abbott Elementary"
 Natural answers: Brunson; Quinta Brunson
 Colloquial answers: Brunson
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Lose, as a tail : EVADE
 Literal: Perder, como una cola
 Natural: Perder de vista, como una cola; Evitar que te sigan
 Natural answers: Evadir; Escapar de; Zafarse de
 Colloquial answers: Evadir; Quitarse de encima; Dar esquinazo
-Alternative English answers: Elude; Dodge; Shake off
+Alternative answers: Elude; Dodge; Shake off
 
 Build up : RISE
 Literal: Construir arriba
 Natural: Aumentar; Ascender; Elevarse
 Natural answers: Ascender; Subir; Elevarse
 Colloquial answers: Subir; Crecer; Ir para arriba
-Alternative English answers: Grow; Increase; Mount
+Alternative answers: Grow; Increase; Mount
 
-Its official languages are Chamorro and English : GUAM
+Its official languages are Chamorro and : GUAM
 Literal: Su oficial idiomas son Chamorro y Inglés
 Natural: Sus idiomas oficiales son el chamorro y el inglés
 Natural answers: Guam
 Colloquial answers: Guam
-Alternative English answers: (None)
+Alternative answers: (None)
 
 "Dese ___ Dose" (Glenn Miller composition) : DEM
 Literal: Esos ___ Esos (Glenn Miller composición)
 Natural: "Dese ___ Dose" (composición de Glenn Miller)
 Natural answers: Dem; Aquellos; Esos
 Colloquial answers: Dem; Ese; Aquellos
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Mideast port with a natural harbor : ADEN
 Literal: Oriente Medio puerto con un natural puerto
 Natural: Puerto de Oriente Medio con un puerto natural; Ciudad portuaria de Oriente Medio con un puerto natural
 Natural answers: Adén
 Colloquial answers: Adén
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Faint : FEEBLE
 Literal: Débil
 Natural: Débil; Endeble
 Natural answers: Débil; Endeble; Frágil
 Colloquial answers: Débil; Flojo; Sin fuerzas
-Alternative English answers: Weak; Fragile; Frail
+Alternative answers: Weak; Fragile; Frail
 
 Smith who was the first woman to receive the Baseball Writers' Association of America's Career Excellence Award : CLAIRE
 Literal: Smith quien fue la primera mujer a recibir la Béisbol Escritores Asociación de América Carrera Excelencia Premio
 Natural: Smith, la primera mujer en recibir el Premio a la Excelencia Profesional de la Asociación de Escritores de Béisbol de América
 Natural answers: Claire
 Colloquial answers: Claire
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Symbol of defiance and solidarity : FIST
 Literal: Símbolo de desafío y solidaridad
 Natural: Símbolo de desafío y solidaridad
 Natural answers: Puño; Puño cerrado
 Colloquial answers: Puño; Puño levantado
-Alternative English answers: Raised fist; Clenched fist; Hand
+Alternative answers: Raised fist; Clenched fist; Hand
 
 Period ender : HORN
 Literal: Período terminador
 Natural: Finalizador de período; Señal de fin de período
 Natural answers: Bocina; Corneta; Timbre
 Colloquial answers: Bocina; Chicharra; Sirena
-Alternative English answers: Buzzer; Whistle; Bell
+Alternative answers: Buzzer; Whistle; Bell
 
 Waste : BLOW
 Literal: Desperdiciar
 Natural: Desperdiciar; Malbaratar
 Natural answers: Desperdiciar; Malversar; Gastar inútilmente
 Colloquial answers: Malgastar; Tirar el dinero; Botar
-Alternative English answers: Squander; Misuse; Fritter away
+Alternative answers: Squander; Misuse; Fritter away
 
 Member of a sub-Saharan matriarchal clan : HYENA
 Literal: Miembro de un sub-Sahariana matriarcal clan
 Natural: Miembro de un clan matriarcal subsahariano; Animal de un clan matriarcal subsahariano
 Natural answers: Hiena; Miembro de clan de hienas
 Colloquial answers: Hiena; Bicha
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Big ones can be difficult to manage : EGOS
 Literal: Grandes unos pueden ser difíciles a manejar
 Natural: Los grandes pueden ser difíciles de manejar; Los egos grandes pueden ser difíciles de manejar
 Natural answers: Egos; Vanidades; Orgullos
 Colloquial answers: Egos; Humos; Engreimientos
-Alternative English answers: Personalities; Tempers; Attitudes
+Alternative answers: Personalities; Tempers; Attitudes
 
 One tirelessly making calls ahead of Election Day : ROBODIALER
 Literal: Uno incansablemente haciendo llamadas antes de Elección Día
 Natural: Uno que hace llamadas sin descanso antes del Día de las Elecciones; Máquina que hace llamadas sin cesar antes del Día de las Elecciones
 Natural answers: Marcador automático; Robollamador; Llamador automático
 Colloquial answers: Robollamador; Máquina de llamadas; El que llama solo
-Alternative English answers: Autodialer; Telemarketer; Canvass caller
+Alternative answers: Autodialer; Telemarketer; Canvass caller
 
 ___ Sea, body of water between Borneo and the Philippines : SULU
 Literal: ___ Mar, cuerpo de agua entre Borneo y las Filipinas
 Natural: Mar ___, cuerpo de agua entre Borneo y Filipinas
 Natural answers: Sulu
 Colloquial answers: Sulu
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Convention challenger : ICONOCLAST
 Literal: Convención desafiador
 Natural: Desafiador de convenciones; Persona que desafía las convenciones
 Natural answers: Iconoclasta; Anticonformista; Inconformista
 Colloquial answers: Iconoclasta; Rebelde; El que no sigue las reglas
-Alternative English answers: Rebel; Maverick; Nonconformist
+Alternative answers: Rebel; Maverick; Nonconformist
 
 Look : SEEM
 Literal: Parecer
 Natural: Parecer; Aparentar
 Natural answers: Parecer; Aparentar; Dar la impresión de
 Colloquial answers: Parecer; Verse; Dar el pego
-Alternative English answers: Appear; Give the impression of; Come across as
+Alternative answers: Appear; Give the impression of; Come across as
 
 Adjunct faculty? : SIXTHSENSE
 Literal: Adjunto facultad?
 Natural: ¿Facultad adicional?; ¿Un sentido extra?
 Natural answers: Sexto sentido; Intuición
 Colloquial answers: Sexto sentido; Corazonada; Pálpito
-Alternative English answers: Intuition; Gut feeling; Hunch
+Alternative answers: Intuition; Gut feeling; Hunch
 
 Smack : WHOP
 Literal: Golpear
 Natural: Golpear fuertemente; Dar un golpe
 Natural answers: Golpear; Sacudir; Azotar
 Colloquial answers: Dar un trancazo; Pegar un tortazo; Mandar un soplamocos
-Alternative English answers: Hit; Strike; Thwack
+Alternative answers: Hit; Strike; Thwack
 
 Kind of spider believed to spread to distant areas via railway : HOBO
 Literal: Tipo de araña creído a extenderse a distantes áreas vía ferrocarril
 Natural: Tipo de araña que se cree que se propaga a áreas distantes por ferrocarril; Araña que se extiende por ferrocarril
 Natural answers: Araña hobo; Araña vagabunda
 Colloquial answers: Araña hobo; Araña viajera
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Biblical prophet whom Martin Luther King Jr. referred to as "an extremist for justice" in his "Letter From Birmingham Jail" : AMOS
 Literal: Bíblico profeta quien Martín Lutero Rey Jr. refirió a como "un extremista por justicia" en su "Carta De Birmingham Cárcel"
 Natural: Profeta bíblico a quien Martin Luther King Jr. se refirió como "un extremista por la justicia" en su "Carta desde la cárcel de Birmingham"
 Natural answers: Amós
 Colloquial answers: Amós
-Alternative English answers: (None)
+Alternative answers: (None)
 
 Youth baseball supporters : TEES
 Literal: Juventud béisbol apoyadores
 Natural: Soportes de béisbol juvenil; Soportes para el béisbol infantil
 Natural answers: Tees; Bases de tee; Soportes de bateo
 Colloquial answers: Tees; Conos para batear; Los palos para la pelota
-Alternative English answers: Batting tees; Bases; Stands
+Alternative answers: Batting tees; Bases; Stands

@@ -3,44 +3,48 @@ Language code of word of phrase: [[LANGUAGE CODE]]
 Context/Reference Senses: ([[REFERECE SENSES]])
 
 Instructions:
-1.  All output should be done in the language of the word or phrase.
+1.  Other than translations, output should be done in the language of the word or phrase.
 2.  Identify all distinct senses. Treat different parts of speech (e.g., Noun vs. Verb) as separate senses.
 3.  If "Reference Senses" are provided above, indicate which one matches the generated sense.
 4.  Classify the frequency of the sense. One sense must be designated as Primary, even if it is uncommon.
     * Primary: The single most immediate meaning.
     * Common: Standard and recognizable usage.
     * Uncommon: Rare, archaic, or highly specific usage.
+5. If the word or phrase is non-sensical, misspelled, or doesn't exist, return a blank response.
 
 For each sense of the word, provide the following:
 
 - A short, focused description that allows people to easily distinguish it from other senses. This should be as short as possible. 
 - A normal description of the sense.
 - The part of speech of the sense.
-- 1-3 natural translations of the word into Spanish
-- 1-3 colloquial translations into Spanish
-- 1-3 alternative ways to say the word or phrase in English. If there are none, output “(None)”.
+- Some translations of the word or phrase into Spanish, or if the word or phrase in not originally in English, into English.
+  Don't include any ancillary text, just the translations.
+  - 1-3 natural translations in the target lanugage.
+  - 1-3 colloquial translations in the target language.
+  - 1-3 alternative ways to say the word or phrase in the same language. If there are none, output “(None)”.
 
 Output the results following the given example, paying attention to the newline structure. (Examples are for the word "tree"). 
 Don't include any extra explanatory or auxiliary text. Don't include any images, only text.
+Always output the part of speech and the classification in English.
 
 (Noun, Primary) Large plant : A large perennial plant with a single main trunk or stem from which branches grow, bearing leaves, flowers, or fruit.
 Natural: árbol
 Colloquial: palo
-Alternate English: (None)
+Alternatives: (None)
 
 (Noun, Common) Diagrammatic representation : In computer science, a tree is a data structure in which nodes are arranged in a hierarchy. In mathematics, it's a type of graph. This sense also applies to a family tree, which shows the relationships among family members.
 Natural: árbol, diagrama arborescente, esquema en árbol
 Colloquial: ramificación, mapa de ramas
-Alternate English: hierarchical chart, tree diagram
+Alternatives: hierarchical chart, tree diagram
 Corresponds with: Diagram with branches
 
 (Noun, Uncommon) Gallows : The gallows, a structure for hanging as punishment
 Natural: horca, patíbulo
 Colloquial: ahorcadero
-Alternate English: gallows, gibbet
+Alternatives: gallows, gibbet
 
 (Verb, Common) Force something up a tree: Often used in the context of hunting, such as "The hounds treed the raccoon," meaning they chased it up a tree.
 Natural: obligar a refugiarse en un árbol, acorralar en un árbol
 Colloquial: trepar a alguien, encaramar
-Alternative English: chase up a tree
+Alternatives: chase up a tree
 Corresponds with: Chase up a tree

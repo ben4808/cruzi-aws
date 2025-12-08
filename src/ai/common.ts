@@ -43,7 +43,7 @@ export async function getTranslateResults(
           naturalTranslation: parsed[i].naturalTranslation,
           naturalAnswers: parsed[i].naturalAnswers,
           colloquialAnswers: parsed[i].colloquialAnswers,
-          alternativeEnglishAnswers: parsed[i].alternativeEnglishAnswers,
+          alternativeAnswers: parsed[i].alternativeAnswers,
           sourceAI: provider.sourceAI,
         }) as TranslateResult);
       }
@@ -89,7 +89,7 @@ export const parseTranslateResponse = (response: string): any[] => {
       naturalTranslation: parts[2].split(':').slice(1).join(':').trim(),
       naturalAnswers: parts[3].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
       colloquialAnswers: parts[4].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
-      alternativeEnglishAnswers: parts[5].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
+      alternativeAnswers: parts[5].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
     });
   }
 

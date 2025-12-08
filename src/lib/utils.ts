@@ -100,3 +100,10 @@ export function arrayToMap<T>(array: T[], keyFn: (item: T) => string): Map<strin
         return map;
     }, new Map<string, T>());
 }
+
+export function displayTextToEntry(text: string): string {
+    // Convert display text to entry format
+    // This regular expression now preserves a wide range of alphanumeric characters,
+    // accented and tilded letters from various languages, and apostrophes.
+    return text.replace(/[^a-zA-Z0-9áéíóúüñãõẽĩũỹÁÉÍÓÚÜÑÃÕẼĨŨỸ']/g, '').toUpperCase();
+}

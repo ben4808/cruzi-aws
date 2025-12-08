@@ -26,7 +26,7 @@ Natural Answers: Translations that naturally convey the meaning of the original 
 
 Colloquial Answers: Translations that adopt a more informal, colloquial, or slangy tone, as if spoken in everyday conversation. List them in order of how well they fit the original clue and answer.
 
-Additionally, provide 0-3 alternative English answers to the original clue. These can be formal or informal. List them in order of how well they fit the original clue. If there are none, output "(None)".
+Additionally, provide 0-3 alternative answers to the original clue, in the clue's original language. These can be formal or informal. List them in order of how well they fit the original clue. If there are none, output "(None)".
 
 Output Format:
 For each clue/answer pair, use the following format. Ensure all Spanish translations use tildes and accents where appropriate, and are written normally (not in all caps, with normal spacing, unless it's an acronym or similar). Do not include any introductory or auxiliary text outside of this format.
@@ -36,7 +36,7 @@ Literal: <literal clue translation>
 Natural: <natural clue translation>
 Natural answers: <first class of answers, separated by a semicolon>
 Colloquial answers: <second class of answers, separated by a semicolon>
-Alternative English answers: <alternative English answers, separated by a semicolon>
+Alternative answers: <alternative answers, separated by a semicolon>
 
 Clues and answers to translate are below:
 
