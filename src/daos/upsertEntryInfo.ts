@@ -23,7 +23,7 @@ export const upsertEntryInfo = async (
   entry: string,
   lang: string,
   senses: Sense[],
-  status: 'Ready' | 'Error' | 'Invalid'
+  status: 'Ready' | 'Error' | 'Invalid' | 'Processing'
 ): Promise<void> => {
   // Convert senses to the format expected by the stored procedure
   const sensesData = senses.map(sense => ({

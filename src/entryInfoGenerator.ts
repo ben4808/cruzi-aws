@@ -43,6 +43,7 @@ Tasks:
     the status should be set to 'Error'. If there were no senses returned, the status should be set to 'Invalid'.
 4. For any returned senses, existing or new, that have less than 3 example sentences, add the sense to the example_sentence_queue table.
   - Use the DAO function add_example_sentence_queue_entry(sense_id: string)
+  - Set the status of the entry back to 'Processing'.
  */
 
 async function loadSensesPromptAsync(): Promise<string> {
@@ -274,7 +275,7 @@ export async function entryInfoGenerator(): Promise<void> {
         }
 
         // Step 6: Determine status
-        let status: 'Ready' | 'Error' | 'Invalid';
+        let status: 'Ready' | 'Error' | 'Invalid' | 'Processing';
         if (parsedSenses.length === 0) {
           status = 'Invalid';
         } else {
@@ -322,6 +323,10 @@ export async function entryInfoGenerator(): Promise<void> {
         if (newSensesToQueue.length > 0) {
           await addExampleSentenceQueueEntries(newSensesToQueue);
           console.log(`Queued ${newSensesToQueue.length} new senses for example sentences`);
+
+          // Set the status back to 'Processing' since senses were queued for example sentences
+          await upsertEntryInfo(item.entry, item.lang, senses, 'Processing');
+          console.log(`Updated status to Processing for ${item.entry} due to queued senses`);
         }
 
       } catch (error) {

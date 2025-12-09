@@ -1,11 +1,16 @@
 import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
+import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 
 export { entryInfoGenerator };
 
-entryInfoGenerator()
-  .then(() => console.log("Entry info generator completed successfully."))
-  .catch(error => console.error("Error in entry info generator: ", error));
+//entryInfoGenerator()
+//  .then(() => console.log("Entry info generator completed successfully."))
+//  .catch(error => console.error("Error in entry info generator: ", error));
+
+exampleSentenceGenerator()
+  .then(() => console.log("Example sentence generator completed successfully."))
+  .catch(error => console.error("Error in example sentence generator: ", error));
 
 //runTasks()
 //  .then(() => console.log("Crossword loading tasks completed successfully."))
