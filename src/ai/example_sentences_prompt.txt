@@ -16,6 +16,10 @@ Quality: Keep sentences concise (6-20 words), grammatically flawless, and polish
 If the word or phrase is in English, also translate each sentence into Spanish using natural Spanish phrasing. If it's not in English, translate
 it to English.
 
+Additionally, for the sentence in the language of the original word or phrase, enclose the word or phrase in double brackets.
+For example, for the word "contribute", "The prize was available for everyone that had {{contributed}} to fund throughout the year."
+For the phrase "watch your step", "Make sure to {{watch your step}} when entering the train."
+
 Output format:
 Generate the results in the following format. For each word/phrase, output the word/phrase on its own line, followed by 6 lines (3 sentence pairs).
 Separate each word/phrase block with a blank line. Don't use any bold or italic text.

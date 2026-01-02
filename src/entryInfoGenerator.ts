@@ -4,6 +4,7 @@ import {upsertEntryInfo} from './daos/upsertEntryInfo';
 import { addExampleSentenceQueueEntries } from './daos/addExampleSentenceQueueEntry';
 import { insertEntries, EntryInsertData } from './daos/insertEntries';
 import { addSenseEntryTranslations, SenseEntryTranslationData } from './daos/addSenseEntryTranslations';
+import { assignPrimarySenseToClues } from './daos/assignPrimarySenseToClues';
 import { Sense } from './models/Sense';
 import { EntryTranslation } from './models/EntryTranslation';
 import { Entry } from './models/Entry';
@@ -44,6 +45,8 @@ Tasks:
 4. For any returned senses, existing or new, that have less than 3 example sentences, add the sense to the example_sentence_queue table.
   - Use the DAO function add_example_sentence_queue_entry(sense_id: string)
   - Set the status of the entry back to 'Processing'.
+5. Query for any clues in the database with the specified entry and no sense_id or custom_clue. Assign these clues the sense_id that was determined as Primary.
+  - Use the DAO function assign_primary_sense_to_clues(entry: string, lang: string, primary_sense_id: string)
  */
 
 async function loadSensesPromptAsync(): Promise<string> {
@@ -285,6 +288,13 @@ export async function entryInfoGenerator(): Promise<void> {
         // Step 7: Update database with senses
         await upsertEntryInfo(item.entry, item.lang, senses, status);
         console.log(`Updated database for ${item.entry} with status: ${status}`);
+
+        // Step 7.5: Assign primary sense to existing clues
+        const primarySense = senses.find(sense => sense.commonness === 'Primary');
+        if (primarySense?.id) {
+          await assignPrimarySenseToClues(item.entry, item.lang, primarySense.id);
+          console.log(`Assigned primary sense ${primarySense.id} to clues for ${item.entry}`);
+        }
 
         // Step 8: Match sense translations with pre-assigned sense IDs and insert
         const senseEntryTranslations: SenseEntryTranslationData[] = [];
