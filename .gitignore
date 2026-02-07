@@ -27,3 +27,4 @@ settings.json
 *.puz
 aws/settings.json
 .env
+.serverless/*

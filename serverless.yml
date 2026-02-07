@@ -1,0 +1,78 @@
+service: cruzi-aws
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-west-2
+  stage: ${opt:stage, 'dev'}
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    # Database configuration
+    DB_HOST: ${env:DB_HOST}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    # AI API configuration
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+
+  iam:
+    role:
+      statements:
+        # CloudWatch Logs permissions
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+        # EventBridge permissions (for scheduled executions)
+        - Effect: Allow
+          Action:
+            - events:PutEvents
+          Resource: "*"
+
+package:
+  include:
+    - dist/**
+
+functions:
+  # # Crossword scraper - runs daily to scrape new crosswords
+  # crosswordScraper:
+  #   handler: dist/crosswordScraperLambda.handler
+  #   description: Scrapes daily crossword puzzles from various sources
+  #   timeout: 300  # 5 minutes
+  #   memorySize: 256  # 256MB
+  #   events:
+  #     - schedule:
+  #         rate: cron(0 9 * * ? *)  # Daily at 02:00 MST (09:00 UTC)
+  #         enabled: true
+
+  # Entry info generator - processes entries and generates sense information
+  entryInfoGenerator:
+    handler: dist/entryInfoGeneratorLambda.handler
+    description: Processes crossword entries and generates sense information using AI
+    timeout: 900  # 15 minutes - AI processing can take time
+    memorySize: 1024  # 1GB - Need more memory for AI processing
+    environment:
+      DB_HOST: ${self:provider.environment.DB_HOST}
+      DB_USER: ${self:provider.environment.DB_USER}
+      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
+      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+
+  # Example sentence generator - generates example sentences for senses
+  exampleSentenceGenerator:
+    handler: dist/exampleSentenceGeneratorLambda.handler
+    description: Generates example sentences for crossword senses using AI
+    timeout: 900  # 15 minutes - AI processing can take time
+    memorySize: 1024  # 1GB - Need more memory for AI processing
+    environment:
+      DB_HOST: ${self:provider.environment.DB_HOST}
+      DB_USER: ${self:provider.environment.DB_USER}
+      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
+      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+
+custom:
+  enableGenerators: ${env:ENABLE_GENERATORS, 'true'}
+
+plugins:
+  - serverless-offline

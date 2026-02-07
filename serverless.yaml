@@ -1,9 +1,0 @@
-service: crossword-scraper
-provider:
-  name: aws
-  runtime: nodejs20.x
-functions:
-  crosswordScraper:
-    handler: dist/crosswordScraper.handler
-plugins:
-  - serverless-offline

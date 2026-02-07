@@ -33,7 +33,10 @@ const geminiProvider = new GeminiAiProvider();
 
 async function loadExampleSentencesPromptAsync(): Promise<string> {
   try {
-    const content: string = await fs.promises.readFile('./src/ai/example_sentences_prompt.txt', 'utf-8');
+    // In Lambda environment, files are relative to the handler location in dist/
+    const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const promptPath = isLambda ? './ai/example_sentences_prompt.txt' : './src/ai/example_sentences_prompt.txt';
+    const content: string = await fs.promises.readFile(promptPath, 'utf-8');
     return content;
   } catch (err) {
     console.error('Error reading example sentences prompt file:', err);

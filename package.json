@@ -6,7 +6,10 @@
   "scripts": {
     "start": "ts-node src\\index.ts",
     "debug": "SET SLS_DEBUG=* && node --inspect node_modules\\serverless\\bin\\serverless offline",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && npm run copy-prompts",
+    "copy-prompts": "node -e \"const fs = require('fs'); const path = require('path'); if (!fs.existsSync('dist/ai')) fs.mkdirSync('dist/ai', { recursive: true }); fs.readdirSync('src/ai').filter(f => f.endsWith('.txt')).forEach(f => fs.copyFileSync(path.join('src/ai', f), path.join('dist/ai', f)));\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "serverless deploy"
   },
   "author": "",
   "license": "ISC",
