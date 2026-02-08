@@ -14,6 +14,7 @@ provider:
     DB_PASSWORD: ${env:DB_PASSWORD}
     # AI API configuration
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    AI_API_HOST: ${env:AI_API_HOST}
 
   iam:
     role:
@@ -58,6 +59,7 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
   # Example sentence generator - generates example sentences for senses
   exampleSentenceGenerator:
@@ -70,6 +72,7 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
 custom:
   enableGenerators: ${env:ENABLE_GENERATORS, 'true'}

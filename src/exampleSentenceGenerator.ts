@@ -1,6 +1,7 @@
 import fs from 'fs';
 import getExampleSentenceQueueTop10 from './daos/getExampleSentenceQueueTop10';
 import addExampleSentences from './daos/addExampleSentences';
+import { updateEntriesLoadingStatus } from './daos/updateEntriesLoadingStatus';
 import { GeminiAiProvider } from './ai/gemini';
 import { ExampleSentence } from './models/ExampleSentence';
 
@@ -35,7 +36,8 @@ async function loadExampleSentencesPromptAsync(): Promise<string> {
   try {
     // In Lambda environment, files are relative to the handler location in dist/
     const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const promptPath = isLambda ? './ai/example_sentences_prompt.txt' : './src/ai/example_sentences_prompt.txt';
+    //const promptPath = isLambda ? './ai/example_sentences_prompt.txt' : './src/ai/example_sentences_prompt.txt';
+    const promptPath = './src/ai/example_sentences_prompt.txt';
     const content: string = await fs.promises.readFile(promptPath, 'utf-8');
     return content;
   } catch (err) {
@@ -137,6 +139,9 @@ export async function exampleSentenceGenerator(): Promise<void> {
       return;
     }
 
+    // Track processed entries for status update
+    const processedEntries = new Set<string>();
+
     // Load the example sentences prompt template
     const promptTemplate = await loadExampleSentencesPromptAsync();
 
@@ -184,12 +189,25 @@ export async function exampleSentenceGenerator(): Promise<void> {
           // Step 7: Save example sentences to database
           await addExampleSentences(item.sense_id, exampleSentences);
           console.log(`Saved ${exampleSentences.length} example sentences for sense ${item.sense_id}`);
+
+          // Track successfully processed entry for status update
+          processedEntries.add(`${item.entry}:${item.lang}`);
         }
 
       } catch (error) {
         console.error(`Error processing batch starting at index ${i}:`, error);
         // Continue processing other batches even if one fails
       }
+    }
+
+    // Step 8: Update loading status to 'Ready' for all successfully processed entries
+    if (processedEntries.size > 0) {
+      const entriesToUpdate = Array.from(processedEntries).map(entryKey => {
+        const [entry, lang] = entryKey.split(':');
+        return { entry, lang };
+      });
+      await updateEntriesLoadingStatus(entriesToUpdate, 'Ready');
+      console.log(`Updated loading status to 'Ready' for ${entriesToUpdate.length} entries`);
     }
 
     console.log('Example sentence generation completed');

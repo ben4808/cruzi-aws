@@ -24,11 +24,11 @@ BEGIN
     LIMIT 10;
 
     -- Delete the processed entries from the queue
-    DELETE FROM example_sentence_queue
-    WHERE sense_id IN (
-        SELECT sense_id
-        FROM example_sentence_queue
-        ORDER BY added_at ASC
+    DELETE FROM example_sentence_queue esq_delete
+    WHERE esq_delete.sense_id IN (
+        SELECT esq_inner.sense_id
+        FROM example_sentence_queue esq_inner
+        ORDER BY esq_inner.added_at ASC
         LIMIT 10
     );
 END;

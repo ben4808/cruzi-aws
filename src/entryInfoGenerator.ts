@@ -53,7 +53,8 @@ async function loadSensesPromptAsync(): Promise<string> {
   try {
     // In Lambda environment, files are relative to the handler location in dist/
     const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const promptPath = isLambda ? './ai/senses_prompt.txt' : './src/ai/senses_prompt.txt';
+    //const promptPath = isLambda ? './ai/senses_prompt.txt' : './src/ai/senses_prompt.txt';
+    const promptPath = './src/ai/senses_prompt.txt';
     const content: string = await fs.promises.readFile(promptPath, 'utf-8');
     return content;
   } catch (err) {
