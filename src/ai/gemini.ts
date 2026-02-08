@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 import * as dotenv from 'dotenv';
 import { Clue } from '../models/Clue';
 import { IAiProvider } from './IAiProvider';
@@ -13,8 +13,6 @@ import { mock } from 'node:test';
 dotenv.config();
 
 export class GeminiAiProvider implements IAiProvider {
-  static genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-  static model = GeminiAiProvider.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   sourceAI = 'gemini';
 
   async getTranslateResultsAsync(clues: Clue[], originalLang: string, translatedLang: string, mockData: boolean): Promise<TranslateResult[]> {
@@ -30,9 +28,27 @@ export class GeminiAiProvider implements IAiProvider {
   }
 
   async generateResultsAsync(prompt: string): Promise<string> {
-    const result = await GeminiAiProvider.model.generateContent(prompt);
-    const response = await result.response;
+    const aiApiHost = process.env.AI_API_HOST;
 
-    return response.text();
+    if (!aiApiHost) {
+      throw new Error('AI_API_HOST environment variable is not set');
+    }
+
+    try {
+      const response = await axios.post(`${aiApiHost}/api/makeAICall`, {
+        prompt: prompt
+      }, {
+        timeout: 120000 // 2 minutes timeout to match the API
+      });
+
+      if (response.data && response.data.success && response.data.response) {
+        return response.data.response;
+      } else {
+        throw new Error('Invalid response from AI API');
+      }
+    } catch (error) {
+      console.error('Error calling AI API:', error);
+      throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
