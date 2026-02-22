@@ -2,7 +2,7 @@ import { generatePuzFile } from './lib/puzFiles';
 import { processPuzData } from './lib/puzFiles';
 import { Puzzle } from './models/Puzzle';
 import { PuzzleSource, PuzzleSources } from './models/PuzzleSource';
-import { writeFile } from 'fs/promises';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { GeminiAiProvider } from './ai/gemini';
 import { IAiProvider } from './ai/IAiProvider';
 import { ILoaderDao } from './daos/ILoaderDao';
@@ -11,7 +11,7 @@ import { arrayToMap, generateId, mapValues } from './lib/utils';
 import { Clue } from './models/Clue';
 import { ClueCollection } from './models/ClueCollection';
 import { Entry } from './models/Entry';
-import { ObscurityResult } from './models/ObscurityResult';
+import { FamiliarityResult } from './models/FamiliarityResult';
 import { QualityResult } from './models/QualityResult';
 import fs from 'fs';
 
@@ -24,21 +24,19 @@ let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<Puzzle> => 
   }
 }
 
-let savePuzzle = async (puzzle: Puzzle, directory: string, filename: string): Promise<void> => {
-  let filePath = `${directory}\\${filename}`;
-  let blob = generatePuzFile(puzzle);
-  await writeBlobToFile(blob, filePath);
-}
+const S3_BUCKET = 'scraped-crosswords';
+const s3Client = new S3Client({});
 
-async function writeBlobToFile(blob: Blob, filePath: string): Promise<void> {
-  try {
-    // Convert Blob to Buffer
-    const buffer = Buffer.from(await blob.arrayBuffer());
-    await writeFile(filePath, buffer);
-    console.log('File written successfully');
-  } catch (error) {
-    console.error('Error writing file:', error);
-  }
+async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
+  const blob = generatePuzFile(puzzle);
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  await s3Client.send(new PutObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: 'application/octet-stream',
+  }));
+  console.log(`Uploaded ${key} to s3://${S3_BUCKET}/`);
 }
 
 export const scrapePuzzles = async (): Promise<Puzzle[]> => {
@@ -55,9 +53,8 @@ export const scrapePuzzles = async (): Promise<Puzzle[]> => {
         let puzzle = await scrapePuzzle(source, date);
         scrapedPuzzles.push(puzzle);
 
-        let directory = "C:\\Users\\ben_z\\Desktop\\puzzles";
-        let fileName = `${source.id}-${date.toISOString().split('T')[0]}.puz`;
-        await savePuzzle(puzzle, directory, fileName);
+        let key = `${source.id}-${date.toISOString().split('T')[0]}.puz`;
+        await uploadPuzzleToS3(puzzle, key);
 
         console.log(`Scraped puzzle from ${source.name} for date ${date.toISOString()}`);
     } catch (error) {
@@ -70,14 +67,14 @@ export const scrapePuzzles = async (): Promise<Puzzle[]> => {
 
 let dao: ILoaderDao = new LoaderDao();
 let aiProvider: IAiProvider = new GeminiAiProvider();
-let mockData = false; // Set to true to use mock data for testing
+let useMockData = true; // Set to true to use mock data for testing
 
 let runCrosswordLoadingTasks = async () => {
   let scrapedPuzzles = [] as Puzzle[];
 
   console.log("Starting crossword loading tasks...");
   try {
-    if (mockData)
+    if (useMockData)
       scrapedPuzzles = await getSamplePuzzles();
     else
       scrapedPuzzles = await scrapePuzzles();
@@ -96,28 +93,28 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
       console.log(`Processing puzzle for ${puzzle.publication}`);
       await dao.savePuzzle(puzzle);
       let clueCollection = puzzleToClueCollection(puzzle);
-      await dao.saveClueCollection(clueCollection);
-      await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues!);
 
-      console.log(`${puzzle.publication} clues saved: ${clueCollection.clues!.length}`);
+      console.log(`${puzzle.publication} clues extracted: ${clueCollection.clues!.length}`);
 
       let entries = clueCollection.clues!.map(clue => clue.entry!);
+      // These will be reset by the new average later.
+      for (let entry of entries) {
+        entry.familiarityScore = undefined;
+        entry.qualityScore = undefined;
+      }
+      
       let entriesMap: Map<string, Entry> = arrayToMap(entries, entry => entry.entry);
+      let lang = puzzle.lang || 'en';
 
-      let originalLang = 'en';
-      let translatedLang = "es";
-
-      let translateResults = await aiProvider.getTranslateResultsAsync(clueCollection.clues!, originalLang, translatedLang, mockData);
-      await dao.addTranslateResults(translateResults);
-
-      console.log(`${puzzle.publication} translations saved.`);
-
-      let obscurityResults = await aiProvider.getObscurityResultsAsync(entries, translatedLang, mockData);
-      populateEntryObscurityInfo(entriesMap, obscurityResults);
-      let qualityResults = await aiProvider.getQualityResultsAsync(entries, translatedLang, mockData);
+      let familiarityResults = await aiProvider.getFamiliarityResultsAsync(entries, lang, useMockData);
+      populateEntryFamiliarityInfo(entriesMap, familiarityResults);
+      let qualityResults = await aiProvider.getQualityResultsAsync(entries, lang, useMockData);
       populateEntryQualityInfo(entriesMap, qualityResults);
 
-      await dao.addObscurityQualityResults(entries, aiProvider.sourceAI);
+      await dao.saveClueCollection(clueCollection); // Adds id to collection
+      await dao.addCluesToCollection(clueCollection.id!, clueCollection.lang, clueCollection.clues!);
+      await dao.addEntries(entries);
+      await dao.addFamiliarityQualityResults(entries, aiProvider.sourceAI);
 
       console.log(`${puzzle.publication} scores saved.`);
   } catch (error) {
@@ -154,15 +151,16 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
   return clueCollection;
 }
 
-let populateEntryObscurityInfo = (entriesMap: Map<string, Entry>, obscurityResults: ObscurityResult[]) => {
-  obscurityResults.forEach(result => {
+let populateEntryFamiliarityInfo = (entriesMap: Map<string, Entry>, FamiliarityResults: FamiliarityResult[]) => {
+  FamiliarityResults.forEach(result => {
     let entry = entriesMap.get(result.entry);
     if (entry) {
+      entry.rootEntry = result.baseForm;
       entry.displayText = result.displayText;
       entry.entryType = result.entryType;
-      entry.familiarityScore = result.obscurityScore;
+      entry.familiarityScore = result.familiarityScore;
     } else {
-      console.warn(`Entry not found for obscurity result: ${result.entry}`);
+      console.warn(`Entry not found for Familiarity result: ${result.entry}`);
     }
   });
 }
@@ -173,7 +171,7 @@ let populateEntryQualityInfo = (entriesMap: Map<string, Entry>, qualityResults: 
     if (entry) {
       entry.qualityScore = result.qualityScore;
     } else {
-      console.warn(`Entry not found for obscurity result: ${result.entry}`);
+      console.warn(`Entry not found for Familiarity result: ${result.entry}`);
     }
   });
 }

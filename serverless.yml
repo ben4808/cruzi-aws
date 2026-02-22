@@ -31,22 +31,32 @@ provider:
           Action:
             - events:PutEvents
           Resource: "*"
+        # S3 permissions - allow functions to add files to scraped-crosswords bucket
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+          Resource:
+            - arn:aws:s3:::scraped-crosswords
+            - arn:aws:s3:::scraped-crosswords/*
 
 package:
   include:
     - dist/**
 
 functions:
-  # # Crossword scraper - runs daily to scrape new crosswords
-  # crosswordScraper:
-  #   handler: dist/crosswordScraperLambda.handler
-  #   description: Scrapes daily crossword puzzles from various sources
-  #   timeout: 300  # 5 minutes
-  #   memorySize: 256  # 256MB
-  #   events:
-  #     - schedule:
-  #         rate: cron(0 9 * * ? *)  # Daily at 02:00 MST (09:00 UTC)
-  #         enabled: true
+  # Crossword scraper - scrapes crossword puzzles from various sources
+  crosswordScraper:
+    handler: dist/crosswordScraperLambda.handler
+    description: Scrapes crossword puzzles from various sources and generates entry info
+    timeout: 900  # 15 minutes - AI processing can take time
+    memorySize: 1024  # 1GB - Need more memory for AI processing
+    environment:
+      DB_HOST: ${self:provider.environment.DB_HOST}
+      DB_USER: ${self:provider.environment.DB_USER}
+      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
+      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
   # Entry info generator - processes entries and generates sense information
   entryInfoGenerator:

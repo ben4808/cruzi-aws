@@ -1,109 +1,19 @@
 import { arrayToMap, batchArray, entryToAllCaps } from "../lib/utils";
-import { Clue } from "../models/Clue";
 import { Entry } from "../models/Entry";
-import { ObscurityResult } from "../models/ObscurityResult";
+import { FamiliarityResult } from "../models/FamiliarityResult";
+import { LanguageNames } from "../models/LanguageNames";
 import { QualityResult } from "../models/QualityResult";
-import { TranslateResult } from "../models/TranslateResult";
 import { IAiProvider } from "./IAiProvider";
 import fs from 'fs';
 
-export async function getTranslateResults(
-  provider: IAiProvider, 
-  clues: Clue[], 
-  originalLang: string,
-  translatedLang: string,
-  mockData: boolean
-): Promise<TranslateResult[]> {
-  let results = [] as TranslateResult[];
-  let prompt = await loadTranslatePromptAsync();
-  let clueMap = arrayToMap(clues, clue => clue.entry?.entry || '');
-
-  try {
-    let batches = batchArray(clues, 40);
-
-    for (let batch of batches) {
-      let promptData = batch.map(clue => `${clue.customClue} : ${clue.entry?.entry || ''}`).join('\n');
-      let batchPrompt = prompt.replace('[[DATA]]', promptData);
-
-      let resultText = "";
-      if (mockData)
-        resultText = await getSampleTranslateResultText();
-      else
-        resultText = await provider.generateResultsAsync(batchPrompt);
-
-      const parsed = parseTranslateResponse(resultText);
-
-      for (let i=0; i < parsed.length; i++) {
-        const clue = clueMap.get(parsed[i].entry)!;
-        results.push(({
-          clueId: clue.id,
-          originalLang: originalLang,
-          translatedLang: translatedLang,
-          literalTranslation: parsed[i].literalTranslation,
-          naturalTranslation: parsed[i].naturalTranslation,
-          naturalAnswers: parsed[i].naturalAnswers,
-          colloquialAnswers: parsed[i].colloquialAnswers,
-          alternativeAnswers: parsed[i].alternativeAnswers,
-          sourceAI: provider.sourceAI,
-        }) as TranslateResult);
-      }
-
-      if (mockData) break; // For testing, break after first batch
-    }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-
-  return results;
-}
-
-export async function loadTranslatePromptAsync(): Promise<string> {
-  try {
-    const content: string = await fs.promises.readFile('./src/ai/translate_prompt.txt', 'utf-8');
-    return content;
-  } catch (err) {
-    console.error('Error reading file:', err);
-    throw err;
-  }
-}
-
-let getSampleTranslateResultText = async (): Promise<string> => {
-  try {
-    const content: string = await fs.promises.readFile('./src/ai/sample_translate_response.txt', 'utf-8');
-    return content;
-  } catch (err) {
-    console.error('Error reading file:', err);
-    throw err;
-  }
-}
-
-export const parseTranslateResponse = (response: string): any[] => {
-  const results: any[] = [];
-  const lines = response.split('\n').filter(line => line.trim() !== '');
-
-  for (let i = 0; i < lines.length; i+=6) {
-    const parts = lines.slice(i, i + 6);
-    results.push({
-      entry: entryToAllCaps(parts[0].split(':').at(-1)!.trim()),
-      literalTranslation: parts[1].split(':').slice(1).join(':').trim(),
-      naturalTranslation: parts[2].split(':').slice(1).join(':').trim(),
-      naturalAnswers: parts[3].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
-      colloquialAnswers: parts[4].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
-      alternativeAnswers: parts[5].split(':').slice(1).join(':').trim().split(';').map(answer => answer.trim()),
-    });
-  }
-
-  return results;
-}
-
-export async function getObscurityResults(
+export async function getFamiliarityResults(
   provider: IAiProvider, 
   entries: Entry[], 
   lang: string,
-  mockData: boolean
-): Promise<ObscurityResult[]> {
-  let results = [] as ObscurityResult[];
-  let prompt = await loadObscurityPromptAsync();
+  useMockData: boolean
+): Promise<FamiliarityResult[]> {
+  let results = [] as FamiliarityResult[];
+  let prompt = await loadFamiliarityPromptAsync();
   let entryMap = arrayToMap(entries, entry => entry.entry);
 
   try {
@@ -111,36 +21,39 @@ export async function getObscurityResults(
 
     for (let batch of batches) {
       let batchNumber = Math.random().toString(36).substring(2, 5);
-      console.log(`Obscurity batch ${batchNumber}: `, batch.map(entry => entry.entry).join(', '));
+      console.log(`Familiarity batch ${batchNumber}: `, batch.map(entry => entry.entry).join(', '));
+      let langName = LanguageNames[lang];
+      let batchPrompt = prompt.replace(/\[\[LANG\]\]/g, langName);
       let promptData = batch.map(entry => entry.entry).join('\n');
-      let batchPrompt = prompt.replace('[[DATA]]', promptData);
+      batchPrompt = batchPrompt.replace('[[DATA]]', promptData);
 
       let resultText = "";
-      if (mockData)
-        resultText = await getSampleObscurityResultText();
+      if (useMockData)
+        resultText = await getSampleFamiliarityResultText();
       else
         resultText = await provider.generateResultsAsync(batchPrompt);
 
-      const parsed = parseObscurityResponse(resultText);
+      const parsed = parseFamiliarityResponse(resultText);
 
       for (let i=0; i < parsed.length; i++) {
         const entry = entryMap.get(parsed[i].entry)!;
         if (!entry) {
-          console.warn(`Entry not found for obscurity result batch ${batchNumber}: ${parsed[i].entry}`);
+          console.warn(`Entry not found for familiarity result batch ${batchNumber}: ${parsed[i].entry}`);
           continue;
         }
 
         results.push(({
           entry: entry.entry,
           lang: lang,
+          baseForm: parsed[i].baseForm,
           displayText: parsed[i].displayText,
           entryType: parsed[i].entryType,
-          obscurityScore: parsed[i].obscurityScore,
+          familiarityScore: parsed[i].familiarityScore,
           sourceAI: provider.sourceAI,
-        }) as ObscurityResult);
+        }) as FamiliarityResult);
       }
 
-      if (mockData) break; // For testing, break after first batch
+      if (useMockData) break; // For testing, break after first batch
     }
   } catch (error) {
     console.error('Error:', error);
@@ -149,9 +62,9 @@ export async function getObscurityResults(
   return results;
 }
 
-let getSampleObscurityResultText = async (): Promise<string> => {
+let getSampleFamiliarityResultText = async (): Promise<string> => {
   try {
-    const content: string = await fs.promises.readFile('./src/ai/sample_obscurity_response.txt', 'utf-8');
+    const content: string = await fs.promises.readFile('./src/ai/sample_familiarity_response.txt', 'utf-8');
     return content;
   } catch (err) {
     console.error('Error reading file:', err);
@@ -159,9 +72,9 @@ let getSampleObscurityResultText = async (): Promise<string> => {
   }
 }
 
-export async function loadObscurityPromptAsync(): Promise<string> {
+export async function loadFamiliarityPromptAsync(): Promise<string> {
   try {
-    const content: string = await fs.promises.readFile('./src/ai/obscurity_prompt.txt', 'utf-8');
+    const content: string = await fs.promises.readFile('./src/ai/familiarity_prompt.txt', 'utf-8');
     return content;
   } catch (err) {
     console.error('Error reading file:', err);
@@ -169,17 +82,23 @@ export async function loadObscurityPromptAsync(): Promise<string> {
   }
 }
 
-export const parseObscurityResponse = (response: string): any[] => {
+export const parseFamiliarityResponse = (response: string): any[] => {
   const results: any[] = [];
   const lines = response.split('\n').filter(line => line.trim() !== '');
 
   for (let line of lines) {
     let parts = line.split(' : ').map(part => part.trim());
+    let baseForm = undefined;
+    if (parts[2].includes('Derived Word')) {
+      baseForm = parts[2].split(' (')[1].split(')')[0];
+      parts[2] = 'Derived Word';
+    }
     results.push({
       entry: parts[0],
+      baseForm: baseForm,
       displayText: parts[1],
       entryType: parts[2],
-      obscurityScore: Math.round(parseFloat(parts[3])*10),
+      familiarityScore: Math.round(parseFloat(parts[3])*10),
     });
   }
 
@@ -190,7 +109,7 @@ export async function getQualityResults(
   provider: IAiProvider, 
   entries: Entry[], 
   lang: string,
-  mockData: boolean
+  useMockData: boolean
 ): Promise<QualityResult[]> {
   let results = [] as QualityResult[];
   let prompt = await loadQualityPromptAsync();
@@ -202,11 +121,13 @@ export async function getQualityResults(
     for (let batch of batches) {
       let batchNumber = Math.random().toString(36).substring(2, 5);
       console.log(`Quality batch ${batchNumber}: `, batch.map(entry => entry.entry).join(', '));
+      let langName = LanguageNames[lang];
+      let batchPrompt = prompt.replace(/\[\[LANG\]\]/g, langName);
       let promptData = batch.map(entry => entry.displayText!).join('\n');
-      let batchPrompt = prompt.replace('[[DATA]]', promptData);
+      batchPrompt = batchPrompt.replace('[[DATA]]', promptData);
       
       let resultText = "";
-      if (mockData)
+      if (useMockData)
         resultText = await getSampleQualityResultText();
       else
         resultText = await provider.generateResultsAsync(batchPrompt);
@@ -228,7 +149,7 @@ export async function getQualityResults(
         }) as QualityResult);
       }
 
-      if (mockData) break; // For testing, break after first batch
+      if (useMockData) break; // For testing, break after first batch
     }
   } catch (error) {
     console.error('Error:', error);

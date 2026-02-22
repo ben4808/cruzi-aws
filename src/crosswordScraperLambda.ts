@@ -1,16 +1,33 @@
-import { Context, APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
+import { Context, APIGatewayProxyResult } from 'aws-lambda';
+import { scrapePuzzles } from './crosswordScraper';
 
-/* 
-npx tsc
-npx serverless offline
-npx serverless invoke local --function crosswordScraper
-*/
+/**
+ * AWS Lambda handler for crossword scraping
+ * Scrapes crossword puzzles from various sources and generates entry info
+ */
+export const handler = async (event: any, context: Context): Promise<APIGatewayProxyResult> => {
+  console.log('Crossword scraper Lambda started at:', new Date().toISOString());
 
-export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    console.log('Daily crossword scraper started at:', new Date().toISOString());
+  try {
+    await scrapePuzzles();
 
     return {
       statusCode: 200,
-      body: JSON.stringify('Daily task completed successfully'),
+      body: JSON.stringify({
+        message: 'Crossword scraping completed successfully',
+        timestamp: new Date().toISOString()
+      }),
     };
+  } catch (error) {
+    console.error('Error in crossword scraper Lambda:', error);
+
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: 'Crossword scraping failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      }),
+    };
+  }
 };

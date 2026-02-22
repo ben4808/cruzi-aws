@@ -1,26 +1,19 @@
 import axios from 'axios';
 import * as dotenv from 'dotenv';
-import { Clue } from '../models/Clue';
 import { IAiProvider } from './IAiProvider';
 import { Entry } from '../models/Entry';
-import { ObscurityResult } from '../models/ObscurityResult';
+import { FamiliarityResult } from '../models/FamiliarityResult';
 import { QualityResult } from '../models/QualityResult';
-import { getObscurityResults, getQualityResults, getTranslateResults } from './common';
-import { TranslateResult } from '../models/TranslateResult';
-import { mock } from 'node:test';
+import { getFamiliarityResults, getQualityResults } from './common';
 
 // Load environment variables
 dotenv.config();
 
 export class GeminiAiProvider implements IAiProvider {
-  sourceAI = 'gemini';
+  sourceAI = 'gemini2.5-flash';
 
-  async getTranslateResultsAsync(clues: Clue[], originalLang: string, translatedLang: string, mockData: boolean): Promise<TranslateResult[]> {
-    return await getTranslateResults(this, clues, originalLang, translatedLang, mockData);
-  }
-
-  async getObscurityResultsAsync(entries: Entry[], lang: string, mockData: boolean): Promise<ObscurityResult[]> {
-    return await getObscurityResults(this, entries, lang, mockData);
+  async getFamiliarityResultsAsync(entries: Entry[], lang: string, mockData: boolean): Promise<FamiliarityResult[]> {
+    return await getFamiliarityResults(this, entries, lang, mockData);
   }
 
   async getQualityResultsAsync(entries: Entry[], lang: string, mockData: boolean): Promise<QualityResult[]> {

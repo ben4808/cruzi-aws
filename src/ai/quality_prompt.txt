@@ -1,4 +1,4 @@
-Rate the quality of words and phrases
+Rate the quality of words and phrases in the [[lang]] language.
 
 Assign a score based on quality according to the provided rubric. Calibrate responses based on the provided examples at each level.
 
@@ -26,7 +26,7 @@ Undesirable qualties that subtract from the baseline (these can stack):
 • Is a partial phrase where the full phrase is much more common. Subtract .5
 • Is a single name, rather than a full name ("Bill" rather than "Bill Gates"). Subtract .5
 • There are better/more common ways to say the same thing. Subtract .5
-• Is a foreign word that's not well known in English. Subract .5
+• Is a foreign word that's not well known in [[lang]]. Subract .5
 
 Rubric:
 

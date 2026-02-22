@@ -28,7 +28,7 @@ FIST : fist : Word : 4.5
 HORN : horn : Word : 4.5
 BLOW : blow : Word : 5
 HYENA : hyena : Word : 4
-EGOS : egos : Derived Word : 4
+EGOS : egos : Derived Word (ego) : 4
 ROBODIALER : robodialer : Word : 3.5
 SULU : Sulu : Proper Name : 3
 ICONOCLAST : iconoclast : Word : 2.5
@@ -37,4 +37,4 @@ SIXTHSENSE : sixth sense : Phrase : 4
 WHOP : whop : Word : 3
 HOBO : hobo : Word : 4
 AMOS : Amos : Proper Name : 3
-TEES : tees : Derived Word : 4
+TEES : tees : Derived Word (tee) : 4

@@ -9,9 +9,10 @@ import { EntryInfoQueueItem } from "./getEntryInfoQueueTop10";
 export interface ILoaderDao {
     savePuzzle: (puzzle: Puzzle) => Promise<void>;
     saveClueCollection: (clueCollection: ClueCollection) => Promise<void>;
-    addCluesToCollection: (collectionId: string, clues: Clue[]) => Promise<void>;
+    addCluesToCollection: (collectionId: string, lang: string, clues: Clue[]) => Promise<void>;
     addTranslateResults: (translatedResults: TranslateResult[]) => Promise<void>;
-    addObscurityQualityResults: (entries: Entry[], sourceAI: string) => Promise<void>;
+    addEntries: (entries: Entry[]) => Promise<void>;
+    addFamiliarityQualityResults: (entries: Entry[], sourceAI: string) => Promise<void>;
     getEntryInfoQueueTop10: () => Promise<EntryInfoQueueItem[]>;
     upsertEntryInfo: (entry: string, lang: string, senses: Sense[], status: 'Ready' | 'Error' | 'Invalid' | 'Processing') => Promise<void>;
     addExampleSentenceQueueEntries: (senseIds: string[]) => Promise<void>;

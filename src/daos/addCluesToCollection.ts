@@ -1,57 +1,39 @@
 import { sqlQuery } from "./postgres";
 import { Clue } from "../models/Clue";
-import { Entry } from "../models/Entry";
 import { generateId } from "../lib/utils";
 
-const addCluesToCollection = async (collectionId: string, clues: Clue[]) => {
-    let order = 1;
+/**
+ * Payload shape for add_clues_to_collection(clues_data jsonb).
+ * Each element is inserted into clue and collection__clue; collection_id is read from the first element.
+ */
+interface CluesDataElement {
+    collection_id: string;
+    id: string;
+    entry: string;
+    lang: string;
+    custom_clue: string | null;
+    custom_display_text: string | null;
+    source: string | null;
+}
 
-    let cluesValue = clues.map(clue => {
-        clue.id = clue.id || generateId();
-        // Note: The Clue interface doesn't include lang, clue, responseTemplate, metadata1 properties
-        // This implementation assumes clues have these properties as used in puzzleToClueCollection
-        const clueLang = (clue as any).lang || 'en';
-        const clueText = (clue as any).clue || clue.customClue || '';
-        const responseTemplate = (clue as any).responseTemplate || null;
-        const metadata1 = (clue as any).metadata1 || '';
-        const source = (clue as any).source || clue.source || null;
+const addCluesToCollection = async (collectionId: string, lang: string, clues: Clue[]) => {
+    if (clues.length === 0) return;
 
-        let entry = clue.entry;
+    const cluesData: CluesDataElement[] = clues.map((clue) => {
         return {
-            clue_id: clue.id,
-            order: order++,
-            metadata1: metadata1,
-            entry: entry?.entry || "",
-            lang: clueLang,
-            clue: clueText,
-            response_template: responseTemplate,
-            source: source,
+            collection_id: collectionId,
+            id: clue.id ?? generateId(),
+            entry: clue.entry?.entry ?? "",
+            lang,
+            custom_clue: clue.customClue ?? null,
+            custom_display_text: clue.customDisplayText ?? null,
+            source: clue.source ?? null,
         };
-    });
+    }).filter(x => x.entry.length > 0);
 
     await sqlQuery(true, "add_clues_to_collection", [
-        {name: "p_collection_id", value: collectionId},
-        {name: "p_clues", value: cluesValue},
+        { name: "clues_data", value: cluesData },
     ]);
-
-    let entriesValue = clues.map(clue => {
-        // Note: The Clue interface doesn't include lang property
-        const clueLang = (clue as any).lang || 'en';
-        let entry = clue.entry;
-        if (!entry) return null;
-
-        return {
-            entry: entry.entry,
-            lang: entry.lang,
-            length: (entry as any).length || entry.entry.length, // Entry interface doesn't have length
-        };
-    }).filter(e => e !== null);
-
-    if (entriesValue.length > 0) {
-        await sqlQuery(true, "add_entries", [
-            {name: "p_entries", value: entriesValue},
-        ]);
-    }
 };
 
 export default addCluesToCollection;

@@ -1,4 +1,4 @@
-For each input word or phrase, which will likely be in ALLCAPS and without spaces (e.g., "SNOWFORT"), perform the following steps:
+For each input word or phrase, which will be in the [[lang]] language and likely be in ALLCAPS and without spaces (e.g., "SNOWFORT"), perform the following steps:
 
 Step 1: Parse and Normalize
 - Convert the input to standard capitalization and spacing (e.g., "SNOWFORT" becomes "snow fort").
@@ -16,7 +16,7 @@ Invalid words or phrases will score 0 on the rubric.
 
 Step 3: Categorize: Assign the parsed word/phrase to one of the following categories. Select the category that maximizes the familiarity score.
 - Word: Single words (e.g., "quixotic"), including contractions (e.g. I've). Include online slang even if it's not officially a word.
-- Derived Word: A word formed from another word (e.g., "diving" from "dive", "pillars" from "pillar"). Conjugated verbs. Score based on the familiarity of the derived form -- some derived forms are more common than the base word, and some are barely used.
+- Derived Word: A word formed from another word (e.g., "diving" from "dive", "pillars" from "pillar"). Conjugated verbs. Score based on the familiarity of the derived form -- some derived forms are more common than the base word, and some are barely used. Also include the base form of the derived word in the output.
 - Phrase: A well-established idiomatic expression, compound noun, or fixed unit of multiple words. The meaning of a phrase should be more than the literal sum of its parts. Examples include "snow fort" and "white lie."  Include verb-preposition sets if they commonly go together ("give to", "wake up"). Include online slang even it isn't an official.
 - Brand Name: (e.g., "Camelbak")
 - Proper Name: Names of specific people, places, or things (e.g., "Tiger Woods," "Mr. Ed"). Consider solo first names or last names (e.g. "Idris", "Robbie").
@@ -25,7 +25,7 @@ Step 3: Categorize: Assign the parsed word/phrase to one of the following catego
 - Prefix/Suffix: (e.g., "tri-," "-ose"). Score based on the familiarity of the prefix/suffix itself.
 - Invalid: Was classified as invalid in Step 2.
 
-Step 4: Score Familiarity: Assign a score from 0 to 5 based on the following rubric. Consider familiarity among native English speakers. Calibrate based on the examples given at each level.
+Step 4: Score Familiarity: Assign a score from 0 to 5 based on the following rubric. Consider familiarity among native [[lang]] speakers. Calibrate based on the examples given at each level.
 5 - Extremely fundamental. These are among the first few words learned. No contractions, abbreviations, or acronyms.
 Examples: sit, else, gone, tree, my, thank you, red, less, year
 4.5 - Extremely common but not fundamental. Extremely common phrases. No contractions, abbreviations, or acronyms.
@@ -54,7 +54,7 @@ Present each evaluation in the following strict format, without any introductory
 
 Example Outputs:
 quixotic : quixotic : Word : 2.5
-DIVING : diving : Derived Word : 4
+DIVING : diving : Derived Word (dive) : 4
 SNOWFORT : snow fort : Phrase : 3.5
 snow tag : snow tag : Invalid : 0
 ATTN : attn. : Abbreviation : 3
@@ -63,6 +63,7 @@ OSS : OSS : Acronym : 1.5
 CAMELBAK : Camelbak : Brand Name : 2.5
 WHOOPIGOLDBERG : Whoopi Goldberg : Proper Name : 3.5
 IVE : I've : Word : 4
+CANDIES : candies : Derived Word (candy) : 4
 
 Words/phrases to evaluate:
 

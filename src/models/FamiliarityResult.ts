@@ -1,8 +1,9 @@
-export interface ObscurityResult {
+export interface FamiliarityResult {
     entry: string;
     lang: string;
+    baseForm: string,
     displayText: string;
     entryType: string;
-    obscurityScore: number;
+    familiarityScore: number;
     sourceAI: string;
 }
