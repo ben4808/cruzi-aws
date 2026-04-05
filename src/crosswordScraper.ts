@@ -1,3 +1,10 @@
+/**
+ * This file contains the code for the crossword scraper lambda function.
+ * It is responsible for scraping crossword puzzles from the web and saving them to a storage drive.
+ * It also creates a new crossword and clue collection in the database for the crossword.
+ * It then enqueues all answers into the entry info queue to have its senses (definitions) populated.
+ */
+
 import { generatePuzFile } from './lib/puzFiles';
 import { processPuzData } from './lib/puzFiles';
 import { Puzzle } from './models/Puzzle';
@@ -42,9 +49,9 @@ async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
 export const scrapePuzzles = async (): Promise<Puzzle[]> => {
   let scrapedPuzzles = [] as Puzzle[]
   let sources = [
-    PuzzleSources.NYT, 
+    //PuzzleSources.NYT, 
     PuzzleSources.WSJ, 
-    PuzzleSources.Newsday
+    //PuzzleSources.Newsday
   ] as PuzzleSource[]; // Add other sources as needed
   let date = new Date(); // Use today's date or modify as needed
 
@@ -67,7 +74,7 @@ export const scrapePuzzles = async (): Promise<Puzzle[]> => {
 
 let dao: ILoaderDao = new LoaderDao();
 let aiProvider: IAiProvider = new GeminiAiProvider();
-let useMockData = true; // Set to true to use mock data for testing
+let useMockData = false; // Set to true to use mock data for testing
 
 let runCrosswordLoadingTasks = async () => {
   let scrapedPuzzles = [] as Puzzle[];

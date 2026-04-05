@@ -7,6 +7,7 @@ import addEntries from "./addEntries";
 import addFamiliarityQualityResults from "./addFamiliarityQualityResults";
 import getEntryInfoQueueTop10 from "./getEntryInfoQueueTop10";
 import addExampleSentenceQueueEntry, { addExampleSentenceQueueEntries } from "./addExampleSentenceQueueEntry";
+import addEntryInfoQueueEntry, { addEntryInfoQueueEntries } from "./addEntryInfoQueueEntries";
 import { upsertEntryInfo } from "./upsertEntryInfo";
 
 class LoaderDao implements ILoaderDao {
@@ -29,6 +30,10 @@ class LoaderDao implements ILoaderDao {
     addExampleSentenceQueueEntry = addExampleSentenceQueueEntry;
 
     addExampleSentenceQueueEntries = addExampleSentenceQueueEntries;
+
+    addEntryInfoQueueEntry = addEntryInfoQueueEntry;
+
+    addEntryInfoQueueEntries = addEntryInfoQueueEntries;
 }
 
 export default LoaderDao;

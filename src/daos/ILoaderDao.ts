@@ -5,6 +5,7 @@ import { Puzzle } from "../models/Puzzle";
 import { TranslateResult } from "../models/TranslateResult";
 import { Sense } from "../models/Sense";
 import { EntryInfoQueueItem } from "./getEntryInfoQueueTop10";
+import { EntryInfoQueueItemInput } from "./addEntryInfoQueueEntries";
 
 export interface ILoaderDao {
     savePuzzle: (puzzle: Puzzle) => Promise<void>;
@@ -17,4 +18,6 @@ export interface ILoaderDao {
     upsertEntryInfo: (entry: string, lang: string, senses: Sense[], status: 'Ready' | 'Error' | 'Invalid' | 'Processing') => Promise<void>;
     addExampleSentenceQueueEntries: (senseIds: string[]) => Promise<void>;
     addExampleSentenceQueueEntry: (senseId: string) => Promise<void>;
+    addEntryInfoQueueEntries: (items: EntryInfoQueueItemInput[]) => Promise<void>;
+    addEntryInfoQueueEntry: (entry: string, lang: string) => Promise<void>;
 }
