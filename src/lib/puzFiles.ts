@@ -20,7 +20,9 @@ export async function processPuzData(data: Blob): Promise<Puzzle | undefined> {
     let height = new Uint8Array(await data.slice(0x2d, 0x2e).arrayBuffer())[0];
 
     let puzzle = newPuzzle(width, height);
-    let restOfFile = await blobToText(await data.slice(0x34, data.size));
+    const buf = await data.slice(0x34, data.size).arrayBuffer();
+    const restOfFile = new TextDecoder("iso-8859-1").decode(buf);
+    // or "windows-1252" if publishers use smart quotes / em dashes from CP1252
 
     let i = 0;
     for (let row = 0; row < height; row++) {
@@ -232,8 +234,9 @@ export function generatePuzFile(puzzle: Puzzle): Blob {
     insertString(bytes, authorStr + "\0", pos);
     pos += authorStr.length + 1;
     let copyrightPos = pos;
-    insertString(bytes, puzzle.copyright + "\0", pos);
-    pos += puzzle.copyright?.length || 0 + 1;
+    const copyrightStr = puzzle.copyright ?? "";
+    insertString(bytes, copyrightStr + "\0", pos);
+    pos += copyrightStr.length + 1;
 
     let sortedKeys = sortEntryKeysForPuz(mapKeys(puzzle.entries));
     let cluesPos = pos;
@@ -319,7 +322,7 @@ export function generatePuzFile(puzzle: Puzzle): Blob {
     cksum = cksum_region(bytes, gridPos, squaresTotal, cksum);
     if (puzzle.title.length > 0) cksum = cksum_region(bytes, titlePos, puzzle.title.length+1, cksum);
     if (authorStr.length > 0) cksum = cksum_region(bytes, authorPos, authorStr.length+1, cksum);
-    if (puzzle.copyright?.length || 0 > 0) cksum = cksum_region(bytes, copyrightPos, puzzle.copyright?.length || 0 + 1, cksum);
+    if (copyrightStr.length > 0) cksum = cksum_region(bytes, copyrightPos, copyrightStr.length + 1, cksum);
     let cluePos = cluesPos;
     for(let i = 0; i < sortedKeys.length; i++) {
         let puzEntry = puzzle.entries.get(sortedKeys[i])!;
@@ -334,7 +337,7 @@ export function generatePuzFile(puzzle: Puzzle): Blob {
     let c_part = 0;
     if (puzzle.title.length > 0) c_part = cksum_region(bytes, titlePos, puzzle.title.length+1, c_part);
     if (authorStr.length > 0) c_part= cksum_region(bytes, authorPos, authorStr.length+1, c_part);
-    if (puzzle.copyright?.length || 0 > 0) c_part = cksum_region(bytes, copyrightPos, puzzle.copyright?.length || 0 + 1, c_part);
+    if (copyrightStr.length > 0) c_part = cksum_region(bytes, copyrightPos, copyrightStr.length + 1, c_part);
     cluePos = cluesPos;
     for(let i = 0; i < sortedKeys.length; i++) {
         let puzEntry = puzzle.entries.get(sortedKeys[i])!;
@@ -364,10 +367,14 @@ function cksum_region(bytes: Uint8Array, startPos: number, len: number, cksum: n
     return cksum; 
 }
 
+/** Writes ISO-8859-1 bytes (PUZ string fields). BMP code points U+0000–U+00FF only. */
 function insertString(bytes: Uint8Array, str: string, pos: number) {
-    for (let i = 0; i < str.length; i++) {
-        bytes[pos] = str[i].charCodeAt(0);
-        pos++;
+    for (const ch of str) {
+        const c = ch.codePointAt(0)!;
+        if (c > 0xff) {
+            throw new Error(`PUZ string must be ISO-8859-1; cannot encode U+${c.toString(16)}`);
+        }
+        bytes[pos++] = c;
     }
 }
 

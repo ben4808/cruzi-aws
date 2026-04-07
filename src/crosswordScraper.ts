@@ -10,17 +10,13 @@ import { processPuzData } from './lib/puzFiles';
 import { Puzzle } from './models/Puzzle';
 import { PuzzleSource, PuzzleSources } from './models/PuzzleSource';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { GeminiAiProvider } from './ai/gemini';
-import { IAiProvider } from './ai/IAiProvider';
 import { ILoaderDao } from './daos/ILoaderDao';
 import LoaderDao from './daos/LoaderDao';
-import { arrayToMap, generateId, mapValues } from './lib/utils';
+import { generateId, mapValues } from './lib/utils';
 import { Clue } from './models/Clue';
 import { ClueCollection } from './models/ClueCollection';
-import { Entry } from './models/Entry';
-import { FamiliarityResult } from './models/FamiliarityResult';
-import { QualityResult } from './models/QualityResult';
 import fs from 'fs';
+import path from 'path';
 
 let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<Puzzle> => {
   try {
@@ -33,10 +29,15 @@ let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<Puzzle> => 
 
 const S3_BUCKET = 'scraped-crosswords';
 const s3Client = new S3Client({});
+const LOCAL_PUZ_PATH = 'C:\\Users\\ben_z\\Desktop\\puzzles';
+
+async function puzzleToBuffer(puzzle: Puzzle): Promise<Buffer> {
+  const blob = generatePuzFile(puzzle);
+  return Buffer.from(await blob.arrayBuffer());
+}
 
 async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
-  const blob = generatePuzFile(puzzle);
-  const buffer = Buffer.from(await blob.arrayBuffer());
+  const buffer = await puzzleToBuffer(puzzle);
   await s3Client.send(new PutObjectCommand({
     Bucket: S3_BUCKET,
     Key: key,
@@ -46,11 +47,35 @@ async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
   console.log(`Uploaded ${key} to s3://${S3_BUCKET}/`);
 }
 
+async function savePuzzleToLocal(puzzle: Puzzle, key: string): Promise<void> {
+  const buffer = await puzzleToBuffer(puzzle);
+  await fs.promises.mkdir(LOCAL_PUZ_PATH, { recursive: true });
+  const localFilePath = path.join(LOCAL_PUZ_PATH, key);
+  await fs.promises.writeFile(localFilePath, buffer);
+  console.log(`Saved ${key} to ${localFilePath}`);
+}
+
+async function savePuzzle(puzzle: Puzzle, key: string): Promise<void> {
+  const puzLocation = process.env.PUZ_LOCATION;
+
+  if (puzLocation === 'S3') {
+    await uploadPuzzleToS3(puzzle, key);
+    return;
+  }
+
+  if (puzLocation === 'local') {
+    await savePuzzleToLocal(puzzle, key);
+    return;
+  }
+
+  console.log(`Skipping save for ${key}; PUZ_LOCATION is not set to 'S3' or 'local'.`);
+}
+
 export const scrapePuzzles = async (): Promise<Puzzle[]> => {
   let scrapedPuzzles = [] as Puzzle[]
   let sources = [
-    //PuzzleSources.NYT, 
-    PuzzleSources.WSJ, 
+    PuzzleSources.NYT, 
+    //PuzzleSources.WSJ, 
     //PuzzleSources.Newsday
   ] as PuzzleSource[]; // Add other sources as needed
   let date = new Date(); // Use today's date or modify as needed
@@ -61,7 +86,7 @@ export const scrapePuzzles = async (): Promise<Puzzle[]> => {
         scrapedPuzzles.push(puzzle);
 
         let key = `${source.id}-${date.toISOString().split('T')[0]}.puz`;
-        await uploadPuzzleToS3(puzzle, key);
+        await savePuzzle(puzzle, key);
 
         console.log(`Scraped puzzle from ${source.name} for date ${date.toISOString()}`);
     } catch (error) {
@@ -73,7 +98,6 @@ export const scrapePuzzles = async (): Promise<Puzzle[]> => {
 }
 
 let dao: ILoaderDao = new LoaderDao();
-let aiProvider: IAiProvider = new GeminiAiProvider();
 let useMockData = false; // Set to true to use mock data for testing
 
 let runCrosswordLoadingTasks = async () => {
@@ -104,26 +128,17 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
       console.log(`${puzzle.publication} clues extracted: ${clueCollection.clues!.length}`);
 
       let entries = clueCollection.clues!.map(clue => clue.entry!);
-      // These will be reset by the new average later.
-      for (let entry of entries) {
-        entry.familiarityScore = undefined;
-        entry.qualityScore = undefined;
-      }
-      
-      let entriesMap: Map<string, Entry> = arrayToMap(entries, entry => entry.entry);
-      let lang = puzzle.lang || 'en';
-
-      let familiarityResults = await aiProvider.getFamiliarityResultsAsync(entries, lang, useMockData);
-      populateEntryFamiliarityInfo(entriesMap, familiarityResults);
-      let qualityResults = await aiProvider.getQualityResultsAsync(entries, lang, useMockData);
-      populateEntryQualityInfo(entriesMap, qualityResults);
+      let uniqueEntries = Array.from(new Set(entries.map(entry => entry.entry)));
+      let entryInfoQueueItems = uniqueEntries.map(entry => ({
+        entry,
+        lang: puzzle.lang || 'en',
+      }));
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
       await dao.addCluesToCollection(clueCollection.id!, clueCollection.lang, clueCollection.clues!);
-      await dao.addEntries(entries);
-      await dao.addFamiliarityQualityResults(entries, aiProvider.sourceAI);
+      await dao.addEntryInfoQueueEntries(entryInfoQueueItems);
 
-      console.log(`${puzzle.publication} scores saved.`);
+      console.log(`${puzzle.publication} entry info queued.`);
   } catch (error) {
     console.error(`Error processing puzzle ${puzzle.publication}`, error);
   }
@@ -156,31 +171,6 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
   };
 
   return clueCollection;
-}
-
-let populateEntryFamiliarityInfo = (entriesMap: Map<string, Entry>, FamiliarityResults: FamiliarityResult[]) => {
-  FamiliarityResults.forEach(result => {
-    let entry = entriesMap.get(result.entry);
-    if (entry) {
-      entry.rootEntry = result.baseForm;
-      entry.displayText = result.displayText;
-      entry.entryType = result.entryType;
-      entry.familiarityScore = result.familiarityScore;
-    } else {
-      console.warn(`Entry not found for Familiarity result: ${result.entry}`);
-    }
-  });
-}
-
-let populateEntryQualityInfo = (entriesMap: Map<string, Entry>, qualityResults: QualityResult[]) => {
-  qualityResults.forEach(result => {
-    let entry = entriesMap.get(result.entry);
-    if (entry) {
-      entry.qualityScore = result.qualityScore;
-    } else {
-      console.warn(`Entry not found for Familiarity result: ${result.entry}`);
-    }
-  });
 }
 
 let getSamplePuzzles = async (): Promise<Puzzle[]> => {

@@ -13,15 +13,16 @@ export class NYTSource implements PuzzleSource {
     public async getPuzzle(date: Date): Promise<Puzzle> {
         let url = `https://www.xwordinfo.com/Crossword?date=${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
         //url = `https://www.xwordinfo.com/Crossword?date=12/17/2020`;
-        let weoriginUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+        let weoriginUrl = 'https://everyorigin.jwvbremen.nl/get?url=' + encodeURIComponent(url);
 
         let parsedHtml;
         let success = false;
         while(!success) {
           try {
-            let response = await fetch(weoriginUrl); 
-            let jsonResponse = await response.json();
-            parsedHtml = parse(jsonResponse.contents);
+            let response = await fetch(url);
+            let textResponse = await response.text();
+            //let jsonResponse = await response.json();
+            parsedHtml = parse(textResponse);
             success = true;
           } catch (error) {
               console.log(`Failed to fetch or parse NYT puzzle: ${error}`);

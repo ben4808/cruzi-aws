@@ -12,10 +12,8 @@ export class NewsdaySource implements PuzzleSource {
         let dateString = `${date.getFullYear().toString().slice(2)}${(date.getMonth()+1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`;
         let url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=${dateString}`;
         //url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=250611`;
-        let weoriginUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-        let response = await fetch(weoriginUrl); 
-        let textResponse = await response.json();
-        let content = textResponse.contents as string;
+        let response = await fetch(url);
+        let content = await response.text();
 
         const lines = content.split('\n').filter(line => line.trim() !== '');
     
