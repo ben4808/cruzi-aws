@@ -6,11 +6,11 @@ export interface Entry {
     rootEntry?: string; // for inflected forms
     displayText?: string;
     entryType?: string;
-    familiarityScore?: number;
-    qualityScore?: number;
+    avgFamiliarityScore?: number;
+    avgQualityScore?: number;
     cruziScore?: number;
     loadingStatus?: string; // Unprocessed, Ready, Processing, Invalid
 
     senses?: Map<string, Sense>; // <senseId, Sense>
-    tags?: string[];
+    tags?: Map<string, string>; // <tag, value>
 }

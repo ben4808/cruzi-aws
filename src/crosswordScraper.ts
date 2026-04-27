@@ -74,8 +74,8 @@ async function savePuzzle(puzzle: Puzzle, key: string): Promise<void> {
 export const scrapePuzzles = async (): Promise<Puzzle[]> => {
   let scrapedPuzzles = [] as Puzzle[]
   let sources = [
-    PuzzleSources.NYT, 
-    //PuzzleSources.WSJ, 
+    //PuzzleSources.NYT, 
+    PuzzleSources.WSJ, 
     //PuzzleSources.Newsday
   ] as PuzzleSource[]; // Add other sources as needed
   let date = new Date(); // Use today's date or modify as needed
@@ -135,7 +135,7 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
       }));
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
-      await dao.addCluesToCollection(clueCollection.id!, clueCollection.lang, clueCollection.clues!);
+      await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues!);
       await dao.addEntryInfoQueueEntries(entryInfoQueueItems);
 
       console.log(`${puzzle.publication} entry info queued.`);
@@ -149,12 +149,12 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
 
   let clues: Clue[] = mapValues(puzzle.entries).map(puzEntry => ({
     id: generateId(),
+    lang,
     entry: {
       entry: puzEntry.entry,
       lang: lang,
     },
     customClue: puzEntry.clue,
-    source: "cw",
   }));
 
   let clueCollection: ClueCollection = {
@@ -164,7 +164,6 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
     createdDate: new Date(),
     modifiedDate: new Date(),
     source: puzzle.publication || "unknown",
-    isCrosswordCollection: true,
     isPrivate: false,
     clueCount: clues.length,
     clues: clues,

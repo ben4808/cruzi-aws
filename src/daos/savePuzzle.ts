@@ -9,6 +9,7 @@ const savePuzzle = async (puzzle: Puzzle) => {
         {name: "p_puzzle_id", value: puzzle.id},
         {name: "p_publication_id", value: puzzle.publication || ""},
         {name: "p_date", value: puzzle.date},
+        {name: "p_lang", value: puzzle.lang || "en"},
         {name: "p_author", value: puzzle.authors?.join(", ") || ""},
         {name: "p_title", value: puzzle.title},
         {name: "p_copyright", value: puzzle.copyright || ""},

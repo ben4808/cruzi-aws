@@ -128,13 +128,17 @@ function parseSensesResponse(response: string): ParsedSense[] {
   return senses;
 }
 
-function createSenseFromParsedData(parsedSense: ParsedSense, lang: string, existingSenseSummaries: string[]): Sense {
+function createSenseFromParsedData(parsedSense: ParsedSense, entry: string, lang: string, existingSenseSummaries: string[]): Sense {
   const sense: Sense = {
     id: generateId(),
+    entry: {
+      entry: entry,
+      lang: lang
+    },
     partOfSpeech: parsedSense.partOfSpeech,
     commonness: parsedSense.commonness,
-    summary: new Map([[lang, parsedSense.summary]]),
-    definition: new Map([[lang, parsedSense.definition]]),
+    summary: parsedSense.summary,
+    definition: parsedSense.definition,
     translations: new Map([[lang, {
       naturalTranslations: parsedSense.naturalTranslations.map(t => ({ entry: t, lang: 'es' } as Entry)),
       colloquialTranslations: parsedSense.colloquialTranslations.map(t => ({ entry: t, lang: 'es' } as Entry)),
@@ -269,7 +273,7 @@ export async function entryInfoGenerator(): Promise<void> {
 
         // Step 5: Convert parsed senses to Sense objects
         const senses: Sense[] = parsedSenses.map(parsedSense =>
-          createSenseFromParsedData(parsedSense, item.lang, item.existing_sense_info.map(info => info.summary))
+          createSenseFromParsedData(parsedSense, item.entry, item.lang, item.existing_sense_info.map(info => info.summary))
         );
 
         // Step 5.5: Collect translation data for both entry table and sense translations
@@ -305,7 +309,7 @@ export async function entryInfoGenerator(): Promise<void> {
         for (const senseData of senseTranslationsData) {
           // Find the matching sense by summary among the senses we just created
           const matchingSense = senses.find(sense => {
-            const summary = sense.summary?.get(item.lang);
+            const summary = sense.summary;
             return summary === senseData.summary;
           });
 

@@ -6,8 +6,8 @@ const addFamiliarityQualityResults = async (entries: Entry[], sourceAI: string) 
         return {
             entry: entry.entry,
             lang: entry.lang,
-            familiarity_score: entry.familiarityScore || null,
-            quality_score: entry.qualityScore || null,
+            familiarity_score: entry.avgFamiliarityScore || null,
+            quality_score: entry.avgQualityScore || null,
             source_ai: sourceAI,
         };
     });

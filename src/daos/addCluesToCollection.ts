@@ -9,25 +9,33 @@ import { generateId } from "../lib/utils";
 interface CluesDataElement {
     collection_id: string;
     id: string;
+    order: number;
     entry: string;
     lang: string;
+    sense_id: string | null;
     custom_clue: string | null;
     custom_display_text: string | null;
     source: string | null;
+    metadata1: string | null;
+    metadata2: string | null;
 }
 
-const addCluesToCollection = async (collectionId: string, lang: string, clues: Clue[]) => {
+const addCluesToCollection = async (collectionId: string, clues: Clue[]) => {
     if (clues.length === 0) return;
 
-    const cluesData: CluesDataElement[] = clues.map((clue) => {
+    const cluesData: CluesDataElement[] = clues.map((clue, index) => {
         return {
             collection_id: collectionId,
             id: clue.id ?? generateId(),
+            order: index,
             entry: clue.entry?.entry ?? "",
-            lang,
+            lang: clue.lang ?? "en",
+            sense_id: clue.sense?.id ?? null,
             custom_clue: clue.customClue ?? null,
             custom_display_text: clue.customDisplayText ?? null,
-            source: clue.source ?? null,
+            source: null,
+            metadata1: null,
+            metadata2: null,
         };
     }).filter(x => x.entry.length > 0);
 
