@@ -20,4 +20,8 @@ export interface ILoaderDao {
     addExampleSentenceQueueEntry: (senseId: string) => Promise<void>;
     addEntryInfoQueueEntries: (items: EntryInfoQueueItemInput[]) => Promise<void>;
     addEntryInfoQueueEntry: (entry: string, lang: string) => Promise<void>;
+    addCrosswordFamiliarityQueueEntries: (items: EntryInfoQueueItemInput[]) => Promise<void>;
+    addCrosswordFamiliarityQueueEntry: (entry: string, lang: string) => Promise<void>;
+    addCrosswordQualityQueueEntries: (items: EntryInfoQueueItemInput[]) => Promise<void>;
+    addCrosswordQualityQueueEntry: (entry: string, lang: string) => Promise<void>;
 }

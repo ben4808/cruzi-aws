@@ -8,6 +8,8 @@ import addFamiliarityQualityResults from "./addFamiliarityQualityResults";
 import getEntryInfoQueueTop10 from "./getEntryInfoQueueTop10";
 import addExampleSentenceQueueEntry, { addExampleSentenceQueueEntries } from "./addExampleSentenceQueueEntry";
 import addEntryInfoQueueEntry, { addEntryInfoQueueEntries } from "./addEntryInfoQueueEntries";
+import addCrosswordFamiliarityQueueEntry, { addCrosswordFamiliarityQueueEntries } from "./addCrosswordFamiliarityQueueEntries";
+import addCrosswordQualityQueueEntry, { addCrosswordQualityQueueEntries } from "./addCrosswordQualityQueueEntries";
 import { upsertEntryInfo } from "./upsertEntryInfo";
 
 class LoaderDao implements ILoaderDao {
@@ -34,6 +36,14 @@ class LoaderDao implements ILoaderDao {
     addEntryInfoQueueEntry = addEntryInfoQueueEntry;
 
     addEntryInfoQueueEntries = addEntryInfoQueueEntries;
+
+    addCrosswordFamiliarityQueueEntry = addCrosswordFamiliarityQueueEntry;
+
+    addCrosswordFamiliarityQueueEntries = addCrosswordFamiliarityQueueEntries;
+
+    addCrosswordQualityQueueEntry = addCrosswordQualityQueueEntry;
+
+    addCrosswordQualityQueueEntries = addCrosswordQualityQueueEntries;
 }
 
 export default LoaderDao;

@@ -11,7 +11,8 @@ CREATE OR REPLACE FUNCTION add_clue_collection (
     p_modified_date timestamp,
     p_metadata1 text,
     p_metadata2 text,
-    p_clue_count integer
+    p_clue_count integer,
+    p_source text
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -30,7 +31,8 @@ BEGIN
         modified_date,
         metadata1,
         metadata2,
-        clue_count
+        clue_count,
+        "source"
     )
     VALUES (
         p_collection_id,
@@ -45,7 +47,8 @@ BEGIN
         p_modified_date,
         NULLIF(p_metadata1, ''),
         NULLIF(p_metadata2, ''),
-        COALESCE(p_clue_count, 0)
+        COALESCE(p_clue_count, 0),
+        p_source
     )
     ON CONFLICT (id) DO UPDATE SET
         puzzle_id = EXCLUDED.puzzle_id,
@@ -59,6 +62,7 @@ BEGIN
         modified_date = EXCLUDED.modified_date,
         metadata1 = EXCLUDED.metadata1,
         metadata2 = EXCLUDED.metadata2,
-        clue_count = EXCLUDED.clue_count;
+        clue_count = EXCLUDED.clue_count,
+        "source" = EXCLUDED.source;
 END;
 $$;

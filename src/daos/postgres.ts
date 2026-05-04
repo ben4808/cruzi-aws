@@ -8,9 +8,9 @@ dotenv.config();
 let pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
-    database: 'cruzi',
+    database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
-    port: 5432,
+    port: parseInt(process.env.DB_PORT || "5432"),
 });
 
 export async function sqlQuery(isFunction: boolean, queryOrFunctionName: string, parameters?: PostgresParameter[]): Promise<any[]> {

@@ -15,7 +15,6 @@ interface CluesDataElement {
     sense_id: string | null;
     custom_clue: string | null;
     custom_display_text: string | null;
-    source: string | null;
     metadata1: string | null;
     metadata2: string | null;
 }
@@ -27,15 +26,14 @@ const addCluesToCollection = async (collectionId: string, clues: Clue[]) => {
         return {
             collection_id: collectionId,
             id: clue.id ?? generateId(),
-            order: index,
+            order: clue.order ?? index,
             entry: clue.entry?.entry ?? "",
             lang: clue.lang ?? "en",
             sense_id: clue.sense?.id ?? null,
             custom_clue: clue.customClue ?? null,
             custom_display_text: clue.customDisplayText ?? null,
-            source: null,
-            metadata1: null,
-            metadata2: null,
+            metadata1: clue.metadata1 ?? null,
+            metadata2: clue.metadata2 ?? null,
         };
     }).filter(x => x.entry.length > 0);
 

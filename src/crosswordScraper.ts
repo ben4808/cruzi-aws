@@ -74,18 +74,19 @@ async function savePuzzle(puzzle: Puzzle, key: string): Promise<void> {
 export const scrapePuzzles = async (): Promise<Puzzle[]> => {
   let scrapedPuzzles = [] as Puzzle[]
   let sources = [
-    //PuzzleSources.NYT, 
+    PuzzleSources.NYT, 
     PuzzleSources.WSJ, 
-    //PuzzleSources.Newsday
+    PuzzleSources.Newsday,
   ] as PuzzleSource[]; // Add other sources as needed
   let date = new Date(); // Use today's date or modify as needed
 
   await Promise.all(sources.map(async (source) => {
     try {
+        let dateString = date.toISOString().split('T')[0];
         let puzzle = await scrapePuzzle(source, date);
         scrapedPuzzles.push(puzzle);
-
-        let key = `${source.id}-${date.toISOString().split('T')[0]}.puz`;
+        
+        let key = `${source.id}-${dateString}.puz`;
         await savePuzzle(puzzle, key);
 
         console.log(`Scraped puzzle from ${source.name} for date ${date.toISOString()}`);
@@ -129,14 +130,14 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
 
       let entries = clueCollection.clues!.map(clue => clue.entry!);
       let uniqueEntries = Array.from(new Set(entries.map(entry => entry.entry)));
-      let entryInfoQueueItems = uniqueEntries.map(entry => ({
+      let familiarityQueueItems = uniqueEntries.map(entry => ({
         entry,
         lang: puzzle.lang || 'en',
       }));
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
       await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues!);
-      await dao.addEntryInfoQueueEntries(entryInfoQueueItems);
+      await dao.addCrosswordFamiliarityQueueEntries(familiarityQueueItems);
 
       console.log(`${puzzle.publication} entry info queued.`);
   } catch (error) {
@@ -155,18 +156,21 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
       lang: lang,
     },
     customClue: puzEntry.clue,
+    metadata1: puzEntry.index,
   }));
 
   let clueCollection: ClueCollection = {
     puzzle: puzzle,
     title: puzzle.title,
     lang: lang,
+    author: puzzle.authors?.join(", "),
     createdDate: new Date(),
     modifiedDate: new Date(),
     source: puzzle.publication || "unknown",
     isPrivate: false,
     clueCount: clues.length,
     clues: clues,
+    metadata1: puzzle.date.toISOString().split('T')[0],
   };
 
   return clueCollection;

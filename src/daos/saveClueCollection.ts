@@ -19,6 +19,7 @@ const saveClueCollection = async (clueCollection: ClueCollection) => {
         {name: "p_metadata1", value: clueCollection.metadata1 ?? ""},
         {name: "p_metadata2", value: clueCollection.metadata2 ?? ""},
         {name: "p_clue_count", value: clueCollection.clueCount ?? 0},
+        {name: "p_source", value: clueCollection.source ?? ""},
     ]);
 };
 

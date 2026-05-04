@@ -30,8 +30,8 @@ export const upsertEntryInfo = async (
     id: sense.id,
     part_of_speech: sense.partOfSpeech,
     commonness: sense.commonness,
-    summary: sense.summary?.get(lang),
-    definition: sense.definition?.get(lang),
+    summary: sense.summary,
+    definition: sense.definition,
     source_ai: sense.sourceAi,
     ...(sense as any).corresponds_with && { corresponds_with: (sense as any).corresponds_with },
   }));

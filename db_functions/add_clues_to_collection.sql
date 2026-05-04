@@ -11,8 +11,7 @@ BEGIN
         lang,
         sense_id,
         custom_clue,
-        custom_display_text,
-        source
+        custom_display_text
     )
     SELECT
         (clue_item->>'id')::text,
@@ -20,8 +19,7 @@ BEGIN
         (clue_item->>'lang')::text,
         NULLIF((clue_item->>'sense_id')::text, ''),
         NULLIF((clue_item->>'custom_clue')::text, ''),
-        NULLIF((clue_item->>'custom_display_text')::text, ''),
-        NULLIF((clue_item->>'source')::text, '')
+        NULLIF((clue_item->>'custom_display_text')::text, '')
     FROM jsonb_array_elements(clues_data) AS clue_item
     WHERE COALESCE((clue_item->>'entry')::text, '') <> ''
     ON CONFLICT (id) DO UPDATE
@@ -29,8 +27,7 @@ BEGIN
         lang = EXCLUDED.lang,
         sense_id = EXCLUDED.sense_id,
         custom_clue = EXCLUDED.custom_clue,
-        custom_display_text = EXCLUDED.custom_display_text,
-        source = EXCLUDED.source;
+        custom_display_text = EXCLUDED.custom_display_text;
 
     INSERT INTO collection__clue (
         collection_id,

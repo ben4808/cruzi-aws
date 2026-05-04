@@ -10,4 +10,9 @@ export interface Clue {
     customClue?: string;
     customDisplayText?: string;
     progressData?: ClueProgressData;
+
+    // related to the Clue Collection it's in
+    order?: number;
+    metadata1?: string;
+    metadata2?: string;
 };
