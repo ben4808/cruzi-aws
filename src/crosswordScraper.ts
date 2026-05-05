@@ -137,6 +137,7 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
       await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues!);
+      await dao.addEntries(familiarityQueueItems);
       await dao.addCrosswordFamiliarityQueueEntries(familiarityQueueItems);
 
       console.log(`${puzzle.publication} entry info queued.`);

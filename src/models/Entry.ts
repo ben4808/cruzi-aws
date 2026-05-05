@@ -6,8 +6,9 @@ export interface Entry {
     rootEntry?: string; // for inflected forms
     displayText?: string;
     entryType?: string;
-    avgFamiliarityScore?: number;
-    avgQualityScore?: number;
+    familiarityScore?: number;
+    qualityScore?: number;
+    crosswordScore?: number;
     cruziScore?: number;
     loadingStatus?: string; // Unprocessed, Ready, Processing, Invalid
 
