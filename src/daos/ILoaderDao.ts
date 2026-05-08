@@ -12,7 +12,7 @@ export interface ILoaderDao {
     saveClueCollection: (clueCollection: ClueCollection) => Promise<void>;
     addCluesToCollection: (collectionId: string, clues: Clue[]) => Promise<void>;
     addTranslateResults: (translatedResults: TranslateResult[]) => Promise<void>;
-    addEntries: (entries: Entry[]) => Promise<void>;
+    upsertEntries: (entries: Entry[]) => Promise<void>;
     addFamiliarityQualityResults: (entries: Entry[], sourceAI: string) => Promise<void>;
     getEntryInfoQueueTop10: () => Promise<EntryInfoQueueItem[]>;
     upsertEntryInfo: (entry: string, lang: string, senses: Sense[], status: 'Ready' | 'Error' | 'Invalid' | 'Processing') => Promise<void>;

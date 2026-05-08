@@ -1,7 +1,7 @@
 import { sqlQuery } from "./postgres";
 import { Entry } from "../models/Entry";
 
-const addEntries = async (entries: Entry[]) => {
+const upsertEntries = async (entries: Entry[]) => {
     const payload = entries.map((e) => ({
         entry: e.entry,
         lang: e.lang,
@@ -16,4 +16,4 @@ const addEntries = async (entries: Entry[]) => {
     await sqlQuery(true, "add_entries", [{ name: "p_entries", value: payload }]);
 };
 
-export default addEntries;
+export default upsertEntries;

@@ -84,6 +84,32 @@ functions:
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
       AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
+  # Crossword familiarity generator - generates familiarity scores and metadata
+  crosswordFamiliarityGenerator:
+    handler: dist/crosswordFamiliarityGeneratorLambda.handler
+    description: Processes crossword entries and generates familiarity information using AI
+    timeout: 900  # 15 minutes - AI processing can take time
+    memorySize: 1024  # 1GB - Need more memory for AI processing
+    environment:
+      DB_HOST: ${self:provider.environment.DB_HOST}
+      DB_USER: ${self:provider.environment.DB_USER}
+      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
+      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
+
+  # Crossword quality generator - generates quality scores
+  crosswordQualityGenerator:
+    handler: dist/crosswordQualityGeneratorLambda.handler
+    description: Processes crossword entries and generates quality scores using AI
+    timeout: 900  # 15 minutes - AI processing can take time
+    memorySize: 1024  # 1GB - Need more memory for AI processing
+    environment:
+      DB_HOST: ${self:provider.environment.DB_HOST}
+      DB_USER: ${self:provider.environment.DB_USER}
+      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
+      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
+      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
+
 custom:
   enableGenerators: ${env:ENABLE_GENERATORS, 'true'}
 

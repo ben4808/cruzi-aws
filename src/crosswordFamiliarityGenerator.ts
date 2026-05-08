@@ -1,5 +1,5 @@
 import getCrosswordFamiliarityQueueTop25, { CrosswordFamiliarityQueueItem } from "./daos/getCrosswordFamiliarityQueueTop25";
-import addEntries from "./daos/addEntries";
+import upsertEntries from "./daos/upsertEntries";
 import { addCrosswordQualityQueueEntries } from "./daos/addCrosswordQualityQueueEntries";
 import { GeminiAiProvider } from "./ai/gemini";
 import { Entry } from "./models/Entry";
@@ -53,7 +53,7 @@ export async function crosswordFamiliarityGenerator(): Promise<void> {
       return;
     }
 
-    await addEntries(entriesToPersist);
+    await upsertEntries(entriesToPersist);
     console.log(`Updated familiarity fields for ${entriesToPersist.length} entries`);
 
     const qualityQueueEntries = entriesToPersist.map((entry) => ({
