@@ -1,3 +1,4 @@
+import { crosswordFamiliarityGenerator } from './crosswordFamiliarityGenerator';
 import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
@@ -10,6 +11,10 @@ import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
 
-runTasks()
-  .then(() => console.log("Crossword loading tasks completed successfully."))
-  .catch(error => console.error("Error in crossword loading tasks: ", error));
+// runTasks()
+//   .then(() => console.log("Crossword loading tasks completed successfully."))
+//   .catch(error => console.error("Error in crossword loading tasks: ", error));
+
+crosswordFamiliarityGenerator()
+  .then(() => console.log("Crossword familiarity generator completed successfully."))
+  .catch(error => console.error("Error in crossword familiarityGenerator: ", error));
