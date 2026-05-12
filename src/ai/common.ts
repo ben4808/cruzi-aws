@@ -33,6 +33,8 @@ export async function getFamiliarityResults(
       else
         resultText = await provider.generateResultsAsync(batchPrompt);
 
+      console.log('Familiarity result text:', resultText);
+
       const parsed = parseFamiliarityResponse(resultText);
 
       for (let i=0; i < parsed.length; i++) {
@@ -131,6 +133,8 @@ export async function getQualityResults(
         resultText = await getSampleQualityResultText();
       else
         resultText = await provider.generateResultsAsync(batchPrompt);
+
+      console.log('Quality result text:', resultText);
 
       const parsed = parseQualityResponse(resultText);
 
