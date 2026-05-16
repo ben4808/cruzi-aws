@@ -6,6 +6,7 @@ import { PuzzleEntry } from "../models/PuzzleEntry";
 import { decode } from 'html-entities';
 import { newPuzzle } from "../lib/puzzle";
 
+
 export class NYTSource implements PuzzleSource {
     public id = "NYT";
     public name = "New York Times";
@@ -94,7 +95,7 @@ export class NYTSource implements PuzzleSource {
             puzEntries.set(key, {
                 index: key,
                 entry: clueMatches.groups ? clueMatches.groups["entry"]: "",
-                clue: decode(clueMatches.groups ? clueMatches.groups["clue"] : ""),
+                clue: normalizeWindows1252ToIso8859_1(decode(clueMatches.groups ? clueMatches.groups["clue"] : "")),
             } as PuzzleEntry);
         }
 
@@ -108,7 +109,7 @@ export class NYTSource implements PuzzleSource {
             puzEntries.set(key, {
                 index: key,
                 entry: clueMatches.groups ? clueMatches.groups["entry"]: "",
-                clue: decode(clueMatches.groups ? clueMatches.groups["clue"] : ""),
+                clue: normalizeWindows1252ToIso8859_1(decode(clueMatches.groups ? clueMatches.groups["clue"] : "")),
             } as PuzzleEntry);
         }
 
@@ -128,3 +129,65 @@ export class NYTSource implements PuzzleSource {
         return puzzle;
     }
 }
+
+function normalizeWindows1252ToIso8859_1(text: string): string {
+    const map: Record<string, string> = {
+      // Misdecoded C1 controls (Windows-1252 bytes read as ISO-8859-1)
+      '\u0080': '',    // €
+      '\u0082': "'",   // ‚
+      '\u0083': 'f',   // ƒ
+      '\u0084': '"',   // „
+      '\u0085': '...', // …
+      '\u0086': '',    // †
+      '\u0087': '',    // ‡
+      '\u0088': '^',   // ˆ
+      '\u0089': '',    // ‰
+      '\u008A': 'S',   // Š
+      '\u008B': '<',   // ‹
+      '\u008C': 'OE',  // Œ
+      '\u008E': 'Z',   // Ž
+      '\u0091': "'",   // ‘
+      '\u0092': "'",   // ’
+      '\u0093': '"',   // “
+      '\u0094': '"',   // ”
+      '\u0095': '',    // •
+      '\u0096': '-',   // –
+      '\u0097': '-',   // —
+      '\u0098': '~',   // ˜
+      '\u0099': '',    // ™
+      '\u009A': 's',   // š
+      '\u009B': '>',   // ›
+      '\u009C': 'oe',  // œ
+      '\u009E': 'z',   // ž
+      '\u009F': 'Y',   // Ÿ
+      // Actual Unicode characters from Windows-1252 not in ISO-8859-1
+      '\u20AC': '',    // €
+      '\u201A': "'",   // ‚
+      '\u0192': 'f',   // ƒ
+      '\u201E': '"',   // „
+      '\u2026': '...', // …
+      '\u2020': '',    // †
+      '\u2021': '',    // ‡
+      '\u02C6': '^',   // ˆ
+      '\u2030': '',    // ‰
+      '\u0160': 'S',   // Š
+      '\u2039': '<',   // ‹
+      '\u0152': 'OE',  // Œ
+      '\u017D': 'Z',   // Ž
+      '\u2018': "'",   // ‘
+      '\u2019': "'",   // ’
+      '\u201C': '"',   // “
+      '\u201D': '"',   // ”
+      '\u2022': '',    // •
+      '\u2013': '-',   // –
+      '\u2014': '-',   // — (em dash)
+      '\u02DC': '~',   // ˜
+      '\u2122': '',    // ™
+      '\u0161': 's',   // š
+      '\u203A': '>',   // ›
+      '\u0153': 'oe',  // œ
+      '\u017E': 'z',   // ž
+      '\u0178': 'Y',   // Ÿ
+    };
+    return text.replace(/[\u0080-\u009F\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20AC\u201A\u201E\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u02DC\u2122\u0161\u203A\u0153\u017E\u0178\u0192]/g, (c) => map[c] ?? '');
+  }

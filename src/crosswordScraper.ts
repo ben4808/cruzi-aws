@@ -111,9 +111,12 @@ let runCrosswordLoadingTasks = async () => {
     else
       scrapedPuzzles = await scrapePuzzles();
 
-    await Promise.all(scrapedPuzzles.map(async (puzzle) => {
+    // Process puzzles sequentially so DB work does not run in parallel. Overlapping
+    // transactions on shared rows (e.g. entries, queues) can deadlock when lock
+    // order differs between workers.
+    for (const puzzle of scrapedPuzzles) {
       await processPuzzle(puzzle);
-    }));
+    }
 
   } catch (error) {
     console.error("Error in crossword loading tasks: ", error);
@@ -129,7 +132,9 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
       console.log(`${puzzle.publication} clues extracted: ${clueCollection.clues!.length}`);
 
       let entries = clueCollection.clues!.map(clue => clue.entry!);
-      let uniqueEntries = Array.from(new Set(entries.map(entry => entry.entry)));
+      let uniqueEntries = Array.from(new Set(entries.map(entry => entry.entry))).sort(
+        (a, b) => (a === b ? 0 : a < b ? -1 : 1),
+      );
       let familiarityQueueItems = uniqueEntries.map(entry => ({
         entry,
         lang: puzzle.lang || 'en',

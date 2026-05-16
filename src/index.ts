@@ -12,14 +12,14 @@ import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
 
-// runTasks()
-//   .then(() => console.log("Crossword loading tasks completed successfully."))
-//   .catch(error => console.error("Error in crossword loading tasks: ", error));
+runTasks()
+  .then(() => console.log("Crossword loading tasks completed successfully."))
+  .catch(error => console.error("Error in crossword loading tasks: ", error));
 
 // crosswordFamiliarityGenerator()
 //   .then(() => console.log("Crossword familiarity generator completed successfully."))
 //   .catch(error => console.error("Error in crossword familiarity generator: ", error));
 
-crosswordQualityGenerator()
-  .then(() => console.log("Crossword quality generator completed successfully."))
-  .catch(error => console.error("Error in crossword quality generator: ", error));
+// crosswordQualityGenerator()
+//   .then(() => console.log("Crossword quality generator completed successfully."))
+//   .catch(error => console.error("Error in crossword quality generator: ", error));
