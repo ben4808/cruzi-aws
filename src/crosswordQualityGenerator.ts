@@ -1,6 +1,4 @@
-import getCrosswordQualityQueueTop25, { CrosswordQualityQueueItem } from "./daos/getCrosswordQualityQueueTop25";
-import getEntries from "./daos/getEntries";
-import upsertEntries from "./daos/upsertEntries";
+import { getCrosswordQualityQueueTop25, CrosswordQualityQueueItem, getEntries, upsertEntries } from "cruzi-db";
 import { GeminiAiProvider } from "./ai/gemini";
 import { Entry } from "./models/Entry";
 
@@ -21,7 +19,7 @@ export async function crosswordQualityGenerator(): Promise<void> {
     const dbEntries = await getEntries(queueItems);
     const dbEntriesByKey = new Map<string, Entry>();
     for (const dbEntry of dbEntries) {
-      dbEntriesByKey.set(`${dbEntry.entry}|${dbEntry.lang}`, dbEntry);
+      dbEntriesByKey.set(`${dbEntry.entry}|${dbEntry.lang}`, dbEntry as Entry);
     }
 
     const queueItemsByLang = new Map<string, CrosswordQualityQueueItem[]>();

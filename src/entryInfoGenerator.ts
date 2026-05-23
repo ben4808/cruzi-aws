@@ -1,10 +1,5 @@
 import fs from 'fs';
-import getEntryInfoQueueTop10 from './daos/getEntryInfoQueueTop10';
-import {upsertEntryInfo} from './daos/upsertEntryInfo';
-import { addExampleSentenceQueueEntries } from './daos/addExampleSentenceQueueEntry';
-import { insertEntries, EntryInsertData } from './daos/insertEntries';
-import { addSenseEntryTranslations, SenseEntryTranslationData } from './daos/addSenseEntryTranslations';
-import { assignPrimarySenseToClues } from './daos/assignPrimarySenseToClues';
+import { getEntryInfoQueueTop10, upsertEntryInfo, addExampleSentenceQueueEntries, insertEntries, EntryInsertData, addSenseEntryTranslations, SenseEntryTranslationData, assignPrimarySenseToClues } from 'cruzi-db';
 import { Sense } from './models/Sense';
 import { EntryTranslation } from './models/EntryTranslation';
 import { Entry } from './models/Entry';

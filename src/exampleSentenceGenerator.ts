@@ -1,7 +1,5 @@
 import fs from 'fs';
-import getExampleSentenceQueueTop10 from './daos/getExampleSentenceQueueTop10';
-import addExampleSentences from './daos/addExampleSentences';
-import { updateEntriesLoadingStatus } from './daos/updateEntriesLoadingStatus';
+import { getExampleSentenceQueueTop10, addExampleSentences, updateEntriesLoadingStatus } from 'cruzi-db';
 import { GeminiAiProvider } from './ai/gemini';
 import { ExampleSentence } from './models/ExampleSentence';
 
