@@ -174,6 +174,7 @@ let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
     source: puzzle.publication || "unknown",
     isPrivate: false,
     clueCount: clues.length,
+    clueCount6Plus: clues.filter(clue => clue.entry!.length >= 6).length,
     clues: clues,
     metadata1: puzzle.date.toISOString().split('T')[0],
   };
