@@ -15,16 +15,16 @@ import {
 } from 'cruzi-models';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ILoaderDao, LoaderDao } from 'cruzi-db';
-import { generateId, mapValues } from './lib/utils';
+import { formatDateKey, generateId, getPuzzleDate, mapValues } from './lib/utils';
 import { PuzzleSource, PuzzleSources } from './scraper/PuzzleSource';
 import fs from 'fs';
 import path from 'path';
 
-const crosswordsToScrape = [
-  { source: PuzzleSources.NYT, date: new Date('2026-05-27') },
-  { source: PuzzleSources.WSJ, date: new Date('2026-05-27') },
-  { source: PuzzleSources.Newsday, date: new Date('2026-05-27') },
-] as { source: PuzzleSource, date: Date }[];
+const puzzleSources = [
+  PuzzleSources.NYT,
+  PuzzleSources.WSJ,
+  PuzzleSources.Newsday,
+] as PuzzleSource[];
 
 let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle> => {
   try {
@@ -81,19 +81,20 @@ async function savePuzzle(puzzle: ScrapedPuzzle, key: string): Promise<void> {
 
 export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
   let scrapedPuzzles = [] as ScrapedPuzzle[]
+  const date = getPuzzleDate();
+  const dateString = formatDateKey(date);
 
-  await Promise.all(crosswordsToScrape.map(async (crossword) => {
+  await Promise.all(puzzleSources.map(async (source) => {
     try {
-        let dateString = crossword.date.toISOString().split('T')[0];
-        let puzzle = await scrapePuzzle(crossword.source, crossword.date);
+        let puzzle = await scrapePuzzle(source, date);
         scrapedPuzzles.push(puzzle);
         
-        let key = `${crossword.source.id}-${dateString}.puz`;
+        let key = `${source.id}-${dateString}.puz`;
         await savePuzzle(puzzle, key);
 
-        console.log(`Scraped puzzle from ${crossword.source.name} for date ${crossword.date.toISOString()}`);
+        console.log(`Scraped puzzle from ${source.name} for date ${dateString}`);
     } catch (error) {
-        console.error(`Error scraping puzzle from ${crossword.source.name} for date ${crossword.date.toISOString()}: `, error);
+        console.error(`Error scraping puzzle from ${source.name} for date ${dateString}: `, error);
     }
   }));
 
@@ -184,7 +185,7 @@ let puzzleToClueCollection = (puzzle: ScrapedPuzzle): ClueCollection => {
     clueCount: clues.length,
     clueCount6Plus: clues.filter(c => c.clue.entry.entry.length >= 6).length,
     clues: clues,
-    aiCompositeScore: puzzle.date.toISOString().split('T')[0],
+    metadata1: formatDateKey(puzzle.date),
   };
 
   return clueCollection;

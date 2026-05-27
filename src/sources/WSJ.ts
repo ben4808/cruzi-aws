@@ -20,6 +20,7 @@ export class WSJSource implements PuzzleSource {
 
       puzzle.lang = "en";
       puzzle.publicationId = this.id as PublicationId;
+      puzzle.date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       puzzle.sourceLink = url; // Link to the source of the puzzle
       return puzzle;
     }

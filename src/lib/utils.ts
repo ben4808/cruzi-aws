@@ -35,6 +35,30 @@ export function mapValues<TKey, TVal>(map: Map<TKey, TVal>): TVal[] {
     return Array.from(map.values()) || [];
 }
 
+const PUZZLE_TIMEZONE = 'America/New_York';
+
+export function getPuzzleDate(now: Date = new Date()): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: PUZZLE_TIMEZONE,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(now);
+
+  const year = Number(parts.find((part) => part.type === 'year')!.value);
+  const month = Number(parts.find((part) => part.type === 'month')!.value) - 1;
+  const day = Number(parts.find((part) => part.type === 'day')!.value);
+
+  return new Date(year, month, day);
+}
+
+export function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
