@@ -1,6 +1,6 @@
 import { getCrosswordFamiliarityQueueTop25, CrosswordFamiliarityQueueItem, upsertEntries, addCrosswordQualityQueueEntries } from "cruzi-db";
 import { GeminiAiProvider } from "./ai/gemini";
-import { Entry } from "./models/Entry";
+import { Entry } from 'cruzi-models';
 
 const geminiProvider = new GeminiAiProvider();
 

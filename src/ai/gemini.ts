@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { IAiProvider } from './IAiProvider';
-import { Entry } from '../models/Entry';
-import { FamiliarityResult } from '../models/FamiliarityResult';
-import { QualityResult } from '../models/QualityResult';
+import { Entry, FamiliarityResult, QualityResult } from 'cruzi-models';
 import { getFamiliarityResults, getQualityResults } from './common';
 
 // Load environment variables

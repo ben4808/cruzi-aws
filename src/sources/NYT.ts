@@ -1,8 +1,6 @@
-import { PuzzleSource } from "../models/PuzzleSource";
+import { ScrapedPuzzle, PuzzleEntry, Square, PublicationId } from 'cruzi-models';
 import { parse } from 'node-html-parser';
-import { Square } from "../models/Square";
-import { Puzzle } from "../models/Puzzle";
-import { PuzzleEntry } from "../models/PuzzleEntry";
+import { PuzzleSource } from '../scraper/PuzzleSource';
 import { decode } from 'html-entities';
 import { newPuzzle } from "../lib/puzzle";
 
@@ -11,7 +9,7 @@ export class NYTSource implements PuzzleSource {
     public id = "NYT";
     public name = "New York Times";
 
-    public async getPuzzle(date: Date): Promise<Puzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
         let url = `https://www.xwordinfo.com/Crossword?date=${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
         //url = `https://www.xwordinfo.com/Crossword?date=12/17/2020`;
         let weoriginUrl = 'https://everyorigin.jwvbremen.nl/get?url=' + encodeURIComponent(url);
@@ -114,7 +112,7 @@ export class NYTSource implements PuzzleSource {
         }
 
         let puzzle = newPuzzle(width, height);
-        puzzle.publication = this.id;
+        puzzle.publicationId = this.id as PublicationId;
         puzzle.title = title;
         puzzle.authors = authors;
         puzzle.copyright = copyright;

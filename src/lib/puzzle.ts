@@ -1,20 +1,16 @@
-import { Puzzle } from "../models/Puzzle";
-import { PuzzleEntry } from "../models/PuzzleEntry";
-import { Square } from "../models/Square";
+import { ScrapedPuzzle, PuzzleEntry, Square } from 'cruzi-models';
 
-export function newPuzzle(width: number, height: number): Puzzle {
+export function newPuzzle(width: number, height: number): ScrapedPuzzle {
     return {
         title: "",
         date: new Date(),
-        source: "",
         authors: [],
         copyright: "",
         width: width,
         height: height,
-    
         grid: newGrid(width, height),
         entries: new Map<string, PuzzleEntry>(),
-    } as Puzzle;
+    };
 }
 
 export function newGrid(width: number, height: number): Square[][] {
@@ -32,10 +28,11 @@ function newSquare(row: number, col: number): Square {
     return {
         row: row,
         col: col,
+        directions: [],
         isBlack: false,
         content: "",
         isCircled: false,
-    } as Square;
+    };
 }
 
 export function numberizeGrid(grid: Square[][]) {

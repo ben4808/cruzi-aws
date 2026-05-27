@@ -1,12 +1,12 @@
-import { PuzzleSource } from "../models/PuzzleSource";
-import { Puzzle } from "../models/Puzzle";
+import { ScrapedPuzzle, PublicationId } from 'cruzi-models';
+import { PuzzleSource } from '../scraper/PuzzleSource';
 import { processPuzData } from "../lib/puzFiles";
 
 export class WSJSource implements PuzzleSource {
     public id = "WSJ";
     public name = "Wall Street Journal";
 
-    public async getPuzzle(date: Date): Promise<Puzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
       let dateString = `${date.getFullYear().toString().slice(2)}${(date.getMonth()+1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`;
       let url = `https://herbach.dnsalias.com/wsj/wsj${dateString}.puz`;
       //url = `https://herbach.dnsalias.com/wsj/wsjYYMMDD.puz`;
@@ -19,7 +19,7 @@ export class WSJSource implements PuzzleSource {
       }
 
       puzzle.lang = "en";
-      puzzle.publication = this.id;
+      puzzle.publicationId = this.id as PublicationId;
       puzzle.sourceLink = url; // Link to the source of the puzzle
       return puzzle;
     }

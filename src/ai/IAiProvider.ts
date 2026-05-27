@@ -1,6 +1,4 @@
-import { Entry } from "../models/Entry";
-import { FamiliarityResult } from "../models/FamiliarityResult";
-import { QualityResult } from "../models/QualityResult";
+import { Entry, FamiliarityResult, QualityResult } from 'cruzi-models';
 
 export interface IAiProvider {
     sourceAI: string;

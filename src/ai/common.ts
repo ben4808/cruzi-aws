@@ -1,8 +1,5 @@
 import { arrayToMap, batchArray, entryToAllCaps } from "../lib/utils";
-import { Entry } from "../models/Entry";
-import { FamiliarityResult } from "../models/FamiliarityResult";
-import { LanguageNames } from "../models/LanguageNames";
-import { QualityResult } from "../models/QualityResult";
+import { Entry, FamiliarityResult, LanguageNames, QualityResult } from 'cruzi-models';
 import { IAiProvider } from "./IAiProvider";
 import fs from 'fs';
 

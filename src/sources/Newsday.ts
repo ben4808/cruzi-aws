@@ -1,14 +1,12 @@
-import { PuzzleSource } from "../models/PuzzleSource";
-import { Square } from "../models/Square";
-import { Puzzle } from "../models/Puzzle";
-import { PuzzleEntry } from "../models/PuzzleEntry";
+import { ScrapedPuzzle, PuzzleEntry, Square, PublicationId } from 'cruzi-models';
+import { PuzzleSource } from '../scraper/PuzzleSource';
 import { generatePuzFile } from "../lib/puzFiles";
 
 export class NewsdaySource implements PuzzleSource {
     public id = "Newsday";
     public name = "Newsday";
 
-    public async getPuzzle(date: Date): Promise<Puzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
         let dateString = `${date.getFullYear().toString().slice(2)}${(date.getMonth()+1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`;
         let url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=${dateString}`;
         //url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=250611`;
@@ -121,11 +119,11 @@ export class NewsdaySource implements PuzzleSource {
             }
         }
         
-        let puzzle: Puzzle = {
-            publication: this.id,
+        let puzzle: ScrapedPuzzle = {
+            publicationId: this.id as PublicationId,
             title: title,
             authors: authorLine.split(',').map(s => s.trim()),
-            copyright: "",
+            copyright: "© Newsday",
             date,
             sourceLink: url,
             width,

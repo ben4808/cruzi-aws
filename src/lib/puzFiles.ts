@@ -1,18 +1,17 @@
-import { Puzzle } from "../models/Puzzle";
-import { PuzzleEntry } from "../models/PuzzleEntry";
+import { ScrapedPuzzle, PuzzleEntry } from 'cruzi-models';
 import { newPuzzle, numberizeGrid } from "./puzzle";
 import { deepClone, mapKeys } from "./utils";
 
 // https://code.google.com/archive/p/puz/wikis/FileFormat.wiki
 
-export async function loadPuzFile(url: string): Promise<Puzzle | undefined> {
+export async function loadPuzFile(url: string): Promise<ScrapedPuzzle | undefined> {
     let response = await fetch(url);
     let data: Blob = await response.blob();
 
     return processPuzData(data);
 }
 
-export async function processPuzData(data: Blob): Promise<Puzzle | undefined> {
+export async function processPuzData(data: Blob): Promise<ScrapedPuzzle | undefined> {
     let magicString = await data.slice(0x02, 0x0e).text();
     if (magicString !== "ACROSS&DOWN\0") return undefined;
 
@@ -180,7 +179,7 @@ function getNextString(data: string, i: number): [string, number] {
     return [ret.trim(), i];
 }
 
-export function generatePuzFile(puzzle: Puzzle): Blob {
+export function generatePuzFile(puzzle: ScrapedPuzzle): Blob {
     let grid = puzzle.grid;
     let bytes = new Uint8Array(128_000);
     let width = grid[0].length;

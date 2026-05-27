@@ -7,17 +7,26 @@
 
 import { generatePuzFile } from './lib/puzFiles';
 import { processPuzData } from './lib/puzFiles';
-import { Puzzle } from './models/Puzzle';
-import { PuzzleSource, PuzzleSources } from './models/PuzzleSource';
+import {
+  ClueCollection,
+  CollectionClue,
+  Puzzle,
+  ScrapedPuzzle,
+} from 'cruzi-models';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ILoaderDao, LoaderDao } from 'cruzi-db';
 import { generateId, mapValues } from './lib/utils';
-import { Clue } from './models/Clue';
-import { ClueCollection } from './models/ClueCollection';
+import { PuzzleSource, PuzzleSources } from './scraper/PuzzleSource';
 import fs from 'fs';
 import path from 'path';
 
-let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<Puzzle> => {
+const crosswordsToScrape = [
+  { source: PuzzleSources.NYT, date: new Date('2026-05-27') },
+  { source: PuzzleSources.WSJ, date: new Date('2026-05-27') },
+  { source: PuzzleSources.Newsday, date: new Date('2026-05-27') },
+] as { source: PuzzleSource, date: Date }[];
+
+let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle> => {
   try {
     let puzzle = await source.getPuzzle(date);
     return puzzle;
@@ -30,12 +39,12 @@ const S3_BUCKET = 'scraped-crosswords';
 const s3Client = new S3Client({});
 const LOCAL_PUZ_PATH = 'C:\\Users\\ben_z\\Desktop\\puzzles';
 
-async function puzzleToBuffer(puzzle: Puzzle): Promise<Buffer> {
+async function puzzleToBuffer(puzzle: ScrapedPuzzle): Promise<Buffer> {
   const blob = generatePuzFile(puzzle);
   return Buffer.from(await blob.arrayBuffer());
 }
 
-async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
+async function uploadPuzzleToS3(puzzle: ScrapedPuzzle, key: string): Promise<void> {
   const buffer = await puzzleToBuffer(puzzle);
   await s3Client.send(new PutObjectCommand({
     Bucket: S3_BUCKET,
@@ -46,7 +55,7 @@ async function uploadPuzzleToS3(puzzle: Puzzle, key: string): Promise<void> {
   console.log(`Uploaded ${key} to s3://${S3_BUCKET}/`);
 }
 
-async function savePuzzleToLocal(puzzle: Puzzle, key: string): Promise<void> {
+async function savePuzzleToLocal(puzzle: ScrapedPuzzle, key: string): Promise<void> {
   const buffer = await puzzleToBuffer(puzzle);
   await fs.promises.mkdir(LOCAL_PUZ_PATH, { recursive: true });
   const localFilePath = path.join(LOCAL_PUZ_PATH, key);
@@ -54,7 +63,7 @@ async function savePuzzleToLocal(puzzle: Puzzle, key: string): Promise<void> {
   console.log(`Saved ${key} to ${localFilePath}`);
 }
 
-async function savePuzzle(puzzle: Puzzle, key: string): Promise<void> {
+async function savePuzzle(puzzle: ScrapedPuzzle, key: string): Promise<void> {
   const puzLocation = process.env.PUZ_LOCATION;
 
   if (puzLocation === 'S3') {
@@ -70,27 +79,21 @@ async function savePuzzle(puzzle: Puzzle, key: string): Promise<void> {
   console.log(`Skipping save for ${key}; PUZ_LOCATION is not set to 'S3' or 'local'.`);
 }
 
-export const scrapePuzzles = async (): Promise<Puzzle[]> => {
-  let scrapedPuzzles = [] as Puzzle[]
-  let sources = [
-    PuzzleSources.NYT, 
-    PuzzleSources.WSJ, 
-    PuzzleSources.Newsday,
-  ] as PuzzleSource[]; // Add other sources as needed
-  let date = new Date(); // Use today's date or modify as needed
+export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
+  let scrapedPuzzles = [] as ScrapedPuzzle[]
 
-  await Promise.all(sources.map(async (source) => {
+  await Promise.all(crosswordsToScrape.map(async (crossword) => {
     try {
-        let dateString = date.toISOString().split('T')[0];
-        let puzzle = await scrapePuzzle(source, date);
+        let dateString = crossword.date.toISOString().split('T')[0];
+        let puzzle = await scrapePuzzle(crossword.source, crossword.date);
         scrapedPuzzles.push(puzzle);
         
-        let key = `${source.id}-${dateString}.puz`;
+        let key = `${crossword.source.id}-${dateString}.puz`;
         await savePuzzle(puzzle, key);
 
-        console.log(`Scraped puzzle from ${source.name} for date ${date.toISOString()}`);
+        console.log(`Scraped puzzle from ${crossword.source.name} for date ${crossword.date.toISOString()}`);
     } catch (error) {
-        console.error(`Error scraping puzzle from ${source.name} for date ${date.toISOString()}: `, error);
+        console.error(`Error scraping puzzle from ${crossword.source.name} for date ${crossword.date.toISOString()}: `, error);
     }
   }));
 
@@ -101,7 +104,7 @@ let dao: ILoaderDao = new LoaderDao();
 let useMockData = false; // Set to true to use mock data for testing
 
 let runCrosswordLoadingTasks = async () => {
-  let scrapedPuzzles = [] as Puzzle[];
+  let scrapedPuzzles = [] as ScrapedPuzzle[];
 
   console.log("Starting crossword loading tasks...");
   try {
@@ -122,15 +125,16 @@ let runCrosswordLoadingTasks = async () => {
   }
 };
 
-let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
+let processPuzzle = async (puzzle: ScrapedPuzzle): Promise<void> => {
   try {
-      console.log(`Processing puzzle for ${puzzle.publication}`);
+      console.log(`Processing puzzle for ${puzzle.publicationId}`);
       await dao.savePuzzle(puzzle);
+      puzzle.id = puzzle.id;
       let clueCollection = puzzleToClueCollection(puzzle);
 
-      console.log(`${puzzle.publication} clues extracted: ${clueCollection.clues!.length}`);
+      console.log(`${puzzle.publicationId} clues extracted: ${clueCollection.clues!.length}`);
 
-      let entries = clueCollection.clues!.map(clue => clue.entry!);
+      let entries = (clueCollection.clues as CollectionClue[]).map(c => c.clue.entry);
       let uniqueEntries = Array.from(new Set(entries.map(entry => entry.entry))).sort(
         (a, b) => (a === b ? 0 : a < b ? -1 : 1),
       );
@@ -140,52 +144,56 @@ let processPuzzle = async (puzzle: Puzzle): Promise<void> => {
       }));
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
-      await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues!);
+      await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues as CollectionClue[]);
       await dao.upsertEntries(familiarityQueueItems);
       await dao.addCrosswordFamiliarityQueueEntries(familiarityQueueItems);
 
-      console.log(`${puzzle.publication} entry info queued.`);
+      console.log(`${puzzle.publicationId} entry info queued.`);
   } catch (error) {
-    console.error(`Error processing puzzle ${puzzle.publication}`, error);
+    console.error(`Error processing puzzle ${puzzle.publicationId}`, error);
   }
 }
 
-let puzzleToClueCollection = (puzzle: Puzzle): ClueCollection => {
+let puzzleToClueCollection = (puzzle: ScrapedPuzzle): ClueCollection => {
   let lang = puzzle.lang || 'en';
 
-  let clues: Clue[] = mapValues(puzzle.entries).map(puzEntry => ({
-    id: generateId(),
-    lang,
-    entry: {
-      entry: puzEntry.entry,
-      lang: lang,
+  let clues: CollectionClue[] = mapValues(puzzle.entries).map((puzEntry, index) => ({
+    clue: {
+      id: generateId(),
+      lang,
+      entry: {
+        entry: puzEntry.entry,
+        lang: lang,
+      },
+      customClue: puzEntry.clue,
+      source: puzzle.publicationId || "unknown",
     },
-    customClue: puzEntry.clue,
+    order: index,
     metadata1: puzEntry.index,
   }));
 
   let clueCollection: ClueCollection = {
-    puzzle: puzzle,
+    puzzle: puzzle as Puzzle,
     title: puzzle.title,
     lang: lang,
     author: puzzle.authors?.join(", "),
     createdDate: new Date(),
     modifiedDate: new Date(),
-    source: puzzle.publication || "unknown",
+    source: puzzle.publicationId || "unknown",
     isPrivate: false,
     clueCount: clues.length,
-    clueCount6Plus: clues.filter(clue => clue.entry!.length >= 6).length,
+    clueCount6Plus: clues.filter(c => c.clue.entry.entry.length >= 6).length,
     clues: clues,
-    metadata1: puzzle.date.toISOString().split('T')[0],
+    aiCompositeScore: puzzle.date.toISOString().split('T')[0],
   };
 
   return clueCollection;
 }
 
-let getSamplePuzzles = async (): Promise<Puzzle[]> => {
+let getSamplePuzzles = async (): Promise<ScrapedPuzzle[]> => {
   let buffer = await loadSamplePuzAsync();
   let puzzle = await processPuzData(new Blob([new Uint8Array(buffer)], { type: 'application/octet-stream' }));
-  puzzle!.publication = "NYT";
+  puzzle!.publicationId = "NYT";
   puzzle!.lang = "en";
   return [puzzle!];
 }

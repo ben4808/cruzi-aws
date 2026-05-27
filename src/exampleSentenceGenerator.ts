@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { getExampleSentenceQueueTop10, addExampleSentences, updateEntriesLoadingStatus } from 'cruzi-db';
 import { GeminiAiProvider } from './ai/gemini';
-import { ExampleSentence } from './models/ExampleSentence';
+import { ExampleSentence } from 'cruzi-models';
 
 /**
 This script should be written in Node.js/TypeScript.
@@ -116,11 +116,11 @@ function parseExampleSentencesBatchResponse(response: string): ParsedExampleSent
 
 function createExampleSentencesFromParsedData(parsedData: ParsedExampleSentences): ExampleSentence[] {
   return parsedData.sentences.map(sentence => ({
-    senseId: '', // Will be set when saving
-    translations: new Map([
-      ['en', sentence.english],
-      ['es', sentence.spanish]
-    ])
+    senseId: '',
+    translations: {
+      en: sentence.english,
+      es: sentence.spanish,
+    },
   }));
 }
 

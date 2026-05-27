@@ -1,8 +1,6 @@
 import fs from 'fs';
 import { getEntryInfoQueueTop10, upsertEntryInfo, addExampleSentenceQueueEntries, insertEntries, EntryInsertData, addSenseEntryTranslations, SenseEntryTranslationData, assignPrimarySenseToClues } from 'cruzi-db';
-import { Sense } from './models/Sense';
-import { EntryTranslation } from './models/EntryTranslation';
-import { Entry } from './models/Entry';
+import { Entry, EntryRef, EntryTranslation, Sense } from 'cruzi-models';
 import { GeminiAiProvider } from './ai/gemini';
 import { displayTextToEntry, generateId } from './lib/utils';
 
@@ -134,12 +132,13 @@ function createSenseFromParsedData(parsedSense: ParsedSense, entry: string, lang
     commonness: parsedSense.commonness,
     summary: parsedSense.summary,
     definition: parsedSense.definition,
-    translations: new Map([[lang, {
-      naturalTranslations: parsedSense.naturalTranslations.map(t => ({ entry: t, lang: 'es' } as Entry)),
-      colloquialTranslations: parsedSense.colloquialTranslations.map(t => ({ entry: t, lang: 'es' } as Entry)),
-      alternatives: parsedSense.alternatives.map(t => ({ entry: t, lang: 'en' } as Entry)),
-      source_ai: 'gemini'
-    } as EntryTranslation]]),
+    translations: {
+      [lang]: {
+        naturalTranslations: parsedSense.naturalTranslations.map(t => ({ entry: t, lang: 'es' } as EntryRef)),
+        colloquialTranslations: parsedSense.colloquialTranslations.map(t => ({ entry: t, lang: 'es' } as EntryRef)),
+        sourceAi: 'gemini',
+      } as EntryTranslation,
+    },
     sourceAi: 'gemini'
   };
 
