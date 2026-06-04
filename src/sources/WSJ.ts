@@ -22,6 +22,10 @@ export class WSJSource implements PuzzleSource {
       puzzle.publicationId = this.id as PublicationId;
       puzzle.date = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       puzzle.sourceLink = url; // Link to the source of the puzzle
+      
+      // Remove the "By" prefix from the author and editor name
+      puzzle!.authors![0] = puzzle!.authors![0].substring(3, puzzle!.authors![0].length - 1);
+      puzzle!.authors![0] = puzzle!.authors![0].replace("/Edited by Mike Shenk", "");
       return puzzle;
     }
 }

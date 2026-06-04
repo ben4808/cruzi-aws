@@ -67,9 +67,10 @@ export class NYTSource implements PuzzleSource {
                 }
 
                 square.number = +col.querySelector(".num")!.textContent || undefined;
-                square.content = col.querySelector(".letter")!.textContent;
-                if (!square.content) square.content = col.querySelector(".subst")!.textContent;
-                if (!square.content) square.content = col.querySelector(".subst2")!.textContent;
+                square.content = col.querySelector(".letter")?.textContent || 
+                    col.querySelector(".subst")?.textContent ||
+                    col.querySelector(".subst2")?.textContent ||
+                    "";
 
                 if (col.getAttribute("class")?.includes("shade") || col.getAttribute("class")?.includes("bigcircle")) {
                     square.isCircled = true;
