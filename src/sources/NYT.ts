@@ -9,9 +9,9 @@ export class NYTSource implements PuzzleSource {
     public id = "NYT";
     public name = "New York Times";
 
-    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle | null> {
         let url = `https://www.xwordinfo.com/Crossword?date=${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
-        //url = `https://www.xwordinfo.com/Crossword?date=12/17/2020`;
+        //url = `https://www.xwordinfo.com/Crossword?date=05/31/2026`;
         let weoriginUrl = 'https://everyorigin.jwvbremen.nl/get?url=' + encodeURIComponent(url);
 
         let parsedHtml;

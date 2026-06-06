@@ -26,7 +26,7 @@ const puzzleSources = [
   PuzzleSources.Newsday,
 ] as PuzzleSource[];
 
-let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle> => {
+let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {
   try {
     let puzzle = await source.getPuzzle(date);
     return puzzle;
@@ -87,6 +87,10 @@ export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
   await Promise.all(puzzleSources.map(async (source) => {
     try {
         let puzzle = await scrapePuzzle(source, date);
+        if (!puzzle) {
+          console.log(`No puzzle found for ${source.name} on ${dateString}`);
+          return;
+        }
         scrapedPuzzles.push(puzzle);
         
         let key = `${source.id}-${dateString}.puz`;

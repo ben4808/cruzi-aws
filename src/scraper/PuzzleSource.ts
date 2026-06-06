@@ -6,7 +6,7 @@ import { WSJSource } from '../sources/WSJ';
 export interface PuzzleSource {
   id: string;
   name: string;
-  getPuzzle: (date: Date) => Promise<ScrapedPuzzle>;
+  getPuzzle: (date: Date) => Promise<ScrapedPuzzle | null>;
 }
 
 export const PuzzleSources = {

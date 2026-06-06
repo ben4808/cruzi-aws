@@ -6,7 +6,11 @@ export class WSJSource implements PuzzleSource {
     public id = "WSJ";
     public name = "Wall Street Journal";
 
-    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle | null> {
+      // Return null if the date is a Friday. WSJ doesn't include solutions for Friday contest puzzles.
+      if (date.getDay() === 5) {
+        return null;
+      }
       let dateString = `${date.getFullYear().toString().slice(2)}${(date.getMonth()+1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`;
       let url = `https://herbach.dnsalias.com/wsj/wsj${dateString}.puz`;
       //url = `https://herbach.dnsalias.com/wsj/wsjYYMMDD.puz`;
@@ -24,7 +28,7 @@ export class WSJSource implements PuzzleSource {
       puzzle.sourceLink = url; // Link to the source of the puzzle
       
       // Remove the "By" prefix from the author and editor name
-      puzzle!.authors![0] = puzzle!.authors![0].substring(3, puzzle!.authors![0].length - 1);
+      puzzle!.authors![0] = puzzle!.authors![0].substring(3);
       puzzle!.authors![0] = puzzle!.authors![0].replace("/Edited by Mike Shenk", "");
       return puzzle;
     }

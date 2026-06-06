@@ -6,7 +6,7 @@ export class NewsdaySource implements PuzzleSource {
     public id = "Newsday";
     public name = "Newsday";
 
-    public async getPuzzle(date: Date): Promise<ScrapedPuzzle> {
+    public async getPuzzle(date: Date): Promise<ScrapedPuzzle | null> {
         let dateString = `${date.getFullYear().toString().slice(2)}${(date.getMonth()+1).toString().padStart(2, "0")}${date.getDate().toString().padStart(2, "0")}`;
         let url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=${dateString}`;
         //url = `https://brainsonly.com/servlets-newsday-crossword/newsdaycrossword?date=250611`;
