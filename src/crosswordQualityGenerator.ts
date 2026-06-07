@@ -1,14 +1,16 @@
-import { getCrosswordQualityQueueTop25, CrosswordQualityQueueItem, getEntries, upsertEntries } from "cruzi-db";
+import { getCrosswordQualityQueueTop25, CrosswordQualityQueueItem, getEntries, upsertEntries, addCrosswordQualityQueueEntries } from "cruzi-db";
 import { GeminiAiProvider } from "./ai/gemini";
 import { Entry } from 'cruzi-models';
 
 const geminiProvider = new GeminiAiProvider();
 
 export async function crosswordQualityGenerator(): Promise<void> {
+  let queueItems: CrosswordQualityQueueItem[] = [];
+
   try {
     console.log("Starting crossword quality generation...");
 
-    const queueItems = await getCrosswordQualityQueueTop25();
+    queueItems = await getCrosswordQualityQueueTop25();
     console.log(`Processing ${queueItems.length} entries from crossword quality queue`);
 
     if (queueItems.length === 0) {
@@ -53,6 +55,12 @@ export async function crosswordQualityGenerator(): Promise<void> {
 
     if (entriesToPersist.length === 0) {
       console.warn("No quality results were generated");
+      try {
+        await addCrosswordQualityQueueEntries(queueItems);
+        console.log(`Re-queued ${queueItems.length} entries in crossword quality queue after empty results`);
+      } catch (requeueError) {
+        console.error("Failed to re-queue crossword quality entries after empty results:", requeueError);
+      }
       return;
     }
 
@@ -61,6 +69,15 @@ export async function crosswordQualityGenerator(): Promise<void> {
 
     console.log("Crossword quality generation completed");
   } catch (error) {
+    if (queueItems.length > 0) {
+      try {
+        await addCrosswordQualityQueueEntries(queueItems);
+        console.log(`Re-queued ${queueItems.length} entries in crossword quality queue after failure`);
+      } catch (requeueError) {
+        console.error("Failed to re-queue crossword quality entries after failure:", requeueError);
+      }
+    }
+
     console.error("Fatal error in crosswordQualityGenerator:", error);
     throw error;
   }

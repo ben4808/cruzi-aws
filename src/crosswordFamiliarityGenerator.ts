@@ -1,14 +1,17 @@
-import { getCrosswordFamiliarityQueueTop25, CrosswordFamiliarityQueueItem, upsertEntries, addCrosswordQualityQueueEntries } from "cruzi-db";
+import { getCrosswordFamiliarityQueueTop25, CrosswordFamiliarityQueueItem, upsertEntries, addCrosswordQualityQueueEntries, addCrosswordFamiliarityQueueEntries } from "cruzi-db";
 import { GeminiAiProvider } from "./ai/gemini";
 import { Entry } from 'cruzi-models';
+import { stripAccents } from "./lib/utils";
 
 const geminiProvider = new GeminiAiProvider();
 
 export async function crosswordFamiliarityGenerator(): Promise<void> {
+  let queueItems: CrosswordFamiliarityQueueItem[] = [];
+
   try {
     console.log("Starting crossword familiarity generation...");
 
-    const queueItems = await getCrosswordFamiliarityQueueTop25();
+    queueItems = await getCrosswordFamiliarityQueueTop25();
     console.log(`Processing ${queueItems.length} entries from crossword familiarity queue`);
 
     if (queueItems.length === 0) {
@@ -39,7 +42,7 @@ export async function crosswordFamiliarityGenerator(): Promise<void> {
           entry: result.entry,
           lang: result.lang,
           rootEntry: result.baseForm || undefined,
-          displayText: result.displayText,
+          displayText: stripAccents(result.displayText),
           entryType: result.entryType,
           familiarityScore: result.familiarityScore,
         });
@@ -48,6 +51,12 @@ export async function crosswordFamiliarityGenerator(): Promise<void> {
 
     if (entriesToPersist.length === 0) {
       console.warn("No familiarity results were generated");
+      try {
+        await addCrosswordFamiliarityQueueEntries(queueItems);
+        console.log(`Re-queued ${queueItems.length} entries in crossword familiarity queue after empty results`);
+      } catch (requeueError) {
+        console.error("Failed to re-queue crossword familiarity entries after empty results:", requeueError);
+      }
       return;
     }
 
@@ -63,6 +72,15 @@ export async function crosswordFamiliarityGenerator(): Promise<void> {
 
     console.log("Crossword familiarity generation completed");
   } catch (error) {
+    if (queueItems.length > 0) {
+      try {
+        await addCrosswordFamiliarityQueueEntries(queueItems);
+        console.log(`Re-queued ${queueItems.length} entries in crossword familiarity queue after failure`);
+      } catch (requeueError) {
+        console.error("Failed to re-queue crossword familiarity entries after failure:", requeueError);
+      }
+    }
+
     console.error("Fatal error in crosswordFamiliarityGenerator:", error);
     throw error;
   }

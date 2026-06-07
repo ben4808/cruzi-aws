@@ -24,6 +24,12 @@ const puzzleSources = [
   PuzzleSources.NYT,
   PuzzleSources.WSJ,
   PuzzleSources.Newsday,
+  //PuzzleSources.LAT,
+  PuzzleSources.Universal,
+  //PuzzleSources.UniversalSunday,
+  //PuzzleSources.WashingtonPost,
+  //PuzzleSources.USAToday,
+  //PuzzleSources.NewYorker,
 ] as PuzzleSource[];
 
 let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {

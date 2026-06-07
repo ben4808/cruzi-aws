@@ -59,6 +59,13 @@ export function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function formatDateKey2(date: Date): string {
+    const year = date.getFullYear().toString().slice(2);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -123,6 +130,10 @@ export function arrayToMap<T>(array: T[], keyFn: (item: T) => string): Map<strin
         map.set(keyFn(item), item);
         return map;
     }, new Map<string, T>());
+}
+
+export function stripAccents(text: string): string {
+    return text.normalize('NFD').replace(/\p{M}/gu, '');
 }
 
 export function displayTextToEntry(text: string): string {
