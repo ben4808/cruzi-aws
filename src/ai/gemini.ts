@@ -24,7 +24,7 @@ function geminiApiModelId(source: GeminiSourceAi): string {
 export class GeminiAiProvider implements IAiProvider {
   sourceAI: GeminiSourceAi;
 
-  constructor(sourceAi: GeminiSourceAi = 'gemini3-flash') {
+  constructor(sourceAi: GeminiSourceAi = 'gemini3.1-flash-lite') {
     this.sourceAI = sourceAi;
   }
 

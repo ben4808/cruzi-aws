@@ -24,12 +24,12 @@ const puzzleSources = [
   PuzzleSources.NYT,
   PuzzleSources.WSJ,
   PuzzleSources.Newsday,
-  //PuzzleSources.LAT,
+  PuzzleSources.LAT,
   PuzzleSources.Universal,
-  //PuzzleSources.UniversalSunday,
-  //PuzzleSources.WashingtonPost,
-  //PuzzleSources.USAToday,
-  //PuzzleSources.NewYorker,
+  PuzzleSources.UniversalSunday,
+  PuzzleSources.WashingtonPost,
+  PuzzleSources.USAToday,
+  PuzzleSources.NewYorker,
 ] as PuzzleSource[];
 
 let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {
@@ -44,6 +44,15 @@ let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzz
 const S3_BUCKET = 'scraped-crosswords';
 const s3Client = new S3Client({});
 const LOCAL_PUZ_PATH = 'C:\\Users\\ben_z\\Desktop\\puzzles';
+
+function getPuzzleStorageKey(puzzle: ScrapedPuzzle): string {
+  const publicationId = puzzle.publicationId || 'unknown';
+  const date = puzzle.date;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const dateString = formatDateKey(date);
+  return `${publicationId}/${year}/${month}/${publicationId}-${dateString}.puz`;
+}
 
 async function puzzleToBuffer(puzzle: ScrapedPuzzle): Promise<Buffer> {
   const blob = generatePuzFile(puzzle);
@@ -63,8 +72,8 @@ async function uploadPuzzleToS3(puzzle: ScrapedPuzzle, key: string): Promise<voi
 
 async function savePuzzleToLocal(puzzle: ScrapedPuzzle, key: string): Promise<void> {
   const buffer = await puzzleToBuffer(puzzle);
-  await fs.promises.mkdir(LOCAL_PUZ_PATH, { recursive: true });
   const localFilePath = path.join(LOCAL_PUZ_PATH, key);
+  await fs.promises.mkdir(path.dirname(localFilePath), { recursive: true });
   await fs.promises.writeFile(localFilePath, buffer);
   console.log(`Saved ${key} to ${localFilePath}`);
 }
@@ -99,7 +108,7 @@ export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
         }
         scrapedPuzzles.push(puzzle);
         
-        let key = `${source.id}-${dateString}.puz`;
+        const key = getPuzzleStorageKey(puzzle);
         await savePuzzle(puzzle, key);
 
         console.log(`Scraped puzzle from ${source.name} for date ${dateString}`);
