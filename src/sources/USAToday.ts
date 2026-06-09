@@ -15,7 +15,8 @@ export class USATodaySource implements PuzzleSource {
     public name = "USA Today";
 
     public async getPuzzle(date: Date): Promise<ScrapedPuzzle | null> {
-      const dateString = formatDateKey(date);
+      let dateString = formatDateKey(date);
+      //dateString = "06-07-2026";
       const filename = `USAToday-${dateString}.puz`;
       const puzPath = path.join(PUZZLES_DIR, filename);
 

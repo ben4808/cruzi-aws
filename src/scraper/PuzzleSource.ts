@@ -8,6 +8,8 @@ import { WashingtonPostSource } from '../sources/WashingtonPost';
 import { UniversalSundaySource } from '../sources/UniversalSunday';
 import { USATodaySource } from '../sources/USAToday';
 import { NewYorkerSource } from '../sources/NewYorker';
+import { BEQSource } from '../sources/BEQ';
+import { CroceSource } from '../sources/Croce';
 
 export interface PuzzleSource {
   id: string;
@@ -25,4 +27,6 @@ export const PuzzleSources = {
   USAToday: new USATodaySource(),
   NewYorker: new NewYorkerSource(),
   WashingtonPost: new WashingtonPostSource(),
+  BEQ: new BEQSource(),
+  Croce: new CroceSource(),
 } as const;

@@ -14,7 +14,7 @@ import {
   ScrapedPuzzle,
 } from 'cruzi-models';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { ILoaderDao, LoaderDao } from 'cruzi-db';
+import { getCrosswordCollectionId, ILoaderDao, LoaderDao } from 'cruzi-db';
 import { formatDateKey, generateId, getPuzzleDate, mapValues } from './lib/utils';
 import { PuzzleSource, PuzzleSources } from './scraper/PuzzleSource';
 import fs from 'fs';
@@ -30,6 +30,8 @@ const puzzleSources = [
   PuzzleSources.WashingtonPost,
   PuzzleSources.USAToday,
   PuzzleSources.NewYorker,
+  PuzzleSources.BEQ,
+  PuzzleSources.Croce,
 ] as PuzzleSource[];
 
 let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {
@@ -78,6 +80,12 @@ async function savePuzzleToLocal(puzzle: ScrapedPuzzle, key: string): Promise<vo
   console.log(`Saved ${key} to ${localFilePath}`);
 }
 
+async function puzzleAlreadyExists(puzzle: ScrapedPuzzle): Promise<boolean> {
+  const publicationId = puzzle.publicationId || 'unknown';
+  const collectionId = await getCrosswordCollectionId(publicationId, puzzle.date);
+  return collectionId !== null;
+}
+
 async function savePuzzle(puzzle: ScrapedPuzzle, key: string): Promise<void> {
   const puzLocation = process.env.PUZ_LOCATION;
 
@@ -106,8 +114,12 @@ export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
           console.log(`No puzzle found for ${source.name} on ${dateString}`);
           return;
         }
+        if (await puzzleAlreadyExists(puzzle)) {
+          console.log(`Puzzle already exists for ${source.name} on ${dateString}, skipping save.`);
+          return;
+        }
         scrapedPuzzles.push(puzzle);
-        
+
         const key = getPuzzleStorageKey(puzzle);
         await savePuzzle(puzzle, key);
 
@@ -147,6 +159,10 @@ let runCrosswordLoadingTasks = async () => {
 
 let processPuzzle = async (puzzle: ScrapedPuzzle): Promise<void> => {
   try {
+      if (await puzzleAlreadyExists(puzzle)) {
+        console.log(`Puzzle already exists for ${puzzle.publicationId} on ${formatDateKey(puzzle.date)}, skipping processing.`);
+        return;
+      }
       console.log(`Processing puzzle for ${puzzle.publicationId}`);
       await dao.savePuzzle(puzzle);
       puzzle.id = puzzle.id;
