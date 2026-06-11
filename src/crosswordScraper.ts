@@ -7,6 +7,7 @@
 
 import { generatePuzFile } from './lib/puzFiles';
 import { processPuzData } from './lib/puzFiles';
+import { normalizeWindows1252ToIso8859_1 } from './lib/textEncoding';
 import {
   ClueCollection,
   CollectionClue,
@@ -32,15 +33,81 @@ const puzzleSources = [
   PuzzleSources.NewYorker,
   PuzzleSources.BEQ,
   PuzzleSources.Croce,
+  PuzzleSources.Premier,
+  PuzzleSources.Jonesin,
+  PuzzleSources.PennyDell,
+  PuzzleSources.PennyDellSunday,
+  PuzzleSources.Joseph,
+  PuzzleSources.Sheffer,
+  PuzzleSources.DailyCommuter,
+  PuzzleSources.BestCrosswords,
 ] as PuzzleSource[];
 
-let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {
-  try {
-    let puzzle = await source.getPuzzle(date);
-    return puzzle;
-  } catch (error) {
-    throw error; // Re-throw to handle it in the calling function
+const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'LAT']);
+const PUZ_FILE_SOURCE_IDS = new Set([
+  'BEQ',
+  'BestCrosswords',
+  'Croce',
+  'Jonesin',
+  'LAT',
+  'NewYorker',
+  'Universal',
+  'UniversalSunday',
+  'USAToday',
+  'WashingtonPost',
+  'WSJ',
+]);
+const PUPPETEER_NAVIGATION_MAX_RETRIES = 3;
+
+function normalizePuzzleForPuzEncoding(puzzle: ScrapedPuzzle): void {
+  if (puzzle.title) {
+    puzzle.title = normalizeWindows1252ToIso8859_1(puzzle.title);
   }
+  if (puzzle.copyright) {
+    puzzle.copyright = normalizeWindows1252ToIso8859_1(puzzle.copyright);
+  }
+  if (puzzle.notes) {
+    puzzle.notes = normalizeWindows1252ToIso8859_1(puzzle.notes);
+  }
+  if (puzzle.authors) {
+    puzzle.authors = puzzle.authors.map(normalizeWindows1252ToIso8859_1);
+  }
+  for (const entry of puzzle.entries.values()) {
+    entry.clue = normalizeWindows1252ToIso8859_1(entry.clue);
+  }
+}
+
+function isNavigationTimeoutError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return error.name === 'TimeoutError' && error.message.includes('Navigation timeout');
+}
+
+let scrapePuzzle = async (source: PuzzleSource, date: Date): Promise<ScrapedPuzzle | null> => {
+  const maxAttempts = PUPPETEER_SOURCE_IDS.has(source.id)
+    ? PUPPETEER_NAVIGATION_MAX_RETRIES
+    : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await source.getPuzzle(date);
+    } catch (error) {
+      const canRetry = PUPPETEER_SOURCE_IDS.has(source.id)
+        && isNavigationTimeoutError(error)
+        && attempt < maxAttempts;
+
+      if (!canRetry) {
+        throw error;
+      }
+
+      console.log(
+        `Navigation timeout scraping ${source.name} (attempt ${attempt}/${maxAttempts}), retrying...`,
+      );
+    }
+  }
+
+  return null;
 }
 
 const S3_BUCKET = 'scraped-crosswords';
@@ -113,6 +180,9 @@ export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
         if (!puzzle) {
           console.log(`No puzzle found for ${source.name} on ${dateString}`);
           return;
+        }
+        if (!PUZ_FILE_SOURCE_IDS.has(source.id)) {
+          normalizePuzzleForPuzEncoding(puzzle);
         }
         if (await puzzleAlreadyExists(puzzle)) {
           console.log(`Puzzle already exists for ${source.name} on ${dateString}, skipping save.`);

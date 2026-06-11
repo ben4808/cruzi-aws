@@ -15,16 +15,17 @@ export class NewYorkerSource implements PuzzleSource {
     public name = "New Yorker";
 
     public async getPuzzle(date: Date): Promise<ScrapedPuzzle | null> {
-      // Return null unless it's a Monday, Tuesday, or Wednesday.
-      if (date.getDay() !== 1 && date.getDay() !== 2 && date.getDay() !== 3) {
+      // No puzzles on Sundays.
+      if (date.getDay() == 0) {
         return null;
       }
       const dateString = formatDateKey(date);
       const filename = `NewYorker-${dateString}.puz`;
       const puzPath = path.join(PUZZLES_DIR, filename);
+      const downloadCode = [1, 2, 3].includes(date.getDay()) ? 'tny' : 'tnym';
 
       await fs.promises.mkdir(PUZZLES_DIR, { recursive: true });
-      await execAsync(`xword-dl tny --date ${dateString} --output ${filename}`, {
+      await execAsync(`xword-dl ${downloadCode} --date ${dateString} --output ${filename}`, {
         cwd: PUZZLES_DIR,
       });
 
