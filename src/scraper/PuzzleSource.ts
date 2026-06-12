@@ -18,6 +18,21 @@ import { JosephSource } from '../sources/Joseph';
 import { ShefferSource } from '../sources/Sheffer';
 import { PremierSource } from '../sources/Premier';
 import { JonesinSource } from '../sources/Jonesin';
+import { DailyPopSource } from '../sources/DailyPop';
+import { AtlanticSource } from '../sources/Atlantic';
+import { CrosswordClubSource } from '../sources/CrosswordClub';
+import { DailyBeastSource } from '../sources/DailyBeast';
+import { PuzzmoSource } from '../sources/Puzzmo';
+import { PuzzmoBigSource } from '../sources/PuzzmoBig';
+import { SimplyDailySource } from '../sources/SimplyDaily';
+import { VoxSource } from '../sources/Vox';
+import { VultureSource } from '../sources/Vulture';
+import { TheWalrusSource } from '../sources/TheWalrus';
+import { PeoplePuzzlerSource } from '../sources/PeoplePuzzler';
+import { SlateSource } from '../sources/Slate';
+import { TelegraphSource } from '../sources/Telegraph';
+import { YourPuzzleSource } from '../sources/YourPuzzleSource';
+import { MerriamWebsterSource } from '../sources/MerriamWebster';
 
 export interface PuzzleSource {
   id: string;
@@ -45,4 +60,19 @@ export const PuzzleSources = {
   PennyDellSunday: new PennyDellSundaySource(),
   BEQ: new BEQSource(),
   Croce: new CroceSource(),
+  DailyPop: new DailyPopSource(),
+  Atlantic: new AtlanticSource(),
+  CrosswordClub: new CrosswordClubSource(),
+  DailyBeast: new DailyBeastSource(),
+  Puzzmo: new PuzzmoSource(),
+  PuzzmoBig: new PuzzmoBigSource(),
+  SimplyDaily: new SimplyDailySource(),
+  Vox: new VoxSource(),
+  Vulture: new VultureSource(),
+  TheWalrus: new TheWalrusSource(),
+  PeoplePuzzler: new PeoplePuzzlerSource(),
+  Slate: new SlateSource(),
+  Telegraph: new TelegraphSource(),
+  YourPuzzleSource: new YourPuzzleSource(),
+  MerriamWebster: new MerriamWebsterSource(),
 } as const;

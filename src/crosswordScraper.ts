@@ -41,19 +41,32 @@ const puzzleSources = [
   PuzzleSources.Sheffer,
   PuzzleSources.DailyCommuter,
   PuzzleSources.BestCrosswords,
+  PuzzleSources.DailyPop,
+  PuzzleSources.Atlantic,
+  PuzzleSources.CrosswordClub,
+  PuzzleSources.DailyBeast,
+  PuzzleSources.Puzzmo,
+  PuzzleSources.PuzzmoBig,
+  PuzzleSources.SimplyDaily,
+  PuzzleSources.Vox,
+  PuzzleSources.Vulture,
+  PuzzleSources.TheWalrus,
+  PuzzleSources.PeoplePuzzler,
+  PuzzleSources.Slate,
+  PuzzleSources.Telegraph,
+  PuzzleSources.YourPuzzleSource,
+  PuzzleSources.MerriamWebster,
 ] as PuzzleSource[];
 
-const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'LAT']);
+const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'LAT', 'PeoplePuzzler']);
 const PUZ_FILE_SOURCE_IDS = new Set([
   'BEQ',
   'BestCrosswords',
   'Croce',
   'Jonesin',
   'LAT',
-  'NewYorker',
   'Universal',
   'UniversalSunday',
-  'USAToday',
   'WashingtonPost',
   'WSJ',
 ]);
