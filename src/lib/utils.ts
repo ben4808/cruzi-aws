@@ -35,7 +35,37 @@ export function mapValues<TKey, TVal>(map: Map<TKey, TVal>): TVal[] {
     return Array.from(map.values()) || [];
 }
 
-const PUZZLE_TIMEZONE = 'America/New_York';
+export const PUZZLE_TIMEZONE = 'America/New_York';
+
+/** Calendar date as local midnight from year/month/day components. */
+export function toCalendarDate(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Calendar date in the puzzle timezone (America/New_York) as local midnight. */
+export function toPuzzleTimezoneCalendarDate(instant: Date): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: PUZZLE_TIMEZONE,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(instant);
+
+  const year = Number(parts.find((part) => part.type === 'year')!.value);
+  const month = Number(parts.find((part) => part.type === 'month')!.value) - 1;
+  const day = Number(parts.find((part) => part.type === 'day')!.value);
+
+  return new Date(year, month, day);
+}
+
+export function epochMsToPuzzleCalendarDate(epochMs: number): Date {
+  return toPuzzleTimezoneCalendarDate(new Date(epochMs));
+}
+
+/** Parse an ISO datetime and return its calendar date in the puzzle timezone. */
+export function isoDatetimeToPuzzleCalendarDate(datetime: string): Date {
+  return toPuzzleTimezoneCalendarDate(new Date(datetime));
+}
 
 export function getPuzzleDate(now: Date = new Date()): Date {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -53,9 +83,10 @@ export function getPuzzleDate(now: Date = new Date()): Date {
 }
 
 export function formatDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const calendarDate = toCalendarDate(date);
+  const year = calendarDate.getFullYear();
+  const month = String(calendarDate.getMonth() + 1).padStart(2, '0');
+  const day = String(calendarDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

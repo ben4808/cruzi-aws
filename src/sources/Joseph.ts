@@ -11,10 +11,15 @@ export class JosephSource implements PuzzleSource {
       return null;
     }
 
-    return fetchKingFeaturesPuzzle('joseph', date, {
+    const puzzle = await fetchKingFeaturesPuzzle('joseph', date, {
       publicationId: this.id as PublicationId,
       defaultTitle: 'Thomas Joseph',
       parseErrorMessage: 'Failed to parse Thomas Joseph puzzle data.',
     });
+
+    if (puzzle) {
+      puzzle.authors = ['Thomas Joseph'];
+    }
+    return puzzle;
   }
 }

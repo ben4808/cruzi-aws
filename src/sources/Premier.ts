@@ -11,10 +11,15 @@ export class PremierSource implements PuzzleSource {
       return null;
     }
 
-    return fetchKingFeaturesPuzzle('premier', date, {
+    const puzzle = await fetchKingFeaturesPuzzle('premier', date, {
       publicationId: this.id as PublicationId,
       defaultTitle: 'Premier Sunday',
       parseErrorMessage: 'Failed to parse Premier Sunday puzzle data.',
     });
+
+    if (puzzle) {
+      puzzle.authors = ['Frank Longo'];
+    }
+    return puzzle;
   }
 }

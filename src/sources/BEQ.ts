@@ -2,6 +2,7 @@ import { ScrapedPuzzle, PublicationId } from 'cruzi-models';
 import puppeteer from 'puppeteer';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 import { processPuzData } from "../lib/puzFiles";
+import { isoDatetimeToPuzzleCalendarDate } from '../lib/utils';
 
 const BEQ_HOMEPAGE_URL = 'https://brendanemmettquigley.com/';
 
@@ -10,12 +11,6 @@ interface BeqPostInfo {
   acrossLiteUrl: string | null;
   postUrl: string;
   title: string;
-}
-
-function parsePostedDate(datetime: string): Date {
-  const datePart = datetime.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day);
 }
 
 async function scrapeLatestBeqPost(): Promise<{ postInfo: BeqPostInfo; blob: Blob } | null> {
@@ -105,7 +100,7 @@ export class BEQSource implements PuzzleSource {
         throw new Error("Failed to parse BEQ puzzle data.");
       }
 
-      const postedDate = parsePostedDate(result.postInfo.postedDate);
+      const postedDate = isoDatetimeToPuzzleCalendarDate(result.postInfo.postedDate);
 
       puzzle.lang = "en";
       puzzle.publicationId = this.id as PublicationId;

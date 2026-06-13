@@ -7,7 +7,7 @@
 
 import { generatePuzFile } from './lib/puzFiles';
 import { processPuzData } from './lib/puzFiles';
-import { normalizeWindows1252ToIso8859_1 } from './lib/textEncoding';
+import { stripNonWindows1252OrIso8859_1 } from './lib/textEncoding';
 import {
   ClueCollection,
   CollectionClue,
@@ -74,19 +74,27 @@ const PUPPETEER_NAVIGATION_MAX_RETRIES = 3;
 
 function normalizePuzzleForPuzEncoding(puzzle: ScrapedPuzzle): void {
   if (puzzle.title) {
-    puzzle.title = normalizeWindows1252ToIso8859_1(puzzle.title);
+    puzzle.title = stripNonWindows1252OrIso8859_1(puzzle.title);
   }
   if (puzzle.copyright) {
-    puzzle.copyright = normalizeWindows1252ToIso8859_1(puzzle.copyright);
+    puzzle.copyright = stripNonWindows1252OrIso8859_1(puzzle.copyright);
   }
   if (puzzle.notes) {
-    puzzle.notes = normalizeWindows1252ToIso8859_1(puzzle.notes);
+    puzzle.notes = stripNonWindows1252OrIso8859_1(puzzle.notes);
   }
   if (puzzle.authors) {
-    puzzle.authors = puzzle.authors.map(normalizeWindows1252ToIso8859_1);
+    puzzle.authors = puzzle.authors.map(stripNonWindows1252OrIso8859_1);
   }
   for (const entry of puzzle.entries.values()) {
-    entry.clue = normalizeWindows1252ToIso8859_1(entry.clue);
+    entry.clue = stripNonWindows1252OrIso8859_1(entry.clue);
+    entry.entry = stripNonWindows1252OrIso8859_1(entry.entry);
+  }
+  for (const row of puzzle.grid) {
+    for (const square of row) {
+      if (square.content) {
+        square.content = stripNonWindows1252OrIso8859_1(square.content);
+      }
+    }
   }
 }
 
@@ -198,7 +206,7 @@ export const scrapePuzzles = async (): Promise<ScrapedPuzzle[]> => {
           normalizePuzzleForPuzEncoding(puzzle);
         }
         if (await puzzleAlreadyExists(puzzle)) {
-          console.log(`Puzzle already exists for ${source.name} on ${dateString}, skipping save.`);
+          console.log(`Puzzle already exists for ${source.name} on ${formatDateKey(puzzle.date)}, skipping save.`);
           return;
         }
         scrapedPuzzles.push(puzzle);

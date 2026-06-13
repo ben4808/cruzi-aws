@@ -1,6 +1,6 @@
 import { PublicationId, ScrapedPuzzle } from 'cruzi-models';
-import { parseLooseDate, parseXdFormat } from './xdFormat';
-import { formatDateKey, getPuzzleDate } from './utils';
+import { parseXdFormat } from './xdFormat';
+import { formatDateKey, getPuzzleDate, toCalendarDate } from './utils';
 
 const GRAPHQL_URL = 'https://www.puzzmo.com/_api/prod/graphql?PlayGameScreenQuery';
 const USER_AGENT = 'cruzi-aws-crossword-scraper';
@@ -135,13 +135,9 @@ export async function fetchPuzzmoPuzzle(
   const dateString = formatDateKey(date);
   const payload = await fetchPuzzmoPayload(dateString, 'today:/{date_string}/crossword');
 
-  const parsedDate = parseLooseDate(payload.dailyTitle)
-    ?? parseLooseDate(payload.dailyTitle.split('-')[0] ?? '')
-    ?? date;
-
   const puzzle = parseXdFormat(payload.puzzle, {
     publicationId: options.publicationId,
-    date: parsedDate,
+    date: toCalendarDate(date),
     sourceLink: options.sourceLink,
     title: payload.name,
     author: joinAuthors(payload.authors),
@@ -208,13 +204,9 @@ export async function fetchPuzzmoBigPuzzle(
   const dateString = formatDateKey(mostRecentBigDate);
   const payload = await fetchPuzzmoPayload(dateString, 'today:/{date_string}/crossword/big');
 
-  const parsedDate = parseLooseDate(payload.dailyTitle)
-    ?? parseLooseDate(payload.dailyTitle.split('-')[0] ?? '')
-    ?? mostRecentBigDate;
-
   return parseXdFormat(payload.puzzle, {
     publicationId: options.publicationId,
-    date: parsedDate,
+    date: toCalendarDate(mostRecentBigDate),
     sourceLink: options.sourceLink,
     title: payload.name,
     author: joinAuthors(payload.authors),

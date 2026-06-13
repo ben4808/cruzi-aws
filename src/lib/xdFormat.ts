@@ -1,4 +1,5 @@
 import { PublicationId, PuzzleEntry, ScrapedPuzzle, Square } from 'cruzi-models';
+import { toCalendarDate } from './utils';
 
 interface ParsedClue {
   direction: 'A' | 'D';
@@ -191,11 +192,7 @@ export function parseXdFormat(
     });
   }
 
-  const puzzleDate = new Date(
-    options.date.getFullYear(),
-    options.date.getMonth(),
-    options.date.getDate(),
-  );
+  const puzzleDate = toCalendarDate(options.date);
 
   return {
     publicationId: options.publicationId,

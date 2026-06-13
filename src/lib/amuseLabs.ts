@@ -1,7 +1,7 @@
 import { parse } from 'node-html-parser';
 import { PublicationId, PuzzleEntry, ScrapedPuzzle, Square } from 'cruzi-models';
 import { deobfuscateRawc } from './amuseLabsRawc';
-import { formatDateKey, stripAccents } from './utils';
+import { formatDateKey, epochMsToPuzzleCalendarDate, stripAccents, toCalendarDate } from './utils';
 
 const USER_AGENT = 'cruzi-aws-crossword-scraper';
 
@@ -73,6 +73,7 @@ interface AmuseLabsPickerParams {
     puzzleDetails?: {
       puzzleId?: string;
       publicationTime?: number;
+      title?: string;
     };
   }>;
 }
@@ -83,13 +84,29 @@ function parsePickerParams(pickerHtml: string): AmuseLabsPickerParams {
   return paramTag?.text ? JSON.parse(paramTag.text) : {};
 }
 
+export type AmuseLabsDateSource = 'request' | 'publishTime';
+
 function publicationTimeToDateKey(publicationTime: number): string {
-  const published = new Date(publicationTime);
-  return formatDateKey(new Date(
-    published.getUTCFullYear(),
-    published.getUTCMonth(),
-    published.getUTCDate(),
-  ));
+  return formatDateKey(epochMsToPuzzleCalendarDate(publicationTime));
+}
+
+/** AmuseLabs date-picker list label, e.g. "13 June 2026". */
+function formatPickerTitleDate(date: Date): string {
+  const calendarDate = toCalendarDate(date);
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(calendarDate);
+}
+
+function publicationTimeToPickerTitleDate(publicationTime: number): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(publicationTime));
 }
 
 function selectPuzzleIdFromPicker(pickerHtml: string, index = 0): string {
@@ -118,6 +135,24 @@ function selectPuzzleIdFromPickerByDate(pickerHtml: string, date: Date): string 
     }
 
     if (publicationTimeToDateKey(details.publicationTime) === targetDateKey) {
+      return details.puzzleId;
+    }
+  }
+
+  return null;
+}
+
+function selectPuzzleIdFromPickerByPickerTitleDate(pickerHtml: string, date: Date): string | null {
+  const targetPickerTitle = formatPickerTitleDate(date);
+  const puzzles = parsePickerParams(pickerHtml).streakInfo ?? [];
+
+  for (const puzzle of puzzles) {
+    const details = puzzle.puzzleDetails;
+    if (!details?.puzzleId || !details.publicationTime) {
+      continue;
+    }
+
+    if (publicationTimeToPickerTitleDate(details.publicationTime) === targetPickerTitle) {
       return details.puzzleId;
     }
   }
@@ -259,6 +294,20 @@ async function fetchAmuseLabsJson(solverUrl: string): Promise<AmuseLabsData> {
   return xwordData;
 }
 
+function resolveAmuseLabsPuzzleDate(
+  xwData: AmuseLabsData,
+  options: {
+    date: Date;
+    dateSource: AmuseLabsDateSource;
+  },
+): Date {
+  if (options.dateSource === 'publishTime' && xwData.publishTime) {
+    return epochMsToPuzzleCalendarDate(xwData.publishTime);
+  }
+
+  return toCalendarDate(options.date);
+}
+
 function buildScrapedPuzzleFromAmuseLabs(
   xwData: AmuseLabsData,
   options: {
@@ -266,6 +315,7 @@ function buildScrapedPuzzleFromAmuseLabs(
     date: Date;
     sourceLink: string;
     titleOverride?: string;
+    dateSource: AmuseLabsDateSource;
   },
 ): ScrapedPuzzle {
   const width = xwData.w;
@@ -362,14 +412,7 @@ function buildScrapedPuzzleFromAmuseLabs(
     });
   }
 
-  let puzzleDate = new Date(
-    options.date.getFullYear(),
-    options.date.getMonth(),
-    options.date.getDate(),
-  );
-  if (xwData.publishTime) {
-    puzzleDate = new Date(xwData.publishTime);
-  }
+  const puzzleDate = resolveAmuseLabsPuzzleDate(xwData, options);
 
   let title = (options.titleOverride ?? xwData.title ?? '').trim();
   if (title === '-') {
@@ -398,10 +441,14 @@ export async function fetchAmuseLabsPuzzle(
     date: Date;
     sourceLink: string;
     titleOverride?: string;
+    dateSource?: AmuseLabsDateSource;
   },
 ): Promise<ScrapedPuzzle> {
   const xwData = await fetchAmuseLabsJson(solverUrl);
-  return buildScrapedPuzzleFromAmuseLabs(xwData, options);
+  return buildScrapedPuzzleFromAmuseLabs(xwData, {
+    ...options,
+    dateSource: options.dateSource ?? 'request',
+  });
 }
 
 export async function fetchAmuseLabsById(
@@ -415,7 +462,10 @@ export async function fetchAmuseLabsById(
   },
 ): Promise<ScrapedPuzzle> {
   const solverUrl = config.urlFromId.replace('{puzzle_id}', puzzleId);
-  return fetchAmuseLabsPuzzle(solverUrl, options);
+  return fetchAmuseLabsPuzzle(solverUrl, {
+    ...options,
+    dateSource: 'request',
+  });
 }
 
 export async function fetchAmuseLabsLatestFromPicker(
@@ -439,12 +489,16 @@ export async function fetchAmuseLabsLatestFromPicker(
   let solverUrl = config.urlFromId.replace('{puzzle_id}', puzzleId);
   solverUrl = appendPickerTokens(solverUrl, pickerHtml, config.pickerUrl, puzzleId, uid);
 
-  return fetchAmuseLabsPuzzle(solverUrl, options);
+  return fetchAmuseLabsPuzzle(solverUrl, {
+    ...options,
+    dateSource: 'publishTime',
+  });
 }
 
-export async function fetchAmuseLabsFromPickerByDate(
+async function fetchAmuseLabsFromPicker(
   config: AmuseLabsOutletConfig,
   date: Date,
+  selectPuzzleId: (pickerHtml: string, date: Date) => string | null,
   options: {
     publicationId: PublicationId;
     sourceLink: string;
@@ -452,12 +506,12 @@ export async function fetchAmuseLabsFromPickerByDate(
   },
 ): Promise<ScrapedPuzzle | null> {
   if (!config.pickerUrl) {
-    throw new Error('Picker URL is required to fetch AmuseLabs puzzle by date.');
+    throw new Error('Picker URL is required to fetch AmuseLabs puzzle from picker.');
   }
 
   const pickerResponse = await fetchText(config.pickerUrl);
   const pickerHtml = await pickerResponse.text();
-  const puzzleId = selectPuzzleIdFromPickerByDate(pickerHtml, date);
+  const puzzleId = selectPuzzleId(pickerHtml, date);
   if (!puzzleId) {
     return null;
   }
@@ -472,5 +526,30 @@ export async function fetchAmuseLabsFromPickerByDate(
     date,
     sourceLink: options.sourceLink,
     titleOverride: options.titleOverride,
+    dateSource: 'request',
   });
+}
+
+export async function fetchAmuseLabsFromPickerByDate(
+  config: AmuseLabsOutletConfig,
+  date: Date,
+  options: {
+    publicationId: PublicationId;
+    sourceLink: string;
+    titleOverride?: string;
+  },
+): Promise<ScrapedPuzzle | null> {
+  return fetchAmuseLabsFromPicker(config, date, selectPuzzleIdFromPickerByDate, options);
+}
+
+export async function fetchAmuseLabsFromPickerByPickerTitleDate(
+  config: AmuseLabsOutletConfig,
+  date: Date,
+  options: {
+    publicationId: PublicationId;
+    sourceLink: string;
+    titleOverride?: string;
+  },
+): Promise<ScrapedPuzzle | null> {
+  return fetchAmuseLabsFromPicker(config, date, selectPuzzleIdFromPickerByPickerTitleDate, options);
 }

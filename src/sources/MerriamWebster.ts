@@ -70,7 +70,7 @@ export class MerriamWebsterSource implements PuzzleSource {
       return null;
     }
 
-    return fetchAmuseLabsById(
+    const puzzle = await fetchAmuseLabsById(
       puzzleId,
       {
         urlFromId: CROSSWORD_URL,
@@ -82,5 +82,9 @@ export class MerriamWebsterSource implements PuzzleSource {
         sourceLink: PAGE_URL,
       },
     );
+
+    puzzle.title = `The Missing Letter`;
+    puzzle.authors = ['Matt Gaffney'];
+    return puzzle;
   }
 }

@@ -1,6 +1,6 @@
 import { decode } from 'html-entities';
 import { PublicationId, PuzzleEntry, ScrapedPuzzle, Square } from 'cruzi-models';
-import { formatDateKey } from '../lib/utils';
+import { formatDateKey, toPuzzleTimezoneCalendarDate } from '../lib/utils';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 
 const USER_AGENT = 'cruzi-aws-crossword-scraper';
@@ -81,12 +81,7 @@ function parseTelegraphDate(copy: TelegraphCopy): Date {
   }
 
   if (copy['date-epoch']) {
-    const published = new Date(copy['date-epoch'] * 1000);
-    return new Date(
-      published.getUTCFullYear(),
-      published.getUTCMonth(),
-      published.getUTCDate(),
-    );
+    return toPuzzleTimezoneCalendarDate(new Date(copy['date-epoch'] * 1000));
   }
 
   throw new Error('Cannot parse Telegraph puzzle date.');

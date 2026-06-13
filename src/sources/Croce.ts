@@ -2,6 +2,7 @@ import { ScrapedPuzzle, PublicationId } from 'cruzi-models';
 import puppeteer from 'puppeteer';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 import { processPuzData } from "../lib/puzFiles";
+import { isoDatetimeToPuzzleCalendarDate } from '../lib/utils';
 
 const CROCE_HOMEPAGE_URL = 'https://club72.wordpress.com/';
 
@@ -10,12 +11,6 @@ interface CrocePostInfo {
   puzUrl: string | null;
   postUrl: string;
   title: string;
-}
-
-function parsePostedDate(datetime: string): Date {
-  const datePart = datetime.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day);
 }
 
 async function scrapeLatestCrocePost(): Promise<{ postInfo: CrocePostInfo; blob: Blob } | null> {
@@ -102,7 +97,7 @@ export class CroceSource implements PuzzleSource {
         throw new Error("Failed to parse Croce puzzle data.");
       }
 
-      const postedDate = parsePostedDate(result.postInfo.postedDate);
+      const postedDate = isoDatetimeToPuzzleCalendarDate(result.postInfo.postedDate);
 
       puzzle.lang = "en";
       puzzle.publicationId = this.id as PublicationId;

@@ -1,6 +1,7 @@
 import { parse } from 'node-html-parser';
 import { PublicationId, ScrapedPuzzle } from 'cruzi-models';
 import { parseXdFormat } from '../lib/xdFormat';
+import { formatDateKey, toCalendarDate } from '../lib/utils';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 
 const API_ENDPOINT = 'https://puzzles-games-api.gp-prod.conde.digital/api/v1/games/';
@@ -20,14 +21,18 @@ async function fetchNewYorkerXdData(
   themeTitle: string;
   puzzleDate: Date;
   sourceLink: string;
-}> {
+} | null> {
   const pageUrl = buildCrosswordPageUrl(date, mini);
   const response = await fetch(pageUrl, {
     headers: { 'User-Agent': USER_AGENT },
   });
 
   if (!response.ok) {
-    throw new Error(`Unable to load ${pageUrl}`);
+    const puzzleType = mini ? 'mini crossword' : 'crossword';
+    console.log(
+      `New Yorker: The ${puzzleType} for ${formatDateKey(date)} has not been posted yet.`,
+    );
+    return null;
   }
 
   const pageHtml = await response.text();
@@ -44,11 +49,7 @@ async function fetchNewYorkerXdData(
     themeTitle = description.slice(themePrefix.length).replace(/\.$/, '');
   }
 
-  let puzzleDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const publishedTime = root.querySelector('time')?.getAttribute('datetime');
-  if (publishedTime) {
-    puzzleDate = new Date(publishedTime);
-  }
+  const puzzleDate = toCalendarDate(date);
 
   const apiUrl = `${API_ENDPOINT}${puzzleIdMatch[1]}`;
   const apiResponse = await fetch(apiUrl, {
@@ -110,12 +111,17 @@ async function fetchNewYorkerPuzzle(
   date: Date,
   publicationId: PublicationId,
 ): Promise<ScrapedPuzzle | null> {
-  if (date.getDay() === 0) {
+  if (date.getDay() === 0 || date.getDay() === 6) {
     return null;
   }
 
   const mini = ![1, 2, 3].includes(date.getDay());
-  const { xdData, themeTitle, puzzleDate, sourceLink } = await fetchNewYorkerXdData(date, mini);
+  const xdDataResult = await fetchNewYorkerXdData(date, mini);
+  if (!xdDataResult) {
+    return null;
+  }
+
+  const { xdData, themeTitle, puzzleDate, sourceLink } = xdDataResult;
   const boilerplate = mini ? 'The Mini Crossword' : 'The Crossword';
 
   const puzzle = parseXdFormat(xdData, {
@@ -125,11 +131,7 @@ async function fetchNewYorkerPuzzle(
   });
 
   puzzle.title = finalizeNewYorkerTitle(puzzle.title, themeTitle, boilerplate);
-  puzzle.date = new Date(
-    puzzleDate.getFullYear(),
-    puzzleDate.getMonth(),
-    puzzleDate.getDate(),
-  );
+  puzzle.date = toCalendarDate(date);
 
   return puzzle;
 }

@@ -1,64 +1,22 @@
-export function normalizeWindows1252ToIso8859_1(text: string): string {
-  const map: Record<string, string> = {
-    // Misdecoded C1 controls (Windows-1252 bytes read as ISO-8859-1)
-    '\u0080': '',    // €
-    '\u0082': "'",   // ‚
-    '\u0083': 'f',   // ƒ
-    '\u0084': '"',   // „
-    '\u0085': '...', // …
-    '\u0086': '',    // †
-    '\u0087': '',    // ‡
-    '\u0088': '^',   // ˆ
-    '\u0089': '',    // ‰
-    '\u008A': 'S',   // Š
-    '\u008B': '<',   // ‹
-    '\u008C': 'OE',  // Œ
-    '\u008E': 'Z',   // Ž
-    '\u0091': "'",   // ‘
-    '\u0092': "'",   // ’
-    '\u0093': '"',   // “
-    '\u0094': '"',   // ”
-    '\u0095': '',    // •
-    '\u0096': '-',   // –
-    '\u0097': '-',   // —
-    '\u0098': '~',   // ˜
-    '\u0099': '',    // ™
-    '\u009A': 's',   // š
-    '\u009B': '>',   // ›
-    '\u009C': 'oe',  // œ
-    '\u009E': 'z',   // ž
-    '\u009F': 'Y',   // Ÿ
-    // Actual Unicode characters from Windows-1252 not in ISO-8859-1
-    '\u20AC': '',    // €
-    '\u201A': "'",   // ‚
-    '\u0192': 'f',   // ƒ
-    '\u201E': '"',   // „
-    '\u2026': '...', // …
-    '\u2020': '',    // †
-    '\u2021': '',    // ‡
-    '\u02C6': '^',   // ˆ
-    '\u2030': '',    // ‰
-    '\u0160': 'S',   // Š
-    '\u2039': '<',   // ‹
-    '\u0152': 'OE',  // Œ
-    '\u017D': 'Z',   // Ž
-    '\u2018': "'",   // ‘
-    '\u2019': "'",   // ’
-    '\u201C': '"',   // “
-    '\u201D': '"',   // ”
-    '\u2022': '',    // •
-    '\u2013': '-',   // –
-    '\u2014': '-',   // — (em dash)
-    '\u02DC': '~',   // ˜
-    '\u2122': '',    // ™
-    '\u0161': 's',   // š
-    '\u203A': '>',   // ›
-    '\u0153': 'oe',  // œ
-    '\u017E': 'z',   // ž
-    '\u0178': 'Y',   // Ÿ
-  };
-  return text.replace(
-    /[\u0080-\u009F\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20AC\u201A\u201E\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u02DC\u2122\u0161\u203A\u0153\u017E\u0178\u0192]/g,
-    (c) => map[c] ?? '',
-  );
+/** Unicode code points for Windows-1252 characters outside ISO-8859-1. */
+const WINDOWS_1252_UNICODE = new Set([
+  0x20ac, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030,
+  0x0160, 0x2039, 0x0152, 0x017d, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022,
+  0x2013, 0x2014, 0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0x017e, 0x0178,
+]);
+
+function isWindows1252OrIso8859_1(codePoint: number): boolean {
+  return codePoint <= 0xff || WINDOWS_1252_UNICODE.has(codePoint);
+}
+
+/** Removes characters that cannot be represented in ISO-8859-1 or Windows-1252. */
+export function stripNonWindows1252OrIso8859_1(text: string): string {
+  let result = '';
+  for (const ch of text) {
+    const codePoint = ch.codePointAt(0)!;
+    if (isWindows1252OrIso8859_1(codePoint)) {
+      result += ch;
+    }
+  }
+  return result;
 }

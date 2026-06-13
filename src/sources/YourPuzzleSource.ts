@@ -1,5 +1,5 @@
 import { PublicationId } from 'cruzi-models';
-import { fetchAmuseLabsFromPickerByDate } from '../lib/amuseLabs';
+import { fetchAmuseLabsFromPickerByPickerTitleDate } from '../lib/amuseLabs';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 
 const DAILY_PAGE_URL = 'https://yourpuzzlesource.com/puzzles/daily-crossword/';
@@ -22,7 +22,7 @@ export class YourPuzzleSource implements PuzzleSource {
     }
 
     if (day === 6) {
-      return fetchAmuseLabsFromPickerByDate(
+      return fetchAmuseLabsFromPickerByPickerTitleDate(
         {
           pickerUrl: WEEKEND_PICKER_URL,
           urlFromId: WEEKEND_CROSSWORD_URL,
@@ -36,7 +36,7 @@ export class YourPuzzleSource implements PuzzleSource {
       );
     }
 
-    return fetchAmuseLabsFromPickerByDate(
+    return fetchAmuseLabsFromPickerByPickerTitleDate(
       {
         pickerUrl: DAILY_PICKER_URL,
         urlFromId: DAILY_CROSSWORD_URL,

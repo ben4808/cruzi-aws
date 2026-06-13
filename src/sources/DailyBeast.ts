@@ -1,7 +1,7 @@
 import { PublicationId } from 'cruzi-models';
 import { fetchAmuseLabsLatestFromPicker } from '../lib/amuseLabs';
 import { parseLooseDate } from '../lib/xdFormat';
-import { formatDateKey, getPuzzleDate } from '../lib/utils';
+import { formatDateKey, getPuzzleDate, toCalendarDate } from '../lib/utils';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 
 export class DailyBeastSource implements PuzzleSource {
@@ -9,6 +9,10 @@ export class DailyBeastSource implements PuzzleSource {
   public name = 'Daily Beast';
 
   public async getPuzzle(date: Date) {
+    if (date.getDay() === 5 || date.getDay() === 6) {
+      return null;
+    }
+
     const today = getPuzzleDate();
     if (formatDateKey(date) !== formatDateKey(today)) {
       return null;
@@ -30,11 +34,7 @@ export class DailyBeastSource implements PuzzleSource {
     const titleWithoutPeriods = puzzle.title.replace(/\./g, '');
     const parsedDate = parseLooseDate(titleWithoutPeriods);
     if (parsedDate) {
-      puzzle.date = new Date(
-        parsedDate.getFullYear(),
-        parsedDate.getMonth(),
-        parsedDate.getDate(),
-      );
+      puzzle.date = toCalendarDate(parsedDate);
     }
 
     return puzzle;

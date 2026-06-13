@@ -11,10 +11,15 @@ export class ShefferSource implements PuzzleSource {
       return null;
     }
 
-    return fetchKingFeaturesPuzzle('sheffer', date, {
+    const puzzle = await fetchKingFeaturesPuzzle('sheffer', date, {
       publicationId: this.id as PublicationId,
       defaultTitle: 'Eugene Sheffer',
       parseErrorMessage: 'Failed to parse Eugene Sheffer puzzle data.',
     });
+
+    if (puzzle) {
+      puzzle.authors = ['Eugene Sheffer'];
+    }
+    return puzzle;
   }
 }

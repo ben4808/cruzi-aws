@@ -1,6 +1,7 @@
 import { ScrapedPuzzle, PuzzleEntry, Square, PublicationId } from 'cruzi-models';
 import { PuzzleSource } from '../scraper/PuzzleSource';
 import { generatePuzFile } from "../lib/puzFiles";
+import { toCalendarDate } from '../lib/utils';
 
 export class NewsdaySource implements PuzzleSource {
     public id = "Newsday";
@@ -124,7 +125,7 @@ export class NewsdaySource implements PuzzleSource {
             title: title,
             authors: authorLine.split(',').map(s => s.trim()),
             copyright: "© Newsday",
-            date,
+            date: toCalendarDate(date),
             sourceLink: url,
             width,
             height,
