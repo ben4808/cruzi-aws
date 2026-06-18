@@ -56,6 +56,7 @@ const puzzleSources = [
   PuzzleSources.Telegraph,
   PuzzleSources.YourPuzzleSource,
   PuzzleSources.MerriamWebster,
+  PuzzleSources.Sporcle,
 ] as PuzzleSource[];
 
 const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'LAT', 'PeoplePuzzler']);

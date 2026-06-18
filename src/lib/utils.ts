@@ -67,6 +67,18 @@ export function isoDatetimeToPuzzleCalendarDate(datetime: string): Date {
   return toPuzzleTimezoneCalendarDate(new Date(datetime));
 }
 
+/** Most recent Sunday on or before the given calendar date. */
+export function getMostRecentSunday(date: Date): Date {
+  const calendarDate = toCalendarDate(date);
+  const daysSinceSunday = calendarDate.getDay();
+  if (daysSinceSunday === 0) {
+    return calendarDate;
+  }
+
+  calendarDate.setDate(calendarDate.getDate() - daysSinceSunday);
+  return calendarDate;
+}
+
 export function getPuzzleDate(now: Date = new Date()): Date {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: PUZZLE_TIMEZONE,

@@ -33,6 +33,7 @@ import { SlateSource } from '../sources/Slate';
 import { TelegraphSource } from '../sources/Telegraph';
 import { YourPuzzleSource } from '../sources/YourPuzzleSource';
 import { MerriamWebsterSource } from '../sources/MerriamWebster';
+import { SporcleSource } from '../sources/Sporcle';
 
 export interface PuzzleSource {
   id: string;
@@ -75,4 +76,5 @@ export const PuzzleSources = {
   Telegraph: new TelegraphSource(),
   YourPuzzleSource: new YourPuzzleSource(),
   MerriamWebster: new MerriamWebsterSource(),
+  Sporcle: new SporcleSource(),
 } as const;

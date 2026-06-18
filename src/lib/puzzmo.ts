@@ -146,6 +146,10 @@ export async function fetchPuzzmoPuzzle(
   return puzzle;
 }
 
+function mondayBasedWeekday(date: Date): number {
+  return (date.getDay() + 6) % 7;
+}
+
 function getMostRecentPuzzmoBigDate(dt: Date): Date {
   const startDate = new Date(2025, 0, 13);
   const lastBiweekly = new Date(2025, 5, 16);
@@ -164,8 +168,9 @@ function getMostRecentPuzzmoBigDate(dt: Date): Date {
   }
 
   if (dt >= firstMonthly) {
+    const weekday = mondayBasedWeekday(dt);
     let monthWithPuzzle = dt.getMonth();
-    if (dt.getDate() <= dt.getDay()) {
+    if (dt.getDate() <= weekday) {
       monthWithPuzzle -= 1;
     }
     let yearWithPuzzle = dt.getFullYear();
@@ -174,7 +179,7 @@ function getMostRecentPuzzmoBigDate(dt: Date): Date {
       yearWithPuzzle -= 1;
     }
     const referenceDate = new Date(yearWithPuzzle, monthWithPuzzle, 7);
-    const offset = referenceDate.getDay();
+    const offset = mondayBasedWeekday(referenceDate);
     referenceDate.setDate(referenceDate.getDate() - offset);
     return referenceDate;
   }
@@ -182,32 +187,26 @@ function getMostRecentPuzzmoBigDate(dt: Date): Date {
   return lastBiweekly;
 }
 
+function buildPuzzmoBigSourceLink(date: Date): string {
+  return `https://www.puzzmo.com/puzzle/${formatDateKey(date)}/crossword/big`;
+}
+
 export async function fetchPuzzmoBigPuzzle(
-  date: Date,
+  _date: Date,
   options: {
     publicationId: PublicationId;
-    sourceLink: string;
   },
-): Promise<ScrapedPuzzle | null> {
+): Promise<ScrapedPuzzle> {
   const today = getPuzzleDate();
   const puzzmoToday = getPuzzmoDate(today);
   const mostRecentBigDate = getMostRecentPuzzmoBigDate(puzzmoToday);
-
-  if (
-    date.getFullYear() !== mostRecentBigDate.getFullYear()
-    || date.getMonth() !== mostRecentBigDate.getMonth()
-    || date.getDate() !== mostRecentBigDate.getDate()
-  ) {
-    return null;
-  }
-
   const dateString = formatDateKey(mostRecentBigDate);
   const payload = await fetchPuzzmoPayload(dateString, 'today:/{date_string}/crossword/big');
 
   return parseXdFormat(payload.puzzle, {
     publicationId: options.publicationId,
     date: toCalendarDate(mostRecentBigDate),
-    sourceLink: options.sourceLink,
+    sourceLink: buildPuzzmoBigSourceLink(mostRecentBigDate),
     title: payload.name,
     author: joinAuthors(payload.authors),
   });

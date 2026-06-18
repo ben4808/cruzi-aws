@@ -1,0 +1,52 @@
+Rate the given words and phrases according to the following rubric.
+
+Also, parse the words and output them in their most natural form (lowercase anything not naturally lowercase), but do NOT change the word order or the spelling of the given phrase (e.g. "water loo" would be output as "Waterloo", "INNOUT" would be output as "In-N-Out").
+Especially try parsing each term as a proper name as well as a word or phrase.
+Parse each term into one of the following categories:
+Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Partial Phrase, Nonsense
+
+RUBRIC: Syntactic & Idiomatic Naturalness (0-5 points)
+
+5 points: Absolute Fixed Term. A non-negotiable, standard technical, cultural, or highly idiomatic term. Replacing any word changes the meaning entirely or sounds completely wrong. It strongly feels like a single lexical unit. The word or phrase must be the best way to the say the thing and the best spelling. 
+- Includes any globally recognized Proper Noun commonly in the vocabulary of the educated public.
+- Includes complete idiomatic frames including their necessary linking prepositions (e.g., "show the door to").
+Examples: spray paint, water vapor, watch your step, world class, fast food, brain drain, water under the bridge, Statue of Liberty
+
+4 points: Strong Collocation / Variation. Highly predictable and cohesive, but slightly less rigid than a 5. This tier captures technical terms, slight variations of a 5-point term, or inflections.
+- Includes any globally recognized Proper Noun, even if it's less known.
+- Inflection of a 5 point term ("spray painted", "good-naturedly")
+- Slight variation on the absolute best way to say it while still being idiomatic ("hybrid vehicle" 4 instead of "hybrid" 5, "traffic flow" 4 instead of "flow of traffic" 5). 
+- Includes phrasal-prepositional verbs where the trailing preposition is standard syntax for connecting an object (e.g., "show up for").
+- E.g. "Heavy rain": "Heavy" is the preferred, highly idiomatic modifier for rain. While you can say "intense rain" or "pouring rain," "heavy rain" is a standard meteorological and conversational unit.
+- E.g. "Running shoes": A distinct category of footwear. It just misses a 5 because it's a sub-category of "shoes" rather than a totally unique, non-substitutable concept like "software."
+
+3 points: Common Formulaic Expression. These are phrases we hear all the time, but the words haven't fused into a single new entity. They keep their literal, dictionary definitions, but they frequently travel as a pair.
+- Includes highly frequent, culturally predictable combinations that describe standard scenarios, distinguishing them from random grammar combinations (e.g., "show up uninvited")
+- Often conjures up a specific mental image or recognizable scenario that native speakers reference constantly (e.g. poop bucket, pool toy) 
+Examples: front door, car keys, word order, water pipe
+
+2 points: Awkward or Sub-Optimal. Grammatically correct, but a native speaker or industry expert would likely correct it because a more cohesive, standard alternative exists, whether it's a different phrasing or spelling.
+- If the given term and the alternative are both idiomatically accepted, it should be scored higher (whisky vs whiskey)
+- Includes terms that are more idiomatic with less words ("Liquid Death" is better than "Liquid Death water")
+Examples: hover vehicle (preferred "hovercraft"), water paint (preferred "watercolor"), tooth doctor (preferred "dentist"), heat machine (preferred "heater"), water density (preferred "density of water"), water spring (preferred just "spring"), tonite (preferred "tonight")
+
+1 point: Purely Descriptive / Free Combination. Perfectly natural English, but there is zero lexical "glue" here. These words are just passing neighbors meeting via normal grammar rules. Often purely descriptive or partial phrases that don't mean anything on their own.
+- Restricted only to accidental neighbors or random, non-frequent combinations (e.g., "show up with shoes").
+Examples: green paint, buy a newspaper, play basketball, tall tree, poor as
+
+0 points: Syntactic Nonsense / Error. The words cannot legally sit next to each other like this in English, or there is a disqualifying typo.
+- Includes misspellings 
+Examples: tree tall, baking sdoa, quickly ran dog, hehhhehoiojj
+
+
+Output the scores in this exact format, without explanatory or auxiliary text:
+
+SUMMARY:
+<parsed form> : <parsed category> : <score>
+<parsed form> : <parsed category> : <score>
+...
+
+
+WORDS AND PHRASES:
+
+[[DATA]]

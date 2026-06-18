@@ -1,8 +1,10 @@
+import { allExploredLoader } from './allExploredLoader';
 import { crosswordFamiliarityGenerator } from './crosswordFamiliarityGenerator';
 import { crosswordQualityGenerator } from './crosswordQualityGenerator';
 import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
+import { idiomacityGenerator } from './idiomacityGenerator';
 
 //entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -12,9 +14,9 @@ import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
 
-runTasks()
-  .then(() => console.log("Crossword loading tasks completed successfully."))
-  .catch(error => console.error("Error in crossword loading tasks: ", error));
+// runTasks()
+//   .then(() => console.log("Crossword loading tasks completed successfully."))
+//   .catch(error => console.error("Error in crossword loading tasks: ", error));
 
 // crosswordFamiliarityGenerator()
 //   .then(() => console.log("Crossword familiarity generator completed successfully."))
@@ -23,3 +25,11 @@ runTasks()
 // crosswordQualityGenerator()
 //   .then(() => console.log("Crossword quality generator completed successfully."))
 //   .catch(error => console.error("Error in crossword quality generator: ", error));
+
+// allExploredLoader()
+//   .then(() => console.log("AllExplored loader completed successfully."))
+//   .catch(error => console.error("Error in AllExplored loader: ", error));
+
+idiomacityGenerator()
+  .then(() => console.log("Idiomacity generator completed successfully."))
+  .catch(error => console.error("Error in idiomacity generator: ", error));

@@ -1,0 +1,59 @@
+Alice and Bob are playing a game to see who can come up with the best fill-in-the-blank answers for the following:
+
+"[[blank phrase]]" ("[[word]]" MUST go at the [[END/START]] of every answer)
+
+Before starting the game, each player brainstorms potential answers from each of the following categories:
+Simple prefixes and suffixes. ("hearing" for "hear _____", "pretext" for "_____ text", "endless" for "end _____")
+Phrasal verb forms ("look for" for "look _____", "walk in on" for "walk ______", "in time" for "_____ time")
+Compound words ("snowman" for "snow _____", "showboat" for "____ boat")
+Multi-word phrases ("used car" for "_____ car", "watch your step" for "watch _____", "high five" for "high _____")
+Idioms ("water under the bridge" for "water ____", "sleep like a log" for "sleep _____")
+Proper Names ("Tiger Woods" for "tiger _____", "John Green" for "_____ green")
+
+To start the game, each player populates a list of 10 answers, chosen draft-style. There can be no duplicates.
+
+The following answers are strictly banned. Note that the list can be large: to help discover allowed answers, look for answers starting with each letter of the alphabet.
+
+(none)
+
+Then the gameplay continues by turns according to the following rules:
+Alice goes first.
+At the start of each turn
+Both players compare lists.
+The player on turn must steal an answer from their opponent's list and add it to their own list, discarding an answer.
+Their opponent must then must come up with a new answer to replace the one stolen.
+At no point can there be duplicate answers in a player's list, and discarded answers cannot be reused.
+After 10 turns, each player's final list is evaluated by a judge and by the audience according to the given guidelines.
+
+Guidelines:
+The filling word(s) must blend with the base word to form a single lexical unit, a cohesive specific concept, rather than just two words next to each other. E.g. "green paint" and "big sign" are too general and simply descriptive.
+The form together with the base word should be the lexically preferred way to say that thing. E.g. "hearse vehicle is grammatically correct but "hearse" by itself is lexically preferred. Sometimes there are multiple forms that are equally natural (e.g. "hybrid" and "hybrid vehicle") and these will be allowed.
+The result is a syntactically and idiomatically natural, standard, technical, or colloquial term (e.g., spray paint, watch your step, porta-john). 
+The audience rewards the most top-of-mind answers that the their mind will jump to. (Family Feud style). The audience will reject answers that are so obscure that nobody has heard of them. Especially include any suffixes/prefixes and phrasal verb forms.
+Include any colloquial and entertaining terms that the audience will appreciate.
+The dominant phrase reins supreme. If a term technically fits but a highly related variation is more common, idiomatic, stylized, or universally recognized, the player is penalized for missing the mark. E.g. "HAZMAT vehicle" over "hazardous vehicle". "Hi-rail vehicle" over "high-rail vehicle".
+
+Simulate a playing of this game, showing both players' lists after each turn. Keep in mind that both Alice and Bob are extremely skilled and competitve players. Their lists will start extremely strong. They will refuse to fall behind and will rack their brains thinking through every niche of the language to find new spectacular terms.
+
+At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary.
+
+Alice's brainstorming
+Simple prefixes and suffixes: <comma separated list>
+Phrasal verb forms: <comma separated list>
+Compound words: <comma separated list>
+Multi-word phrases: <comma separated list>
+Idioms: <comma separated list>
+Proper Names: <comma separated list>
+
+Bob's brainstorming:
+Simple prefixes and suffixes: <comma separated list>
+Phrasal verb forms: <comma separated list>
+Compound words: <comma separated list>
+Multi-word phrases: <comma separated list>
+Idioms: <comma separated list>
+Proper Names: <comma separated list>
+
+All Full Words/Phrases Utilized:
+<Alice's starting list, one item per line>
+<Bob's starting list, one item per line>
+<All items that were used to replace a stolen item, one per line>
