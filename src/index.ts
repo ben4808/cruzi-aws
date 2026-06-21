@@ -4,7 +4,9 @@ import { crosswordQualityGenerator } from './crosswordQualityGenerator';
 import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
+import { familiarityGenerator } from './familiarityGenerator';
 import { idiomacityGenerator } from './idiomacityGenerator';
+import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
 
 //entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -30,6 +32,14 @@ import { idiomacityGenerator } from './idiomacityGenerator';
 //   .then(() => console.log("AllExplored loader completed successfully."))
 //   .catch(error => console.error("Error in AllExplored loader: ", error));
 
-idiomacityGenerator()
-  .then(() => console.log("Idiomacity generator completed successfully."))
-  .catch(error => console.error("Error in idiomacity generator: ", error));
+// idiomacityGenerator()
+//   .then(() => console.log("Idiomacity generator completed successfully."))
+//   .catch(error => console.error("Error in idiomacity generator: ", error));
+
+// idiomacityGeneratorRound2()
+//   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
+//   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
+
+familiarityGenerator()
+  .then(() => console.log("Familiarity generator completed successfully."))
+  .catch(error => console.error("Error in familiarity generator: ", error));

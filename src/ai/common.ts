@@ -87,17 +87,29 @@ export const parseFamiliarityResponse = (response: string): any[] => {
 
   for (let line of lines) {
     let parts = line.split(' : ').map(part => part.trim());
-    let baseForm = undefined;
-    if (parts[2].includes('Derived Word')) {
-      baseForm = parts[2].split(' (')[1].split(')')[0];
-      parts[2] = 'Derived Word';
+    if (parts.length < 4) {
+      continue;
     }
+
+    const score = parseFloat(parts[3]);
+    if (Number.isNaN(score)) {
+      continue;
+    }
+
+    let baseForm = undefined;
+    let entryType = parts[2];
+    const categoryMatch = entryType.match(/^(.+?)\s+\((.+)\)$/);
+    if (categoryMatch) {
+      entryType = categoryMatch[1].trim();
+      baseForm = categoryMatch[2].trim();
+    }
+
     results.push({
       entry: parts[0],
       baseForm: baseForm,
       displayText: parts[1],
-      entryType: parts[2],
-      familiarityScore: Math.round(parseFloat(parts[3])*10),
+      entryType: entryType,
+      familiarityScore: Math.round(score * 10),
     });
   }
 

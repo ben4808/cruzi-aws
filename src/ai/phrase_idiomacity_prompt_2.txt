@@ -1,0 +1,76 @@
+TASK
+Analyze the provided list of words and phrases. For each item:
+- Parse the word/phrase in the most natural/common way.
+- Attempt multiple parsings of the item. For example, ACTSAPART can parse as "acts apart" (not idiomatic) or "acts a part" (quite idiomatic)
+- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters in the exact sequence provided. Do not substitute letters for digits, do not reinterpret, respell, add, remove, or change any words. Don't capitalize just becasue it's the first word.
+- Assign exactly one category. Select the most natural/familiar category for the word/phrase.
+- Score using the rubric below.
+
+Strict Rules:
+- If a term is misspelled, awkwardly phrased, or requires reinterpretation to make sense, score it 0 or 1.
+- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
+- Output only items scoring 3, 4, or 5.
+
+CATEGORIES
+Word: Single lexical item.
+Phrase: Multi-word coherent expression.
+Proper Name: Specific person, place, brand, or organization.
+Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+Partial Phrase: Broken grammatical fragment (e.g., "age of", "acts in").
+Nonsense: Unintelligible or grammatically impossible sequences.
+
+RUBRIC
+5 Points: Absolute Fixed Term / Primary Proper Noun
+A non-negotiable, standard cultural, technical, or highly idiomatic unit. Replacing any word destroys the meaning or sounds entirely wrong (unless the new word forms a new idiomatic unit). It is the absolute best way to say the thing.
+- Includes globally recognized Proper Nouns in common public vocabulary.
+- Includes complete idiomatic frames with necessary prepositions.
+- Single words naturally score a 5 
+- Includes foundational, universally understood acronyms and abbreviations (FBI, abbr.)
+Examples: spray paint, water vapor, watch your step, fast food, brain drain, Statue of Liberty, acclimating
+
+4 Points: Strong Collocation / Variation / Minor Proper Noun
+Highly predictable, cohesive, and idiomatic, but slightly less rigid than a 5.
+- Includes concrete, highly predictable technical, industrial, legal, or physical collocations and technical terms (e.g., adoptive mother as a legal status, aggregate sand as an industrial material).
+- Includes lesser-known or regional Proper Nouns.
+- Includes acronyms and abbreviations must represent a unique, irreplaceable concept
+- Inflections of a 5-point term (Examples: spray painted, good-naturedly).
+- Must be the preferred conversational unit for saying that thing (Example: "heavy rain" over "intense rain").
+- Includes phrases that serve as immediate, highly predictable native reactions or transitions in speech (e.g., 'about that...', 'watch out')
+Examples: paint can, boiling water, take care, Asian food, brain food, galaxy cluster
+
+3 Points: Common Formulaic Expression
+Possesses specific lexical, technical, cultural, or conversational weight. Carries with it narrative gravity, a specific culturally understood saying, scenario, or image.
+- Must be a complete syntactic unit. If it requires a missing verb/noun to make sense or sound natural, it is a Partial Phrase and scores 1.
+- Includes syntactically complete phrasal verbs or predicate adjectives with their mandatory prepositions, even if they typically take an object later in a sentence. (look for, active in, accustoms to).
+- Includes extremely common and cohesive predicate phrases (read a book, cooked dinner)
+Examples: after class, front door, car keys, pool toy, poop bucket, acts in, advanced on, accustoms to, afraid of, afternoon social, act a part
+
+2 Points: Awkward / Sub-Optimal
+Grammatically possible or phonetically understandable, but conceptually unstable or non-standard. Changing a single word or correcting a spelling results in a significantly higher-frequency native idiom.
+- Includes common phonetic shortcuts or homophone errors where an incorrect word choice undermines the standard, high-frequency native idiom.
+- Includes terms with unnecessary or redundant words (Example: "Liquid Death water" vs preferred "Liquid Death").
+- Includes common phonetic shortcuts or slightly dated text-slang (Example: tonite).
+Examples: affect change (preferred: effect change), hover vehicle (preferred: hovercraft), water paint (preferred: watercolor), tooth doctor (preferred: dentist), absent days (preferred: days of absence)
+
+1 Point: Purely Descriptive / Free Combination
+Literal, generic combinations that possess zero unique cultural or lexical "glue".
+- Includes fragments that rely entirely on a missing verb or noun to form a recognizable conversational unit.
+Examples: green paint, buy a newspaper, play basketball, tall tree, age of, poor as, a goner, accept it, age of, ABCD, after dusk
+
+0 Points: Syntactic Nonsense / Disqualifying Error
+Words that cannot legally sit next to each other in English syntax, or contain critical typos that ruin the lexical unit.
+Examples: tree tall, baking sdoa, quickly ran dog.
+
+OUTPUT FORMAT
+Output only qualifying items in this exact format (one per line, no extra text):
+
+SUMMARY:
+<parsed form> : <parsed category> : <score>
+<parsed form> : <parsed category> : <score>
+...
+
+
+WORDS AND PHRASES
+
+[[DATA]]

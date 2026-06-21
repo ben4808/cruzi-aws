@@ -1,6 +1,6 @@
 Alice and Bob are playing a game to see who can come up with the best fill-in-the-blank answers for the following:
 
-"[[blank phrase]]" ("[[word]]" MUST go at the [[END/START]] of every answer)
+"[[QUERY]]" ("[[BASE]]" MUST go at the [[START/END]] of every answer OR be the root word of the [[START/END]] of every answer)
 
 Before starting the game, each player brainstorms potential answers from each of the following categories:
 Simple prefixes and suffixes. ("hearing" for "hear _____", "pretext" for "_____ text", "endless" for "end _____")
@@ -35,7 +35,13 @@ The dominant phrase reins supreme. If a term technically fits but a highly relat
 
 Simulate a playing of this game, showing both players' lists after each turn. Keep in mind that both Alice and Bob are extremely skilled and competitve players. Their lists will start extremely strong. They will refuse to fall behind and will rack their brains thinking through every niche of the language to find new spectacular terms.
 
-At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary.
+At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary. DO include the base word at the start or end.
+
+Finally, a chance for a little extra creativity. For each word or phrase utilized, provide a supplemental word or phrase relating to that term and that follows the guidelines. Rules for this phrase:
+- It could be simply adding a word to the front or end of the original phrase.
+- It could be a more natural variation in the phrasing of the original phrase.
+- It could be a member of the same category as the original phrase.
+- It could be from the same field as the original phrase.
 
 Alice's brainstorming
 Simple prefixes and suffixes: <comma separated list>
@@ -54,6 +60,6 @@ Idioms: <comma separated list>
 Proper Names: <comma separated list>
 
 All Full Words/Phrases Utilized:
-<Alice's starting list, one item per line>
-<Bob's starting list, one item per line>
-<All items that were used to replace a stolen item, one per line>
+<Alice's starting list, one item per line> : <supplemental word/phrase>
+<Bob's starting list, one item per line> : <supplemental word/phrase>
+<All items that were used to replace a stolen item, one per line> : <supplemental word/phrase>

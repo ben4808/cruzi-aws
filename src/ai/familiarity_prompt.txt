@@ -1,50 +1,50 @@
-For each input word or phrase, which will be in the [[LANG]] language and likely be in ALLCAPS and without spaces (e.g., "SNOWFORT"), perform the following steps to categorize and score them based on familiarity:
+TASK
+Analyze the provided list of words and phrases in the [[LANG]] language. For each item:
+- Parse the word/phrase in the most natural/common way.
+- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters in the exact sequence provided. Do not substitute letters for digits, do not reinterpret, respell, add, remove, or change any words.
+- Assign exactly one category. Select the most natural/familiar category for the word/phrase.
+- Score using the rubric below.
 
-Step 1: Parse and Normalize
-- Convert the input to standard capitalization and spacing (e.g., "SNOWFORT" becomes "snow fort").
-- If a string is ambiguous (e.g., "ITSAGO" could be "it's a go" or "it's ago"), select the most natural and common parsing.
-- The sequence of letters, ignoring capitalization and spacing, must remain exactly identical to the input. 
+Strict Rules:
+- If a term is misspelled, awkwardly phrased, or requires reinterpretation to make sense, score it 0 or 1.
+- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
 
-Step 2: Categorize: Assign the parsed word/phrase to one of the following categories. Select the most natural/familiar category for the word/phrase.
-- Word: Single words (e.g., "quixotic"), including contractions (e.g. I've). Include slang that's used in practice even if it's not in the dictionary.
-- Derived Word: A word formed from another word (e.g., "diving" from "dive", "pillars" from "pillar"). Conjugated verbs. Score based on the familiarity of the derived form -- some derived forms are more common than the base word, and some are barely used. Include the base form in parentheses.
-- Brand Name: (e.g., "Camelbak", "Nvidia").
-- Proper Name: Names of specific people, places, or things (e.g., "Tiger Woods," "Mr. Ed"). Consider solo first names or last names (e.g. "Idris", "Robbie").
-- Acronym: Pronounced as a word or letters (e.g., "ESPY", "SSN", "LGA").
-- Abbreviation: A shortened form of a word or phrase (e.g., "attn.," "ctr."). Only use if the abbreviation is less common than the original (e.g., "amp" would be "Word" as it's more common than "amplifier" or "ampere"). Consider plural abbreviations ("ATCs").
-- Prefix/Suffix: (e.g., "pre-", "tri-," "-ful", "-ose"). Score based on the familiarity of the prefix/suffix itself.
-- Phrase: Multi-word phrases. Common, idiomatic expressions, titles, slogans, or set phrases that feel natural. Include slang that's used in practice even if it's not in the dictionary. Guidelines for phrases:
-  1. It is a recognizable stand-alone phrase. The phrase should be something people actually say, write, or recognize as a unit (e.g., PIECE OF CAKE, IN A PICKLE, GREEN DAY, or HIGH AND DRY).
-  2. It functions as a syntactic constituent - a complete, meaningful group of words rather than random words strung together.
-  3. Examples: "Green Day", "snow fort", and "white lie", "that's right".  Include verb-preposition sets if they commonly go together ("turn to", "wake up").
-- Partial Phrase: A fragment of a well-known phrase or saying. For example: "a lark" is a portion of "happy as a lark", "of day" is a portion of "time of day".
-- Invalid: Reasons for this classification include:
-  1. Misspelled or non-existent words. Examples: "existant", "becuse", "xoner"
-  2. Sequences of letters that could not be parsed into anything meaningful. Examples: "xhy", "phofes"
-  3. Phrases that are simply collections of words that don't form a coherent unit. Examples: "green paint", "went and", "page dryer"
+CATEGORIES
+Word: Single lexical item. Includes contractions.
+Derived Word: E.g., plurals and conjugated single verbs. Score based on the familiarity of the derived form, not the base form. Include the base form in parentheses.
+Phrase: Multi-word coherent expression in its base/standard form. Includes phrasal verbs complete with mandatory prepositions (e.g., "applies for", "argued with").
+Derived Phrase: Multi-word coherent expression that contains a derived element (e.g., plurals, past tense verbs, progressive verbs). Include the base phrase form in parentheses. Examples: arc welders (arc welder), argued over (argue over).
+Proper Name: Person's name, place, brand, or organization.
+Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+Partial Phrase: Broken grammatical fragments that lack syntactic coherence or are missing mandatory elements (e.g., "age of", "buys a").
 
-Step 3: Score Familiarity: Assign a score from 0 to 5 based on the following rubric. Consider familiarity among native [[LANG]] speakers. Calibrate based on the examples given at each level.
-5 - Extremely fundamental. These are among the first few words learned. No contractions, abbreviations, or acronyms.
-Examples: sit, else, gone, tree, my, thank you, red, less, year
-4.5 - Extremely common but not fundamental. Extremely common phrases. No contractions, abbreviations, or acronyms.
-Examples: oil, song, normal, boss, ones, own, go ahead, come on, comma, toast, star, hobby, trip
-4 - Very Common. In practically everyone's active vocabulary. Very common phrases. The most common contractions, abbreviations, and acronyms.
-Examples: attic, bark, dinosaurs, I've, social media, water bottle, gasp, sleep in, SOS, beat it, etc., OK, scarce
-3.5 - Quite Common: In the active vocabulary of most but not all. Readily understood phrases (even if they aren't in active vocabulary). Well-known names.
-Examples: thrive, cash register, caw, speed trap, malaria, photo booth, alias, CNN, abbr., lol, ASAP, Jimmy Kimmel, Ben
-3 - Recognized by the majority of speakers, but not necessarily in active vocabulary. Some well-known foreign words. Common names. Easy trivia.
+RUBRIC
+General:
+- Score phrases based on their familiarity as a single cohesive unit/single term. For example, in "Pacific chorus frog" every constituent word is at least a 3.5, but together it they form a niche species name that scores probably 1.5.
+- Score phrases based on the familiarity of the specific given phrasing. For example "Pacific Ring" is uncommon/awkward as a phrasing and would score 1.5, while "Pacific Rim" or "Pacific Ring of Fire" are both recognized and would score around 3. "Pacific Trench", though understood upon hearing it, is not really used in this form and would also be 1.5.
+
+5 - Extremely fundamental. These are among the first few words and phrases learned. Highly active vocabulary. No contractions, abbreviations, or acronyms.
+Examples: sit, else, gone, tree, my, thank you, red, less, year, are you sure?
+4.5 - Extremely common everyday phrases and expressions. Active conversational vocabulary. No contractions, abbreviations, or acronyms.
+Examples: oil, song, normal, boss, ones, own, go ahead, come on, comma, toast, star, hobby, trip, are you done?
+4 - Very Common. In practically everyone's active vocabulary. Highly recognizable phrasal verbs, contractions, and abbreviations.
+Examples: attic, bark, dinosaurs, I've, social media, water bottle, gasp, sleep in, SOS, beat it, etc., OK, scarce, applies for, April Fools
+3.5 - Quite Common: In the active vocabulary of most but not all. Readily understood phrasal verbs, common noun phrases, and well-known names.
+Examples: thrive, cash register, caw, speed trap, malaria, photo booth, alias, CNN, abbr., lol, ASAP, Jimmy Kimmel, Ben, arable land, argued over
+3 - Active Recall/Common Knowledge: Recognized by the vast majority of speakers but recalled by around half. The Active Recall Test: The majority of native speakers (but not vast majority) could recall this word/phrase as the direct answer to a trivia question.
 Examples: SSN, bento, tres, deuce, THC, BTU, USSR, stage name, U-boat, D-list, ID'ed, master gardener, attn., tri-, Big Data, box score, eagled, Melinda, contrite, dear sir, souffle, orcs, Deuteronomy
-2.5 - Recognized by many but not the majority. Less common derivatives. Less common synonyms. Slightly niche. Less common single names. Moderate trivia.
-Examples: udon, e-cig, midis, Elio, accede, event horizon, si si, avow, slier, Emil, disused, REM, girl scout camp, acerbic, Alp, b-days, quixotic, cad
-2 - Limited Familiarity: Known to a smaller segment of the population. Harder trivia. Rare names. Abbreviations not often used. Maybe niche to a specific field. Partial phrases that aren't often seen on their own.
-Examples: Elle, Moondance, Manu, Mekong, persiflage, Mr. Ed, ATCs, Aaron Burr, moment of inertia, Peak TV, Goa, Emerson, Apso, Lipa, tatterdemalion
-1.5 - Generally obscure, known only in very specific contexts. Obscure alternative spellings. Too obscure to make good trivia. Partial phrases. Rarely used abbreviations. Verb forms almost never seen. Super technical terms. 
-Examples: tsars, ade, plagioclase, Ilana, Erivo, ctr., -ose, Gaussian distribution, OR docs, meeter, Nomo, Entebbe, Sao, tra-las, cdr.
-1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Info is available on the Internet, but everyone has to look it up.
-Examples: Marli Miller, Cantor Set, six seconds, Three Forks
-0 - Was classified as Invalid
+2.5 - Moderate Recall / Borderline Niche: Recognized by many but not the majority. Slightly niche terms that are familiar but not universal. Passable trivia fodder for a general audience. Less common derivatives. Less common synonyms. Less common single names.
+Examples: udon, e-cig, midis, Elio, accede, event horizon, avow, slier, Emil, disused, REM, acerbic, Alp, b-days, quixotic, cad, Arctic hare
+2 - Limited Familiarity: Known only to a smaller segment of the population. For phrases, people might understand the constituent words, but they are not familiar with the  standalone technical term. Rare names. Abbreviations not often used. Often niche to a specific field. Fodder for tough trivia.
+Examples: Elle, Moondance, Manu, Mekong, persiflage, Mr. Ed, ATCs, moment of inertia, Peak TV, Goa, Emerson, Apso, tatterdemalion, Arctic char
+1.5 - Generally Obscure: Known only in very specific, highly technical, or regional contexts. Too obscure to make good general trivia. Grammatical fragments that are rare. Obscure alternative spellings. Too obscure to make good trivia. Partial phrases that don't stand on their own. Rarely used abbreviations. Verb forms almost never seen.
+Examples: ade, plagioclase, Ilana, Erivo, ctr., -ose, meeter, Nomo, Entebbe, Sao, tra-las, cdr., aqua fortis, iterative deepening
+1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Everyone has to look it up.
+Examples: Marli Miller, Cantor Set, Three Forks
+0 - Not a real thing, couldn't make any sense of the word/phrase.
 
-Step 4: Output
+OUTPUT
 Present each evaluation in the following strict format, without any introductory or auxiliary text:
 
 <original word/phrase> : <written naturally> : <category> (optional base form) : <score>
@@ -53,7 +53,6 @@ Example Outputs:
 quixotic : quixotic : Word : 2.5
 DIVING : diving : Derived Word (dive) : 4
 SNOWFORT : snow fort : Phrase : 3.5
-snow tag : snow tag : Invalid : 0
 ATTN : attn. : Abbreviation : 3
 TRI : tri- : Prefix/Suffix : 3
 OSS : OSS : Acronym : 1.5
@@ -61,7 +60,6 @@ CAMELBAK : Camelbak : Brand Name : 2.5
 WHOOPIGOLDBERG : Whoopi Goldberg : Proper Name : 3.5
 IVE : I've : Word : 4
 CANDIES : candies : Derived Word (candy) : 4
-ALARK : a lark : Partial Phrase : 1.5
 
 Words/phrases to evaluate:
 

@@ -19,16 +19,22 @@ cruzi-db/sql/schema.sql is the source of truth for the database schema.
 import fs from 'fs';
 import {
   getEntriesWithoutIdiomacityTop50,
-  updateEntryIdiomacityResults,
+  upsertEntries,
   addPhraseGeneratorQueueEntries,
   EntryWithoutIdiomacity,
-  EntryIdiomacityResult,
   PhraseGeneratorQueueItem,
 } from 'cruzi-db';
+import { Entry } from 'cruzi-models';
 import { entryToAllCaps, stripAccents } from './lib/utils';
-import { GeminiAiProvider } from './ai/gemini';
+import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 
-const geminiProvider = new GeminiAiProvider();
+const geminiProvider = new GeminiWebAiProvider();
+const MAX_BATCH_RETRIES = 5;
+
+function isGeminiTimeoutError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /timed out/i.test(message);
+}
 
 async function loadIdiomacityPromptAsync(): Promise<string> {
   try {
@@ -161,7 +167,7 @@ async function processBatch(
   }
 
   const matches = matchParsedResultsToEntries(entries, parsedResults);
-  const resultsToPersist: EntryIdiomacityResult[] = [];
+  const resultsToPersist: Entry[] = [];
   const phraseQueueItems: PhraseGeneratorQueueItem[] = [];
 
   for (const match of matches) {
@@ -170,7 +176,7 @@ async function processBatch(
     }
 
     const { entry: entryItem, parsed } = match;
-    const result: EntryIdiomacityResult = {
+    const result: Entry = {
       entry: entryItem.entry,
       lang: entryItem.lang,
       idiomacityScore: parsed.score,
@@ -200,7 +206,7 @@ async function processBatch(
   }
 
   if (resultsToPersist.length > 0) {
-    await updateEntryIdiomacityResults(resultsToPersist);
+    await upsertEntries(resultsToPersist);
     console.log(`Updated idiomacity fields for ${resultsToPersist.length} entries`);
   }
 
@@ -227,10 +233,27 @@ export async function idiomacityGenerator(): Promise<void> {
       batchNumber++;
       console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
 
-      try {
-        await processBatch(entries, promptTemplate);
-      } catch (error) {
-        console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
+      let batchSucceeded = false;
+      for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
+        try {
+          await processBatch(entries, promptTemplate);
+          batchSucceeded = true;
+          break;
+        } catch (error) {
+          if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
+            console.warn(
+              `Gemini timeout processing idiomacity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
+            );
+            continue;
+          }
+
+          console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
+          break;
+        }
+      }
+
+      if (!batchSucceeded) {
+        break;
       }
     }
 
