@@ -5,8 +5,12 @@ import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 import { familiarityGenerator } from './familiarityGenerator';
+import { qualityGenerator } from './qualityGenerator';
 import { idiomacityGenerator } from './idiomacityGenerator';
 import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
+import { scrabbleLoader } from './scrabbleLoader';
+import { displayNameFixer } from './displayNameFixer';
+import { phraseGenerator } from './phraseGenerator';
 
 //entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -40,6 +44,22 @@ import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
 //   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
 //   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
 
-familiarityGenerator()
-  .then(() => console.log("Familiarity generator completed successfully."))
-  .catch(error => console.error("Error in familiarity generator: ", error));
+// familiarityGenerator()
+//   .then(() => console.log("Familiarity generator completed successfully."))
+//   .catch(error => console.error("Error in familiarity generator: ", error));
+
+// qualityGenerator()
+//   .then(() => console.log("Quality generator completed successfully."))
+//   .catch(error => console.error("Error in quality generator: ", error));
+
+// scrabbleLoader()
+//   .then(() => console.log("Scrabble loader completed successfully."))
+//   .catch(error => console.error("Error in scrabble loader: ", error));
+
+// displayNameFixer()
+//   .then(() => console.log("Display name fixer completed successfully."))
+//   .catch(error => console.error("Error in display name fixer: ", error));
+
+phraseGenerator()
+  .then(() => console.log("Phrase generator completed successfully."))
+  .catch(error => console.error("Error in phrase generator: ", error));

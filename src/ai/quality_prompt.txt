@@ -1,74 +1,64 @@
-Rate the quality of words and phrases in the [[LANG]] language.
+TASK
+Evaluate and score the linguistic quality, cultural resonance, and phonetic appeal of [[LANG]] words and phrases on a scale from 0.0 to 5.0.
 
 How to score in practice:
-The default score is a 3 and the score deviates from there based on the following factors. Note that there might be both good and bad factors and that cancel out.
+The baseline score is a 3 and the score deviates from there based on the following factors. Positive and negative factors can cancel each other out.
 
-Desirable qualities that raise the baseline above 3:
-• Sparks joy.
-• Evocative of rich, vivid imagery
-• Is likely to spark conversation, perhaps causing people to tell stories or share opinions.
-• Evokes positive memories, humor, or sensory appeal.
-• Has a unique construction, looks cool, or is fun to say.
-• Alludes to something people find cool.
-• Is interesting, might inspire people to look it up and learn more.
-• Is very topical
+GUIDELINES
+Positive Drivers (add ~0.5 points each):
+• Sparks Joy: Makes people happy upon seeing it.
+• High Evocativeness: Instantly conjures rich imagery, sensory details, humor, or deep nostalgia (e.g., campfire, plot twist).
+• Conversation Sparker: Highly likely to provoke opinions, stories, or cultural discussions.
+• Phonetic/Aesthetic Appeal: Fun to pronounce, musically satisfying, or possesses a unique structural look (e.g., shenanigans, pizzazz, mamby-pamby).
+• Intellectual Stimulation: Fascinating enough to inspire someone to look up its etymology or history.
 
-Qualities that cancel out a desirable quality but don't subtract from the score:
-• Is less than 6 letters long.
-• Is a single word rather than a phrase.
+Negative Drivers (subtract ~0.5 points each)
+• Vulgarity: Contains profanity, crude slang, or highly offensive terms. Negative connotations don't lower the score, but vulgarity does.
+• Awkward Derivation: A derived word variant that is significantly less natural or common than its root (e.g., using slier instead of more sly).
+• Shortcuts: Truncations, acronyms, abbreviations, or contractions that are awkward or unnatural compared to alternative forms (e.g., "ctr." instead of "center").
+• Clunky Phrasing: The phrasing is noticeably worst than a better alternative. (e.g. "water sip" instead of "sip of water")
+• Fragmented/Partial Phrasing: An incomplete segment of a much more common full phrase that is not a common phrasal or modal form. (a lark, run of)
+• Unofficial Phrasing: A proper noun or technical term that is not phrased according to its official title (e.g. "Paris Catacombs" instead of "Catacombs of Paris")
 
-Undesirable qualties that subtract from the baseline (these can stack):
-• Carries a negative connotation or sounds close to a word with negative connotation or a swear word. Subtract .5
-  - If a word has multiple meanings, score based on its most common/neutral usage, but apply the -0.5 penalty if one of the secondary meanings is a common swear or slur.
-• Is a derived word instead of a base word, and the derived word is significantly less common than the base word. Or is a plural where the base word in more common. Subtract .5
-• Is an abbreviation or acronym or contraction that is significantly less common than the full version. Subtract .5
-• Is a partial phrase where the full phrase is much more common. Subtract .5
-• Is a single name, rather than a full name ("Bill" rather than "Bill Gates"). Subtract .5
-• There are better/more common ways to say the same thing. Subtract .5
-• Is a foreign word that's not well known in [[LANG]]. Subract .5
+RUBRIC
+5: Iconic - Linguistically flawless and universally recognized phrases that capture an exact cultural mood, emotion, or vivid image. It's hard to achieve this level.
+Examples: save the date, trick or treat, you had me at hello, the American dream, once upon a time
 
-Rubric:
+4.5: Beloved - Highly evocative, structurally satisfying, or culturally resonant terms that spark distinct positive associations.
+Examples: brainchild, plot twist, comfort food, sibling rivalry, game on!, bromance, brain freeze, mic drop
 
-5: "Iconic" - Embodies almost every desirable quality. It's hard to achieve this level.
-Examples: save the date, trick or treat, you had me at hello, the American dream
+4: Warm - Familiar, pleasant, and highly functional words or phrases slightly elevated above standard prose.
+Examples: cozy, high five, skyscraper, double-check, wedding dress, dill pickle
 
-4.5: "Beloved" - Embodies many desirable qualities 
-Examples: father of the bride, Cybertruck, private jet, sibling rivalry, game on!, bromance
+3.5 Interesting - Contains at least one unique phonetic or conceptual element. Satisfying to encounter, though neutral in emotional weight.
+Examples: hadron, sashay, soufflé, wanderlust, quirk, peak TV, kaleidoscope
 
-4: "Warm" - Embodies some desirable qualities 
-Examples: PJs, wedding dress, dill pickle, thank you, it's a go!, and done!, beat it, on a tear
+3: Nothing special (The Baseline) - Standard, functional language. Possesses no notable positive charm, nor any structural flaws or awkwardness.
+Examples: document, sidewalk, employee, law, orca, cash register, unit, MBA, NATO, Abel
 
-3.5 "Interesting" - Embodies at least one desirable quality
-Examples: hadron, twerps, X-ray lab, madly, sleeping bag, sashay, malaria, dairy farm, souffle, Peak TV
+2.5: Minor Defect (1 Negative Quality) - Slightly awkward, vulgar, or uninspiring.
+Examples: Alp (singular is rare), b-day (lazy truncation), disused (stiff alternative to "unused"), booby hatch (slightly vulgar), oft (stiff and archaic)
 
-3: “Nothing special" - Either have neither positive or negative qualities or has both that are cancelling each other out
-Examples: law, orca, lei, Sony, unit, abuela, MBA, NATO, Goa, burrs, Abel, enamor, herb garden, cash register, ochre
+2: Moderate Defect (2 Negative Qualities) - Noticeably clunky. Combines multiple issues.
+Examples: OR docs (worse than "surgeons" + awkward plural), o-neg (obscure short form of O-negative)
 
-2.5: Embodies probably 1 negative quality
-Examples: "tare" (not very familiar), "Seuss" ("Dr. Seuss" is much better), "puss" (close to "pussy"), "si si" (foreign and not a common contruction), "Alp" ("Alps" is much more common), disused (not very familiar), "b-days" ("birthdays" is better), "slier" (not a common derived form), "Apso" ("Lhasa Apso" is better), "Tasha" (single name), "IRAs" (not common as a plural), "REM" ("REM sleep" is usually said), "sits pat", ("stands pat" is better)
+1.5: Severe Defect (3+ Negative Qualities) - Highly unnatural, fragmented, or archaic phrasing. Heavily compromised by multiple structural or contextual flaws.
+Examples: dept head guy (uncommon abbreviation + clunky alternative + casual phrasing)
 
-2: Embodies multiple negative qualities.
-Examples: "tra-las" ("tra-la" is a rare form, and even less plural), "OR docs" ("OR doc" is worse than "surgeon", and even worse plural), "Sao" (foreign, and also partial for "Sao Paulo"), "oneg" ("O-negative" is better, plus it's an uncommon abbreviation)
+1 Barely Coherent - Syntactically mangled or severely broken fragments that technically exist but sound alien or incorrect to a native speaker.
+Examples: O woe, Can't I?, went and
 
-1.5: 3 or more negative qualities
+0.5: Unused - Anything below 1 scores a 0.
 
-1 Barely coherent. Might feel like a typo or mangled syntax even though it does exist. Might be a partial phrase that makes no sense on its own.
-Examples: O woe, Can't I?
-
-0.5: Unused. Anything below 1 scores a 0.
-
-0: Invalid. Reasons for this classification include:
-  - Misspelled or non-existent words. Examples: "existant", "becuse", "xoner"
-  - Sequences of letters that could not be parsed into anything meaningful. Examples: "xhy", "phofes"
-  - Syntactically correct but semantically unremarkable or non-idiomatic collections of words. Examples: "green paint", "went and", "page dryer"
+0: Invalid - Misspellings, gibberish, incomprehensible input
+Examples: existant (misspelling), xhy (gibberish), greenery paint (incomprehensible)
 
 
-Input will be one word/phrase per line.
-
-Output format is as follows. Stick to the output format and don't include any introductory or auxiliary text.
+OUTPUT
+Provide your evaluation strictly using the format below. Do not include any introductory, explanatory, or auxiliary text outside of this format.
 
 <original word/phrase> : <quality score>
 
-Words/phrases:
+WORDS/PHRASES
 
 [[DATA]]

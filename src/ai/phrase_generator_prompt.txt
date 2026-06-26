@@ -1,65 +1,73 @@
 Alice and Bob are playing a game to see who can come up with the best fill-in-the-blank answers for the following:
 
-"[[QUERY]]" ("[[BASE]]" MUST go at the [[START/END]] of every answer OR be the root word of the [[START/END]] of every answer)
+"[[QUERY]]" ("[[BASE]]" MUST go at the [[START/END]] of every answer)
 
 Before starting the game, each player brainstorms potential answers from each of the following categories:
-Simple prefixes and suffixes. ("hearing" for "hear _____", "pretext" for "_____ text", "endless" for "end _____")
-Phrasal verb forms ("look for" for "look _____", "walk in on" for "walk ______", "in time" for "_____ time")
-Compound words ("snowman" for "snow _____", "showboat" for "____ boat")
-Multi-word phrases ("used car" for "_____ car", "watch your step" for "watch _____", "high five" for "high _____")
-Idioms ("water under the bridge" for "water ____", "sleep like a log" for "sleep _____")
-Proper Names ("Tiger Woods" for "tiger _____", "John Green" for "_____ green")
+- Morphological mutations (Compounds, prefixed/suffixed forms, and derived variations) (e.g. hearing, pretext, endless, turns around). Consider each derived form as a distinct answer for this game.
+- Phrasal verb forms and modal phrases complete with their mandatory prepositions (e.g. look for, walk in on, in time, about to)
+- Multi-word phrases (e.g. used car, watch your step, high five, out of order, up to par, watch the dog)
+- Idioms (e.g. water under the bridge, sleep like a log)
+- Proper Names (e.g. Tiger Woods, John Green, Montana, Betsy)
+- Conversational Phrases: (e.g. "I believe in you", "off to school", "never say never")
 
-To start the game, each player populates a list of 10 answers, chosen draft-style. There can be no duplicates.
+Grammatical structures for phrases:
+Structure 1: [Preposition] + (optional Determiner/Modifier) + [Target Word]    e.g. behind the scenes, under the weather, off the record, in the zone
+Structure 2: [Noun acting as adjective] + [Target Word]     e.g. couch potato, garbage truck, lip gloss
+Structure 3: [Verb] + (optional Pronoun/Determiner/Preposition) + [Target Word]    e.g. don't shoot the messenger, face the music, break the ice, watch your step
+Structure 4: [Noun/Concept] + of + [Target Word] / [Target Word]'s + [Noun]    e.g. rule of thumb, point of view, Achilles' heel 
+Structure 5: [Participle Verb] + [Target Word]          e.g. frozen food, wanted man, missing link, spitting image
+Structure 6: [Adjective] + [Target Word]    e.g. upper hand, blue sky, fast car
 
-The following answers are strictly banned. Note that the list can be large: to help discover allowed answers, look for answers starting with each letter of the alphabet.
+To start the game, each player populates a list of 10 answers, chosen draft-style.
+Some strict rules: 
+- There can be no duplicates used in the entire game. 
+- No more than 4 phrase answers per player with the same grammatical structure (of the 5 structures enumerated above)
+
+Brainstorming guidelines as the players populate their lists.
+- Think about the base word on multiple levels of abstraction:
+  1. Hyper-Literal: What is it made of? Where is it manufactured?
+  2. Functional: What does it do or facilitate?
+  3. Metaphorical/Idiomatic: What does it symbolize?
+  4. Pop Culture/Proper Noun: Who is famously associated with it?
+- Physical object scan: Close your eyes and imagine. Where does the base word appear in your house? In your everyday activities? In your everyday speech patterns?
+- Ask yourself: What is the absolute opposite of this word's core trait? What happens if there is too much of it, or if it is entirely absent?
+- That something appears in the ban list means very likely there are other great related phrases ripe for the picking! Pick three items from the ban list, and find a great related term.
+- If multiple specific items belonging to a single category are banned (e.g., pool noodle, pool float), check if the overarching parent category (e.g., pool toy) is still legally up for grabs.
+- Consider all the separate meanings of the base word, especially if it can be used as different parts of speech.
+- Think how you would use the target word in everyday conversation and generate colloquial phrases from that.
+- Resort to obscure technical terms only as a last resort.
+
+The following list of answers are strictly banned. Note that the list can be large, but that doesn't mean it isn't missing some good, common answers.
 
 (none)
 
 Then the gameplay continues by turns according to the following rules:
-Alice goes first.
-At the start of each turn
-Both players compare lists.
-The player on turn must steal an answer from their opponent's list and add it to their own list, discarding an answer.
-Their opponent must then must come up with a new answer to replace the one stolen.
-At no point can there be duplicate answers in a player's list, and discarded answers cannot be reused.
+Alice goes first and the players alternate turns.
+On each turn:
+1. The active player steals an answer from their opponent's list, adding it to their own list.
+2. The active player discards an answer from their own list.
+3. The active player generates a new answer and adds it to their own list.
+At no point can there be duplicate answers, and discarded answers cannot be reused.
 After 10 turns, each player's final list is evaluated by a judge and by the audience according to the given guidelines.
 
 Guidelines:
-The filling word(s) must blend with the base word to form a single lexical unit, a cohesive specific concept, rather than just two words next to each other. E.g. "green paint" and "big sign" are too general and simply descriptive.
-The form together with the base word should be the lexically preferred way to say that thing. E.g. "hearse vehicle is grammatically correct but "hearse" by itself is lexically preferred. Sometimes there are multiple forms that are equally natural (e.g. "hybrid" and "hybrid vehicle") and these will be allowed.
-The result is a syntactically and idiomatically natural, standard, technical, or colloquial term (e.g., spray paint, watch your step, porta-john). 
-The audience rewards the most top-of-mind answers that the their mind will jump to. (Family Feud style). The audience will reject answers that are so obscure that nobody has heard of them. Especially include any suffixes/prefixes and phrasal verb forms.
-Include any colloquial and entertaining terms that the audience will appreciate.
-The dominant phrase reins supreme. If a term technically fits but a highly related variation is more common, idiomatic, stylized, or universally recognized, the player is penalized for missing the mark. E.g. "HAZMAT vehicle" over "hazardous vehicle". "Hi-rail vehicle" over "high-rail vehicle".
+- The filling word(s) must blend with the base word to form a single lexical unit, a cohesive specific concept, rather than just two words next to each other. E.g. "green paint" and "big sign" are too general and simply descriptive.
+- The form together with the base word should be the lexically preferred way to say that thing. E.g. "hearse vehicle is grammatically correct but "hearse" by itself is lexically preferred. Sometimes there are multiple forms that are equally natural (e.g. "hybrid" and "hybrid vehicle") and these will be allowed.
+- The result is a syntactically and idiomatically natural, standard, technical, or colloquial term (e.g., spray paint, watch your step, porta-john). 
+- The audience rewards the most top-of-mind answers that the their mind will jump to. (Family Feud style). Especially colloquial and entertaining terms.
+- Bonus points are awarded for 'Universal Anchor Phrases'—terms that are so universally recognized that 95% of English speakers encounter them weekly. If you hold one of these at the end of the game, its point value triples.
+- The dominant phrase reins supreme. If a term technically fits but a highly related variation is more common, idiomatic, stylized, or universally recognized, the player is penalized for missing the mark. E.g. "HAZMAT vehicle" over "hazardous vehicle". "Porta-potty" over "portable toilet".
 
 Simulate a playing of this game, showing both players' lists after each turn. Keep in mind that both Alice and Bob are extremely skilled and competitve players. Their lists will start extremely strong. They will refuse to fall behind and will rack their brains thinking through every niche of the language to find new spectacular terms.
 
-At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary. DO include the base word at the start or end.
+Finally, a chance for a little extra creativity. For each word or phrase utilized, provide a supplemental word or phrase relating to that term. The supplemental word or phrase must follow the same guidelines as all other answers. This supplemental phrase can be:
+- Priority 1, if it's different than the origianl phrase: The most natural variation in the phrasing of the original phrase. For example, "Pacific Garbage Patch" -> "Great Pacific Garbage Patch", "about to go down" -> "it's about to go down".
+- What the phrase makes the audience also think of naturally.
+- A different phrase that shares the structure of the original phrase, with one word changed.
 
-Finally, a chance for a little extra creativity. For each word or phrase utilized, provide a supplemental word or phrase relating to that term and that follows the guidelines. Rules for this phrase:
-- It could be simply adding a word to the front or end of the original phrase.
-- It could be a more natural variation in the phrasing of the original phrase.
-- It could be a member of the same category as the original phrase.
-- It could be from the same field as the original phrase.
-
-Alice's brainstorming
-Simple prefixes and suffixes: <comma separated list>
-Phrasal verb forms: <comma separated list>
-Compound words: <comma separated list>
-Multi-word phrases: <comma separated list>
-Idioms: <comma separated list>
-Proper Names: <comma separated list>
-
-Bob's brainstorming:
-Simple prefixes and suffixes: <comma separated list>
-Phrasal verb forms: <comma separated list>
-Compound words: <comma separated list>
-Multi-word phrases: <comma separated list>
-Idioms: <comma separated list>
-Proper Names: <comma separated list>
+At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary. DO include the base word in the answers. Write the answers in natural English, only capitalizing where it's natural to do so.
 
 All Full Words/Phrases Utilized:
 <Alice's starting list, one item per line> : <supplemental word/phrase>
 <Bob's starting list, one item per line> : <supplemental word/phrase>
-<All items that were used to replace a stolen item, one per line> : <supplemental word/phrase>
+<Newly generated items, one per line> : <supplemental word/phrase>

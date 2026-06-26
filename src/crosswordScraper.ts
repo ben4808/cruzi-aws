@@ -59,13 +59,12 @@ const puzzleSources = [
   PuzzleSources.Sporcle,
 ] as PuzzleSource[];
 
-const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'LAT', 'PeoplePuzzler']);
+const PUPPETEER_SOURCE_IDS = new Set(['BEQ', 'Croce', 'PeoplePuzzler']);
 const PUZ_FILE_SOURCE_IDS = new Set([
   'BEQ',
   'BestCrosswords',
   'Croce',
   'Jonesin',
-  'LAT',
   'Universal',
   'UniversalSunday',
   'WashingtonPost',

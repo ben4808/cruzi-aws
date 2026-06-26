@@ -28,4 +28,5 @@ settings.json
 aws/settings.json
 .env
 .gemini-user-data
+.gemini-user-data*
 .serverless/*

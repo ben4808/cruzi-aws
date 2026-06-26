@@ -1,13 +1,10 @@
 /*
 Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that do not have a familiarity score and have no entry_tags records.
-2. For each entry, generate a prompt using the familiarity_prompt.txt file. Send the prompt to Gemini (using GeminiWebAiProvider)
-   and get the response.
-3. Update a few fields in the entry table with the results:
-    - familiarity_score (save as the returned score * 10 to fit in an integer column)
-    - upsert display_text to the parsed form in the response
-    - upsert entry_type to the parsed category in the response
-    - upsert root_entry to the parsed base form in the response, in the case of derived words or derived phrases
+1. Select the first 50 entries from the entry table that do not have a quality score, have no entry_tags records, and have display_text populated.
+2. For each entry, generate a prompt using the quality_prompt.txt file. Use the display_text field as the input.
+3. Send the prompt to Gemini (using GeminiWebAiProvider) and get the response.
+4. Update the quality_score field in the entry table with the results.
+5. Use the runPauseCycle to pause for 1 hour every 2 hours.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -16,19 +13,19 @@ Keep these requirements in the file.
 */
 
 import {
-  getEntriesWithoutFamiliarityTop50,
+  getEntriesWithoutQualityTop50,
   upsertEntries,
-  EntryWithoutFamiliarity,
+  EntryWithoutQuality,
 } from 'cruzi-db';
 import { Entry, LanguageNames } from 'cruzi-models';
-import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './ai/common';
+import { loadQualityPromptAsync, parseQualityResponse } from './ai/common';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import {
   getRunPhaseDeadline,
   isRunPhaseActive,
   pauseBetweenRunPhases,
 } from './lib/runPauseCycle';
-import { entryToAllCaps, stripAccents } from './lib/utils';
+import { entryToAllCaps } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
 const MAX_BATCH_RETRIES = 5;
@@ -38,10 +35,14 @@ function isGeminiTimeoutError(error: unknown): boolean {
   return /timed out/i.test(message);
 }
 
+function promptTextForEntry(entryItem: EntryWithoutQuality): string {
+  return entryItem.displayText;
+}
+
 function groupEntriesByLang(
-  entries: EntryWithoutFamiliarity[],
-): Map<string, EntryWithoutFamiliarity[]> {
-  const byLang = new Map<string, EntryWithoutFamiliarity[]>();
+  entries: EntryWithoutQuality[],
+): Map<string, EntryWithoutQuality[]> {
+  const byLang = new Map<string, EntryWithoutQuality[]>();
   for (const entryItem of entries) {
     const items = byLang.get(entryItem.lang) ?? [];
     items.push(entryItem);
@@ -51,24 +52,28 @@ function groupEntriesByLang(
 }
 
 function matchParsedResultsToEntries(
-  entries: EntryWithoutFamiliarity[],
-  parsedResults: ReturnType<typeof parseFamiliarityResponse>,
-): Array<{ entry: EntryWithoutFamiliarity; parsed: (typeof parsedResults)[number] } | null> {
+  entries: EntryWithoutQuality[],
+  parsedResults: ReturnType<typeof parseQualityResponse>,
+): Array<{ entry: EntryWithoutQuality; parsed: (typeof parsedResults)[number] } | null> {
   const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: EntryWithoutFamiliarity; parsed: (typeof parsedResults)[number] } | null> = [];
+  const matches: Array<{ entry: EntryWithoutQuality; parsed: (typeof parsedResults)[number] } | null> = [];
 
   for (const entryItem of entries) {
+    const promptText = promptTextForEntry(entryItem);
+
     let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryItem.entry,
+      (parsed) => parsed.displayText === promptText,
     );
 
     if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex((parsed) => parsed.entry === entryItem.entry);
+      matchIndex = unmatchedParsed.findIndex(
+        (parsed) => entryToAllCaps(parsed.entry) === entryItem.entry,
+      );
     }
 
     if (matchIndex === -1) {
       matchIndex = unmatchedParsed.findIndex(
-        (parsed) => parsed.entry.toLowerCase() === entryItem.entry.toLowerCase(),
+        (parsed) => parsed.displayText.toLowerCase() === promptText.toLowerCase(),
       );
     }
 
@@ -89,29 +94,29 @@ function matchParsedResultsToEntries(
 }
 
 async function processLangGroup(
-  entries: EntryWithoutFamiliarity[],
+  entries: EntryWithoutQuality[],
   promptTemplate: string,
 ): Promise<void> {
   const lang = entries[0].lang;
   const langName = LanguageNames[lang] ?? lang;
-  const promptData = entries.map((entry) => entry.entry).join('\n');
+  const promptData = entries.map((entry) => promptTextForEntry(entry)).join('\n');
   const prompt = promptTemplate.replace(/\[\[LANG\]\]/g, langName).replace('[[DATA]]', promptData);
 
-  console.log(`Sending familiarity prompt for ${entries.length} ${lang} entries`);
+  console.log(`Sending quality prompt for ${entries.length} ${lang} entries`);
   const aiResponse = await geminiProvider.generateResultsAsync(prompt);
-  console.log(`Received familiarity response for ${lang} batch (${aiResponse.length} characters)`);
+  console.log(`Received quality response for ${lang} batch (${aiResponse.length} characters)`);
 
-  const parsedResults = parseFamiliarityResponse(aiResponse);
-  console.log(`Parsed ${parsedResults.length} familiarity results from ${lang} response`);
+  const parsedResults = parseQualityResponse(aiResponse);
+  console.log(`Parsed ${parsedResults.length} quality results from ${lang} response`);
 
   if (parsedResults.length === 0) {
-    console.warn(`No familiarity results parsed for ${lang}; skipping batch update`);
+    console.warn(`No quality results parsed for ${lang}; skipping batch update`);
     return;
   }
 
   if (parsedResults.length !== entries.length) {
     console.warn(
-      `Expected ${entries.length} familiarity results for ${lang} but parsed ${parsedResults.length}`,
+      `Expected ${entries.length} quality results for ${lang} but parsed ${parsedResults.length}`,
     );
   }
 
@@ -127,27 +132,24 @@ async function processLangGroup(
     const result: Entry = {
       entry: entryItem.entry,
       lang: entryItem.lang,
-      familiarityScore: parsed.familiarityScore,
-      displayText: stripAccents(parsed.displayText),
-      entryType: parsed.entryType,
-      rootEntry: parsed.baseForm || undefined,
+      qualityScore: parsed.qualityScore,
     };
 
     resultsToPersist.push(result);
 
     console.log(
-      `Processed ${entryItem.entry} (${entryItem.lang}): score=${parsed.familiarityScore / 10}, category=${parsed.entryType}, form=${parsed.displayText}${parsed.baseForm ? `, base=${parsed.baseForm}` : ''}`,
+      `Processed ${entryItem.entry} (${entryItem.lang}): quality=${parsed.qualityScore / 10}`,
     );
   }
 
   if (resultsToPersist.length > 0) {
     await upsertEntries(resultsToPersist);
-    console.log(`Updated familiarity fields for ${resultsToPersist.length} ${lang} entries`);
+    console.log(`Updated quality fields for ${resultsToPersist.length} ${lang} entries`);
   }
 }
 
 async function processBatch(
-  entries: EntryWithoutFamiliarity[],
+  entries: EntryWithoutQuality[],
   promptTemplate: string,
 ): Promise<void> {
   const entriesByLang = groupEntriesByLang(entries);
@@ -157,21 +159,21 @@ async function processBatch(
   }
 }
 
-export async function familiarityGenerator(): Promise<void> {
+export async function qualityGenerator(): Promise<void> {
   try {
-    console.log('Starting familiarity generation (2h run / 2h pause cycle)...');
+    console.log('Starting quality generation (2h run / 1h pause cycle)...');
 
-    const promptTemplate = await loadFamiliarityPromptAsync();
+    const promptTemplate = await loadQualityPromptAsync();
     let batchNumber = 0;
 
     while (true) {
       const runDeadline = getRunPhaseDeadline();
-      console.log('Starting familiarity run phase (2 hours)...');
+      console.log('Starting quality run phase (2 hours)...');
 
       while (isRunPhaseActive(runDeadline)) {
-        const entries = await getEntriesWithoutFamiliarityTop50();
+        const entries = await getEntriesWithoutQualityTop50();
         if (entries.length === 0) {
-          console.log('No entries remaining without familiarity scores; ending run phase early');
+          console.log('No entries remaining without quality scores; ending run phase early');
           break;
         }
 
@@ -187,12 +189,12 @@ export async function familiarityGenerator(): Promise<void> {
           } catch (error) {
             if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
               console.warn(
-                `Gemini timeout processing familiarity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
+                `Gemini timeout processing quality batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
               );
               continue;
             }
 
-            console.error(`Error processing familiarity batch ${batchNumber}:`, error);
+            console.error(`Error processing quality batch ${batchNumber}:`, error);
             break;
           }
         }
@@ -202,10 +204,10 @@ export async function familiarityGenerator(): Promise<void> {
         }
       }
 
-      await pauseBetweenRunPhases('Familiarity generator');
+      await pauseBetweenRunPhases('Quality generator');
     }
   } catch (error) {
-    console.error('Fatal error in familiarityGenerator:', error);
+    console.error('Fatal error in qualityGenerator:', error);
     throw error;
   }
 }

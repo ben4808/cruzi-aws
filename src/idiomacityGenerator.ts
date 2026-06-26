@@ -16,7 +16,6 @@ All database operations should be done through Postgre functions in the cruzi-db
 cruzi-db/sql/schema.sql is the source of truth for the database schema.
 */
 
-import fs from 'fs';
 import {
   getEntriesWithoutIdiomacityTop50,
   upsertEntries,
@@ -25,8 +24,21 @@ import {
   PhraseGeneratorQueueItem,
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
-import { entryToAllCaps, stripAccents } from './lib/utils';
+import {
+  getRunPhaseDeadline,
+  isRunPhaseActive,
+  pauseBetweenRunPhases,
+} from './lib/runPauseCycle';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
+import {
+  loadIdiomacityPromptAsync,
+  matchIdiomacityResultsToPhrases,
+  parseIdiomacityResponse,
+  ParsedIdiomacityResult,
+} from './ai/phraseScoring';
+
+export type { ParsedIdiomacityResult };
+export { parseIdiomacityResponse };
 
 const geminiProvider = new GeminiWebAiProvider();
 const MAX_BATCH_RETRIES = 5;
@@ -36,109 +48,23 @@ function isGeminiTimeoutError(error: unknown): boolean {
   return /timed out/i.test(message);
 }
 
-async function loadIdiomacityPromptAsync(): Promise<string> {
-  try {
-    const promptPath = './src/ai/phrase_idiomacity_prompt.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
-  } catch (err) {
-    console.error('Error reading idiomacity prompt file:', err);
-    throw err;
-  }
-}
-
-export interface ParsedIdiomacityResult {
-  parsedForm: string;
-  category: string;
-  score: number;
-}
-
-export function parseIdiomacityResponse(response: string): ParsedIdiomacityResult[] {
-  const summaryIndex = response.indexOf('SUMMARY:');
-  if (summaryIndex === -1) {
-    return [];
-  }
-
-  const summaryText = response.slice(summaryIndex + 'SUMMARY:'.length);
-  const lines = summaryText.split('\n').map((line) => line.trim()).filter((line) => line !== '');
-
-  const results: ParsedIdiomacityResult[] = [];
-  for (const line of lines) {
-    const parts = line.split(' : ').map((part) => part.trim());
-    if (parts.length < 3) {
-      continue;
-    }
-
-    const score = parseInt(parts[2], 10);
-    if (Number.isNaN(score)) {
-      continue;
-    }
-
-    results.push({
-      parsedForm: parts[0],
-      category: parts[1],
-      score,
-    });
-  }
-
-  return results;
-}
-
 function getPromptText(item: EntryWithoutIdiomacity): string {
   return item.display_text ?? item.entry;
-}
-
-function normalizeForEntryMatch(text: string): string {
-  return entryToAllCaps(stripAccents(text));
 }
 
 function matchParsedResultsToEntries(
   entries: EntryWithoutIdiomacity[],
   parsedResults: ParsedIdiomacityResult[],
 ): Array<{ entry: EntryWithoutIdiomacity; parsed: ParsedIdiomacityResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: EntryWithoutIdiomacity; parsed: ParsedIdiomacityResult } | null> = [];
+  const phrases = entries.map(getPromptText);
+  const phraseMatches = matchIdiomacityResultsToPhrases(phrases, parsedResults);
 
-  for (const entryItem of entries) {
-    const promptText = getPromptText(entryItem);
-    const entryNormalized = normalizeForEntryMatch(entryItem.entry);
-
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.parsedForm) === entryItem.entry,
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForEntryMatch(parsed.parsedForm) === entryNormalized,
-      );
+  return phraseMatches.map((match, index) => {
+    if (!match) {
+      return null;
     }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => parsed.parsedForm.toLowerCase() === promptText.toLowerCase(),
-      );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) =>
-          stripAccents(parsed.parsedForm).toLowerCase() === stripAccents(promptText).toLowerCase(),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry: entryItem, parsed });
-  }
-
-  return matches;
+    return { entry: entries[index], parsed: match.parsed };
+  });
 }
 
 async function processBatch(
@@ -218,46 +144,51 @@ async function processBatch(
 
 export async function idiomacityGenerator(): Promise<void> {
   try {
-    console.log('Starting idiomacity generation...');
+    console.log('Starting idiomacity generation (2h run / 2h pause cycle)...');
 
     const promptTemplate = await loadIdiomacityPromptAsync();
     let batchNumber = 0;
 
     while (true) {
-      const entries = await getEntriesWithoutIdiomacityTop50();
-      if (entries.length === 0) {
-        console.log('No entries remaining without idiomacity scores');
-        break;
-      }
+      const runDeadline = getRunPhaseDeadline();
+      console.log('Starting idiomacity run phase (2 hours)...');
 
-      batchNumber++;
-      console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
-
-      let batchSucceeded = false;
-      for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
-        try {
-          await processBatch(entries, promptTemplate);
-          batchSucceeded = true;
+      while (isRunPhaseActive(runDeadline)) {
+        const entries = await getEntriesWithoutIdiomacityTop50();
+        if (entries.length === 0) {
+          console.log('No entries remaining without idiomacity scores; ending run phase early');
           break;
-        } catch (error) {
-          if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
-            console.warn(
-              `Gemini timeout processing idiomacity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
-            );
-            continue;
-          }
+        }
 
-          console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
+        batchNumber++;
+        console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
+
+        let batchSucceeded = false;
+        for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
+          try {
+            await processBatch(entries, promptTemplate);
+            batchSucceeded = true;
+            break;
+          } catch (error) {
+            if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
+              console.warn(
+                `Gemini timeout processing idiomacity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
+              );
+              continue;
+            }
+
+            console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
+            break;
+          }
+        }
+
+        if (!batchSucceeded) {
           break;
         }
       }
 
-      if (!batchSucceeded) {
-        break;
-      }
+      await pauseBetweenRunPhases('Idiomacity generator');
     }
-
-    console.log('Idiomacity generation completed');
   } catch (error) {
     console.error('Fatal error in idiomacityGenerator:', error);
     throw error;
