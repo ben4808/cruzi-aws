@@ -33,8 +33,7 @@ async function scrapeLatestBeqPost(): Promise<{ postInfo: BeqPostInfo; blob: Blo
       if (entryContent) {
         for (const link of Array.from(entryContent.querySelectorAll('a'))) {
           const href = link.getAttribute('href');
-          const text = link.textContent?.trim().toUpperCase() ?? '';
-          if (href?.endsWith('.puz') && text.includes('ACROSS LITE')) {
+          if (href && /\.puz$/i.test(href)) {
             acrossLiteUrl = href;
             break;
           }
@@ -60,7 +59,7 @@ async function scrapeLatestBeqPost(): Promise<{ postInfo: BeqPostInfo; blob: Blo
     }
 
     if (!postInfo.acrossLiteUrl) {
-      console.log(`BEQ: No Across Lite link found for "${postInfo.title}".`);
+      console.log(`BEQ: No .puz link found for "${postInfo.title}".`);
       return null;
     }
 

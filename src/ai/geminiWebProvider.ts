@@ -61,9 +61,9 @@ const MODEL_SELECTOR_SELECTORS = [
 const RESPONSE_STABLE_POLLS = 4;
 const RESPONSE_POLL_INTERVAL_MS = 800;
 const STANDARD_RESPONSE_APPEAR_TIMEOUT_MS = 120_000;
-const EXTENDED_RESPONSE_APPEAR_TIMEOUT_MS = 600_000;
-const STANDARD_GENERATION_TIMEOUT_MS = 600_000;
-const EXTENDED_GENERATION_TIMEOUT_MS = 600_000;
+const EXTENDED_RESPONSE_APPEAR_TIMEOUT_MS = 300_000;
+const STANDARD_GENERATION_TIMEOUT_MS = 300_000;
+const EXTENDED_GENERATION_TIMEOUT_MS = 300_000;
 const PUPPETEER_OPERATION_TIMEOUT_MS = EXTENDED_GENERATION_TIMEOUT_MS;
 
 const GENERATING_INDICATOR_SELECTORS = [
@@ -267,9 +267,43 @@ async function ensureGeminiLogin(page: Page): Promise<void> {
   }
 }
 
+function stripGeminiWebUiChrome(text: string): string {
+  return text.replace(/^Gemini said\s*\n?/i, '').trim();
+}
+
 async function getLatestResponseText(page: Page): Promise<string> {
-  return page.evaluate((selectors) => {
-    let bestText = '';
+  const rawText = await page.evaluate((selectors) => {
+    const blockTags = new Set([
+      'P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+      'PRE', 'BLOCKQUOTE', 'TR', 'SECTION', 'ARTICLE',
+    ]);
+
+    function extractPlainTextWithLineBreaks(element: Element): string {
+      function walk(node: Node): string {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return node.textContent ?? '';
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return '';
+        }
+
+        const el = node as Element;
+        if (el.tagName === 'BR') {
+          return '\n';
+        }
+
+        let text = '';
+        for (const child of Array.from(el.childNodes)) {
+          text += walk(child);
+        }
+        if (blockTags.has(el.tagName) && text.length > 0) {
+          text += '\n';
+        }
+        return text;
+      }
+
+      return walk(element).replace(/\n{3,}/g, '\n\n').trim();
+    }
 
     for (const selector of selectors) {
       const nodes = document.querySelectorAll(selector);
@@ -277,14 +311,20 @@ async function getLatestResponseText(page: Page): Promise<string> {
         continue;
       }
 
-      const text = nodes[nodes.length - 1].textContent?.trim() ?? '';
-      if (text.length > bestText.length) {
-        bestText = text;
+      const element = nodes[nodes.length - 1];
+      const text =
+        element instanceof HTMLElement && element.innerText.trim().length > 0
+          ? element.innerText.trim()
+          : extractPlainTextWithLineBreaks(element);
+      if (text.length > 0) {
+        return text;
       }
     }
 
-    return bestText;
+    return '';
   }, RESPONSE_SELECTORS);
+
+  return stripGeminiWebUiChrome(rawText);
 }
 
 async function isResponseGenerating(page: Page): Promise<boolean> {
@@ -534,6 +574,11 @@ async function logGeminiModelExpectation(
   );
 }
 
+function isResponseWaitTimeoutError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /timed out/i.test(message);
+}
+
 class GeminiWebSession {
   private browsers: Partial<Record<GeminiWebThinkingLevel, Browser>> = {};
   private pages: Partial<Record<GeminiWebThinkingLevel, Page>> = {};
@@ -585,24 +630,61 @@ class GeminiWebSession {
     console.log(`Gemini web session ready for ${thinkingLevel} profile`);
   }
 
+  private async restartBrowser(thinkingLevel: GeminiWebThinkingLevel): Promise<void> {
+    console.log(`Restarting Gemini web browser for ${thinkingLevel} profile...`);
+
+    await this.pages[thinkingLevel]?.close().catch(() => undefined);
+    await this.browsers[thinkingLevel]?.close().catch(() => undefined);
+
+    delete this.browsers[thinkingLevel];
+    delete this.pages[thinkingLevel];
+    delete this.pageSetup[thinkingLevel];
+  }
+
+  private async generateOnce(
+    prompt: string,
+    thinkingLevel: GeminiWebThinkingLevel,
+    timeouts: GeminiWebTimeouts,
+    attempt: number,
+  ): Promise<string> {
+    const page = await this.ensurePage(thinkingLevel);
+
+    await startNewChat(page);
+
+    const editorSelector = await waitForAnySelector(page, EDITOR_SELECTORS, 30_000);
+
+    await setEditorText(page, editorSelector, prompt);
+    await sleep(300);
+    await submitPrompt(page);
+
+    console.log(
+      `Waiting up to ${timeouts.generationTimeoutMs / 1000}s for Gemini ${thinkingLevel} Flash response (attempt ${attempt})...`,
+    );
+    return waitForGeminiResponse(page, timeouts.generationTimeoutMs);
+  }
+
   async generate(prompt: string, thinkingLevel: GeminiWebThinkingLevel): Promise<string> {
     const queue = this.operationQueues[thinkingLevel] ?? Promise.resolve();
     const run = async (): Promise<string> => {
-      const page = await this.ensurePage(thinkingLevel);
       const timeouts = timeoutsForThinkingLevel(thinkingLevel);
+      const maxAttempts = 2;
 
-      await startNewChat(page);
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await this.generateOnce(prompt, thinkingLevel, timeouts, attempt);
+        } catch (error) {
+          if (!isResponseWaitTimeoutError(error) || attempt >= maxAttempts) {
+            throw error;
+          }
 
-      const editorSelector = await waitForAnySelector(page, EDITOR_SELECTORS, 30_000);
+          console.warn(
+            `Gemini ${thinkingLevel} response timed out after ${timeouts.generationTimeoutMs / 1000}s (attempt ${attempt}/${maxAttempts}); restarting browser and retrying...`,
+          );
+          await this.restartBrowser(thinkingLevel);
+        }
+      }
 
-      await setEditorText(page, editorSelector, prompt);
-      await sleep(300);
-      await submitPrompt(page);
-
-      console.log(
-        `Waiting up to ${timeouts.generationTimeoutMs / 1000}s for Gemini ${thinkingLevel} Flash response...`,
-      );
-      return waitForGeminiResponse(page, timeouts.generationTimeoutMs);
+      throw new Error('Gemini web generate failed after browser restart retry');
     };
 
     const result = queue.then(run);

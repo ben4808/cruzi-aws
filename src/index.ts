@@ -12,9 +12,9 @@ import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
 import { phraseGenerator } from './phraseGenerator';
 
-//entryInfoGenerator()
-//  .then(() => console.log("Entry info generator completed successfully."))
-//  .catch(error => console.error("Error in entry info generator: ", error));
+entryInfoGenerator()
+ .then(() => console.log("Entry info generator completed successfully."))
+ .catch(error => console.error("Error in entry info generator: ", error));
 
 //exampleSentenceGenerator()
 //  .then(() => console.log("Example sentence generator completed successfully."))
@@ -60,6 +60,6 @@ import { phraseGenerator } from './phraseGenerator';
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-phraseGenerator()
-  .then(() => console.log("Phrase generator completed successfully."))
-  .catch(error => console.error("Error in phrase generator: ", error));
+// phraseGenerator()
+//   .then(() => console.log("Phrase generator completed successfully."))
+//   .catch(error => console.error("Error in phrase generator: ", error));

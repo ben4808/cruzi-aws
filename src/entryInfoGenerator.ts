@@ -1,19 +1,7 @@
-import fs from 'fs';
-import { getEntryInfoQueueTop10, upsertEntryInfo, addExampleSentenceQueueEntries, insertEntries, EntryInsertData, addSenseEntryTranslations, SenseEntryTranslationData, assignPrimarySenseToClues } from 'cruzi-db';
-import { Entry, EntryRef, EntryTranslation, Sense } from 'cruzi-models';
-import { GeminiAiProvider } from './ai/gemini';
-import { displayTextToEntry, generateId } from './lib/utils';
-
-const geminiProvider = new GeminiAiProvider();
-
 /**
-This script should be written in Node.js/TypeScript.
-
-Tasks:
-1. Query the database for the top 10 entries in the entry_info_queue table.
-  - Use DAO function get_entry_info_queue_top_10()
-  - Entries should be removed from the queue after being selected.
-  - Output will be in the following structure:
+Loop through the following tasks until the queue is empty:
+1. Query the database for the top entry in the entry_info_queue table.
+  - Response will be in the following JSON structure:
   [
     {
       entry: string,
@@ -27,28 +15,53 @@ Tasks:
     },
     ...
   ]
-2. Using the prompt in senses_prompt.txt, send a request to the Gemini 2.5 API to generate senses for the entry.
-  - Include the summaries of the existing senses for the entry in the prompt.
+2. Using the prompt in senses_prompt.txt, send a request to Gemini (using the geminiWebProvider non-extended) to generate senses for the entry.
+  - Include the summaries of the existing senses as the REFERENCE_SENSES, one per line.
 3. Update the database with the info returned from the API.
-  - Use the DAO function upsert_entry_info(entry: string, senses: Sense[])
-  - The info should be updated whether or not the senses already existed. If the sense is referenced to an existing
-    sense, that sense ID should be conserved.
+  - The senses should be updated whether or not they already existed. If the sense is referenced to an existing
+    sense, that sense ID should be conserved even as the summary etc. are updated.
   - The status of the entry should be updated. If everything was successful, the status should be set to 'Ready'. If there was an error,
-    the status should be set to 'Error'. If there were no senses returned, the status should be set to 'Invalid'.
+    the status should be set to 'Error'. If there were no senses returned ("Nonsense"), the status should be set to 'Invalid'.
 4. For any returned senses, existing or new, that have less than 3 example sentences, add the sense to the example_sentence_queue table.
-  - Use the DAO function add_example_sentence_queue_entry(sense_id: string)
   - Set the status of the entry back to 'Processing'.
 5. Query for any clues in the database with the specified entry and no sense_id or custom_clue. Assign these clues the sense_id that was determined as Primary.
   - Use the DAO function assign_primary_sense_to_clues(entry: string, lang: string, primary_sense_id: string)
+6. Remove the entry from the queue after being successfully processed.
+
+Use the runPauseCycle to pause for 1 hour every 2 hours.
+Output messages to the console updating all progress.
+All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Sense summary and definition are stored directly on the sense row. Natural and colloquial translations are stored in sense_entry_translation; alternatives are stored in sense.similar_entries.
+cruzi-db/sql/schema.sql is the source of truth for the database schema. 
+Keep these requirements in the file.
  */
+
+import fs from 'fs';
+import {
+  getEntryInfoQueueTop1,
+  upsertSense,
+  updateEntriesLoadingStatus,
+  addExampleSentenceQueueEntries,
+  assignPrimarySenseToClues,
+  getSensesForEntry,
+  removeFromEntryInfoQueue,
+  EntryInfoQueueItem,
+  ExistingSenseInfo,
+} from 'cruzi-db';
+import { EntryRef, LanguageNames, Sense } from 'cruzi-models';
+import { GeminiWebAiProvider } from './ai/geminiWebProvider';
+import {
+  getRunPhaseDeadline,
+  isGeminiTimeoutError,
+  isRunPhaseActive,
+  pauseBetweenRunPhases,
+} from './lib/runPauseCycle';
+import { displayTextToEntry, generateId } from './lib/utils';
+
+const geminiProvider = new GeminiWebAiProvider();
 
 async function loadSensesPromptAsync(): Promise<string> {
   try {
-    // In Lambda environment, files are relative to the handler location in dist/
-    const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    //const promptPath = isLambda ? './ai/senses_prompt.txt' : './src/ai/senses_prompt.txt';
-    const promptPath = './src/ai/senses_prompt.txt';
-    const content: string = await fs.promises.readFile(promptPath, 'utf-8');
+    const content: string = await fs.promises.readFile('./src/ai/senses_prompt.txt', 'utf-8');
     return content;
   } catch (err) {
     console.error('Error reading senses prompt file:', err);
@@ -58,305 +71,371 @@ async function loadSensesPromptAsync(): Promise<string> {
 
 interface ParsedSense {
   partOfSpeech: string;
-  commonness: string;
+  classification: string;
+  frequency: string;
   summary: string;
   definition: string;
   naturalTranslations: string[];
   colloquialTranslations: string[];
   alternatives: string[];
-  correspondsWith?: string;
+  correspondingExistingSense?: string;
+}
+
+const TRANSLATION_FIELD_PREFIX_REGEX = /^(?:Natural|Colloquial|Alternatives)\s*:\s*/i;
+
+function splitTranslationList(text: string): string[] {
+  const withoutLabel = text.replace(TRANSLATION_FIELD_PREFIX_REGEX, '').replace(/^:\s*/, '').trim();
+  return withoutLabel.split(';').map((t) => t.trim()).filter((t) => t !== '' && t.toLowerCase() !== '(none)');
+}
+
+// Header includes short description and colon so "(None)" / in-definition "(Noun, Word, Primary)" cannot false-match.
+const SENSE_HEADER_REGEX =
+  /\(([^,\n)]+),\s*([^,\n)]+),\s*(Primary|Common|Uncommon)\)\s+([^:\n]+?)\s*:\s*/g;
+
+const SENSE_FIELD_LABELS = [
+  'Natural',
+  'Colloquial',
+  'Alternatives',
+  'Corresponding existing sense',
+] as const;
+
+function extractLabeledField(
+  text: string,
+  label: string,
+  followingLabels: readonly string[],
+): string | undefined {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nextLabelPattern = followingLabels
+    .map((nextLabel) => nextLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const boundary = nextLabelPattern.length > 0 ? `(?=(?:${nextLabelPattern}):)` : '$';
+  const regex = new RegExp(`${escapedLabel}\\s*:\\s*([\\s\\S]*?)${boundary}`);
+  const match = text.match(regex);
+  return match?.[1]?.trim();
+}
+
+function parseSenseBlock(
+  partOfSpeech: string,
+  classification: string,
+  frequency: string,
+  summary: string,
+  blockContent: string,
+): ParsedSense | null {
+  const naturalIndex = blockContent.search(/Natural:/);
+  const definition = (naturalIndex === -1 ? blockContent : blockContent.slice(0, naturalIndex))
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const naturalText = extractLabeledField(blockContent, 'Natural', SENSE_FIELD_LABELS.slice(1));
+  const colloquialText = extractLabeledField(blockContent, 'Colloquial', SENSE_FIELD_LABELS.slice(2));
+  const alternativesText = extractLabeledField(
+    blockContent,
+    'Alternatives',
+    SENSE_FIELD_LABELS.slice(3),
+  );
+  const correspondingText = extractLabeledField(
+    blockContent,
+    'Corresponding existing sense',
+    [],
+  );
+
+  if (
+    !summary ||
+    !definition ||
+    naturalText === undefined ||
+    colloquialText === undefined ||
+    alternativesText === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    partOfSpeech: partOfSpeech.trim(),
+    classification: classification.trim(),
+    frequency: frequency.trim(),
+    summary: summary.trim(),
+    definition,
+    naturalTranslations: splitTranslationList(naturalText),
+    colloquialTranslations: splitTranslationList(colloquialText),
+    alternatives: splitTranslationList(alternativesText),
+    ...(correspondingText !== undefined ? { correspondingExistingSense: correspondingText } : {}),
+  };
 }
 
 function parseSensesResponse(response: string): ParsedSense[] {
   const senses: ParsedSense[] = [];
-  const lines = response.split('\n').filter(line => line.trim() !== '');
+  const normalized = response.trim();
+  const headers: RegExpExecArray[] = [];
 
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i].trim();
+  let headerMatch: RegExpExecArray | null;
+  const headerRegex = new RegExp(SENSE_HEADER_REGEX.source, 'g');
+  while ((headerMatch = headerRegex.exec(normalized)) !== null) {
+    headers.push(headerMatch);
+  }
 
-    // Check if this is a sense header line (starts with '(' and contains part of speech)
-    if (line.startsWith('(') && line.includes(') ')) {
-      const sense: Partial<ParsedSense> = {};
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    const blockStart = header.index! + header[0].length;
+    const blockEnd = i + 1 < headers.length ? headers[i + 1].index! : normalized.length;
+    const blockContent = normalized.slice(blockStart, blockEnd).trim();
 
-      // Parse header: "(Noun, Primary) Large plant : A large perennial plant..."
-      const headerMatch = line.match(/^\(([^,]+),\s*([^)]+)\)\s*([^:]+)\s*:\s*(.+)$/);
-      if (headerMatch) {
-        sense.partOfSpeech = headerMatch[1].trim();
-        sense.commonness = headerMatch[2].trim();
-        sense.summary = headerMatch[3].trim();
-        sense.definition = headerMatch[4].trim();
-      }
-
-      i++; // Move to next line
-
-      // Parse remaining lines for this sense
-      while (i < lines.length && !lines[i].trim().startsWith('(')) {
-        const currentLine = lines[i].trim();
-
-        if (currentLine.startsWith('Natural:')) {
-          sense.naturalTranslations = currentLine.substring('Natural:'.length).trim().split(',').map(t => t.trim());
-        } else if (currentLine.startsWith('Colloquial:')) {
-          sense.colloquialTranslations = currentLine.substring('Colloquial:'.length).trim().split(',').map(t => t.trim());
-        } else if (currentLine.startsWith('Alternatives:')) {
-          const alts = currentLine.substring('Alternatives:'.length).trim();
-          sense.alternatives = alts === '(None)' ? [] : alts.split(',').map(t => t.trim());
-        } else if (currentLine.startsWith('Corresponds with:')) {
-          sense.correspondsWith = currentLine.substring('Corresponds with:'.length).trim();
-        }
-
-        i++;
-      }
-
-      // Ensure all required fields are present
-      if (sense.partOfSpeech && sense.commonness && sense.summary && sense.definition &&
-          sense.naturalTranslations && sense.colloquialTranslations && sense.alternatives) {
-        senses.push(sense as ParsedSense);
-      }
-    } else {
-      i++; // Skip non-header lines
+    const parsed = parseSenseBlock(
+      header[1],
+      header[2],
+      header[3],
+      header[4],
+      blockContent,
+    );
+    if (parsed) {
+      senses.push(parsed);
     }
   }
 
   return senses;
 }
 
-function createSenseFromParsedData(parsedSense: ParsedSense, entry: string, lang: string, existingSenseSummaries: string[]): Sense {
-  const sense: Sense = {
-    id: generateId(),
-    entry: {
-      entry: entry,
-      lang: lang
-    },
-    partOfSpeech: parsedSense.partOfSpeech,
-    commonness: parsedSense.commonness,
-    summary: parsedSense.summary,
-    definition: parsedSense.definition,
-    translations: {
-      [lang]: {
-        naturalTranslations: parsedSense.naturalTranslations.map(t => ({ entry: t, lang: 'es' } as EntryRef)),
-        colloquialTranslations: parsedSense.colloquialTranslations.map(t => ({ entry: t, lang: 'es' } as EntryRef)),
-        sourceAi: 'gemini',
-      } as EntryTranslation,
-    },
-    sourceAi: 'gemini'
+function resolveSenseId(
+  parsedSense: ParsedSense,
+  existingSenseInfo: ExistingSenseInfo[],
+): string {
+  if (
+    parsedSense.correspondingExistingSense &&
+    parsedSense.correspondingExistingSense.toLowerCase() !== 'none'
+  ) {
+    const existing = existingSenseInfo.find(
+      (info) => info.summary === parsedSense.correspondingExistingSense,
+    );
+    if (existing) {
+      return existing.id;
+    }
+  }
+  return generateId();
+}
+
+function removeParenthesizedComments(text: string): string {
+  return text.replace(/\([^)]*\)/g, '').trim();
+}
+
+function createSenseFromParsedData(
+  parsedSense: ParsedSense,
+  entry: string,
+  lang: string,
+  existingSenseInfo: ExistingSenseInfo[],
+  translationLang: string,
+): Sense {
+  const senseId = resolveSenseId(parsedSense, existingSenseInfo);
+
+  const toEntryRef = (text: string): EntryRef => {
+    const cleaned = removeParenthesizedComments(text);
+    return {
+      entry: displayTextToEntry(cleaned),
+      lang: translationLang,
+      displayText: cleaned,
+    };
   };
 
-  // Handle corresponds_with for existing sense matching
-  if (parsedSense.correspondsWith) {
-    // Note: The corresponds_with logic is handled in the stored procedure
-    // We need to add this field to the sense data sent to the stored procedure
-    (sense as any).corresponds_with = parsedSense.correspondsWith;
+  const sense: Sense = {
+    id: senseId,
+    entry: {
+      entry,
+      lang,
+    },
+    partOfSpeech: parsedSense.partOfSpeech,
+    classification: parsedSense.classification,
+    frequency: parsedSense.frequency,
+    summary: parsedSense.summary,
+    definition: parsedSense.definition,
+    similarEntries: parsedSense.alternatives
+      .map(removeParenthesizedComments)
+      .filter((alternative) => alternative !== ''),
+    translations: {
+      [translationLang]: {
+        naturalTranslations: parsedSense.naturalTranslations.map(toEntryRef),
+        colloquialTranslations: parsedSense.colloquialTranslations.map(toEntryRef),
+        sourceAi: 'gemini',
+      },
+    },
+    sourceAi: 'gemini',
+  };
+
+  if (
+    parsedSense.correspondingExistingSense &&
+    parsedSense.correspondingExistingSense.toLowerCase() !== 'none'
+  ) {
+    (sense as Sense & { corresponds_with?: string }).corresponds_with =
+      parsedSense.correspondingExistingSense;
   }
 
   return sense;
 }
 
-function removeParenthesizedComments(text: string): string {
-  // Remove all content within parentheses, including the parentheses themselves
-  return text.replace(/\([^)]*\)/g, '').trim();
+function buildSensesPrompt(
+  promptTemplate: string,
+  item: EntryInfoQueueItem,
+): string {
+  const translationLang = item.lang === 'en' ? 'es' : 'en';
+  const referenceSenses =
+    item.existing_sense_info.length > 0
+      ? item.existing_sense_info.map((info) => info.summary).join('\n')
+      : '(None)';
+
+  return promptTemplate
+    .replace('[[PHRASE]]', item.display_text)
+    .replace('[[SOURCE_LANGUAGE]]', LanguageNames[item.lang] ?? item.lang)
+    .replace('[[TRANSLATION_LANGUAGE]]', LanguageNames[translationLang] ?? translationLang)
+    .replace('[[REFERENCE SENSES]]', referenceSenses);
 }
 
-interface CollectedTranslationData {
-  entryInsertData: EntryInsertData[];
-  senseTranslationsData: Array<{summary: string, translations: SenseEntryTranslationData[]}>;
-}
-
-function collectTranslationData(parsedSenses: ParsedSense[], originalLang: string): CollectedTranslationData {
-  const translationEntries: EntryInsertData[] = [];
-  const senseTranslations: Array<{summary: string, translations: SenseEntryTranslationData[]}> = [];
-  const seen = new Set<string>();
-
-  // Determine target language for natural and colloquial translations
-  // If original is English, translate to Spanish; otherwise translate to English
-  const translationLang = originalLang === 'en' ? 'es' : 'en';
-
-  for (const parsedSense of parsedSenses) {
-    const senseTranslationsForSense: SenseEntryTranslationData[] = [];
-
-    // Helper function to process a translation
-    const processTranslation = (translation: string, lang: string) => {
-      const cleanedTranslation = removeParenthesizedComments(translation);
-      if (cleanedTranslation.trim() === '') return;
-
-      const key = `${lang}:${cleanedTranslation}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        translationEntries.push({
-          entry: displayTextToEntry(cleanedTranslation),
-          lang,
-          length: cleanedTranslation.length,
-          display_text: cleanedTranslation
-        });
-      }
-
-      // Always add to sense translations (sense_id will be filled later)
-      senseTranslationsForSense.push({
-        sense_id: '', // Will be filled in later
-        entry: displayTextToEntry(cleanedTranslation),
-        lang,
-        display_text: cleanedTranslation
-      });
-    };
-
-    // Collect natural translations
-    for (const translation of parsedSense.naturalTranslations) {
-      processTranslation(translation, translationLang);
-    }
-
-    // Collect colloquial translations
-    for (const translation of parsedSense.colloquialTranslations) {
-      processTranslation(translation, translationLang);
-    }
-
-    // Collect alternatives (same language as original)
-    for (const translation of parsedSense.alternatives) {
-      processTranslation(translation, originalLang);
-    }
-
-    senseTranslations.push({
-      summary: parsedSense.summary,
-      translations: senseTranslationsForSense
-    });
+function countExampleSentences(sense: Sense): number {
+  if (!Array.isArray(sense.exampleSentences)) {
+    return 0;
   }
 
-  return {
-    entryInsertData: translationEntries,
-    senseTranslationsData: senseTranslations
-  };
+  const exampleIds = new Set(
+    sense.exampleSentences
+      .map((example: { id?: string }) => example.id)
+      .filter((id): id is string => !!id),
+  );
+  return exampleIds.size;
+}
+
+type EntryLoadingStatus = 'Ready' | 'Error' | 'Invalid' | 'Processing';
+
+async function updateEntryLoadingStatus(
+  entry: string,
+  lang: string,
+  status: EntryLoadingStatus,
+): Promise<void> {
+  await updateEntriesLoadingStatus([{ entry, lang }], status);
+}
+
+async function saveSensesAndStatus(
+  entry: string,
+  lang: string,
+  senses: Sense[],
+  status: EntryLoadingStatus,
+): Promise<void> {
+  for (const sense of senses) {
+    await upsertSense(entry, lang, sense);
+  }
+  await updateEntryLoadingStatus(entry, lang, status);
+}
+
+async function processQueueItem(
+  promptTemplate: string,
+  item: EntryInfoQueueItem,
+): Promise<void> {
+  console.log(
+    `Processing entry: ${item.entry} (${item.lang}) - ${item.existing_sense_info.length} existing senses`,
+  );
+
+  const prompt = buildSensesPrompt(promptTemplate, item);
+  const aiResponse = await geminiProvider.generateResultsAsync(prompt);
+  console.log(`AI response for ${item.entry}:`, aiResponse);
+
+  if (aiResponse.trim().toLowerCase() === 'nonsense') {
+    await updateEntryLoadingStatus(item.entry, item.lang, 'Invalid');
+    console.log(`Marked ${item.entry} as Invalid (Nonsense response)`);
+    return;
+  }
+
+  const parsedSenses = parseSensesResponse(aiResponse);
+  console.log(`Parsed ${parsedSenses.length} senses for ${item.entry}`);
+
+  if (parsedSenses.length === 0) {
+    await updateEntryLoadingStatus(item.entry, item.lang, 'Invalid');
+    console.log(`Marked ${item.entry} as Invalid (no senses parsed)`);
+    return;
+  }
+
+  const translationLang = item.lang === 'en' ? 'es' : 'en';
+  const senses: Sense[] = parsedSenses.map((parsedSense) =>
+    createSenseFromParsedData(
+      parsedSense,
+      item.entry,
+      item.lang,
+      item.existing_sense_info,
+      translationLang,
+    ),
+  );
+
+  await saveSensesAndStatus(item.entry, item.lang, senses, 'Ready');
+  console.log(`Updated database for ${item.entry} with status: Ready`);
+
+  const primarySense = senses.find((sense) => sense.frequency === 'Primary');
+  if (primarySense?.id) {
+    await assignPrimarySenseToClues(item.entry, item.lang, primarySense.id);
+    console.log(`Assigned primary sense ${primarySense.id} to clues for ${item.entry}`);
+  }
+
+  const dbSenses = await getSensesForEntry(item.entry, item.lang);
+  const sensesToQueue = dbSenses
+    .filter((sense) => countExampleSentences(sense) < 3)
+    .map((sense) => sense.id)
+    .filter((id): id is string => !!id);
+
+  if (sensesToQueue.length > 0) {
+    await addExampleSentenceQueueEntries(sensesToQueue);
+    console.log(`Queued ${sensesToQueue.length} senses for example sentences`);
+
+    await updateEntryLoadingStatus(item.entry, item.lang, 'Processing');
+    console.log(`Updated status to Processing for ${item.entry} due to queued senses`);
+  }
 }
 
 export async function entryInfoGenerator(): Promise<void> {
   try {
-    console.log('Starting entry info generation...');
+    console.log('Starting entry info generation (2h run / 1h pause cycle)...');
 
-    // Step 1: Get top 10 entries from queue
-    const queueItems = await getEntryInfoQueueTop10();
-    console.log(`Processing ${queueItems.length} entries from queue`);
-
-    if (queueItems.length === 0) {
-      console.log('No entries in queue');
-      return;
-    }
-
-    // Load the senses prompt template
     const promptTemplate = await loadSensesPromptAsync();
+    let itemNumber = 0;
 
-    // Process each entry
-    for (const item of queueItems) {
-      try {
-        console.log(`Processing entry: ${item.entry} (${item.lang}) - ${item.existing_sense_info.length} existing senses`);
+    while (true) {
+      const runDeadline = getRunPhaseDeadline();
+      console.log('Starting entry info generator run phase (2 hours)...');
 
-        // Step 2: Create prompt with existing sense summaries
-        const referenceSenses = item.existing_sense_info.length > 0
-          ? item.existing_sense_info.map(info => `"${info.summary}"`).join(', ')
-          : '(None)';
-
-        let prompt = promptTemplate
-          .replace('[[PHRASE]]', item.display_text)
-          .replace('[[LANGUAGE CODE]]', item.lang)
-          .replace('[[REFERECE SENSES]]', referenceSenses);
-
-        // Step 3: Call Gemini API
-        const aiResponse = await geminiProvider.generateResultsAsync(prompt);
-        console.log(`AI response for ${item.entry}:`, aiResponse);
-
-        // Step 4: Parse the response
-        const parsedSenses = parseSensesResponse(aiResponse);
-        console.log(`Parsed ${parsedSenses.length} senses for ${item.entry}`);
-
-        // Step 5: Convert parsed senses to Sense objects
-        const senses: Sense[] = parsedSenses.map(parsedSense =>
-          createSenseFromParsedData(parsedSense, item.entry, item.lang, item.existing_sense_info.map(info => info.summary))
-        );
-
-        // Step 5.5: Collect translation data for both entry table and sense translations
-        const { entryInsertData, senseTranslationsData } = collectTranslationData(parsedSenses, item.lang);
-
-        // Step 5.6: Insert translation entries into entry table
-        if (entryInsertData.length > 0) {
-          await insertEntries(entryInsertData);
-          console.log(`Inserted ${entryInsertData.length} translation entries for ${item.entry}`);
+      while (isRunPhaseActive(runDeadline)) {
+        const queueItem = await getEntryInfoQueueTop1();
+        if (!queueItem) {
+          console.log('No entries in queue; ending run phase early');
+          break;
         }
 
-        // Step 6: Determine status
-        let status: 'Ready' | 'Error' | 'Invalid' | 'Processing';
-        if (parsedSenses.length === 0) {
-          status = 'Invalid';
-        } else {
-          status = 'Ready';
-        }
+        itemNumber++;
+        console.log(`Processing entry info item ${itemNumber}: ${queueItem.entry} (${queueItem.lang})`);
 
-        // Step 7: Update database with senses
-        await upsertEntryInfo(item.entry, item.lang, senses, status);
-        console.log(`Updated database for ${item.entry} with status: ${status}`);
-
-        // Step 7.5: Assign primary sense to existing clues
-        const primarySense = senses.find(sense => sense.commonness === 'Primary');
-        if (primarySense?.id) {
-          await assignPrimarySenseToClues(item.entry, item.lang, primarySense.id);
-          console.log(`Assigned primary sense ${primarySense.id} to clues for ${item.entry}`);
-        }
-
-        // Step 8: Match sense translations with pre-assigned sense IDs and insert
-        const senseEntryTranslations: SenseEntryTranslationData[] = [];
-        for (const senseData of senseTranslationsData) {
-          // Find the matching sense by summary among the senses we just created
-          const matchingSense = senses.find(sense => {
-            const summary = sense.summary;
-            return summary === senseData.summary;
-          });
-
-          if (matchingSense?.id) {
-            // Add all translations for this sense
-            for (const translation of senseData.translations) {
-              senseEntryTranslations.push({
-                ...translation,
-                sense_id: matchingSense.id
-              });
-            }
-          }
-        }
-
-        if (senseEntryTranslations.length > 0) {
-          await addSenseEntryTranslations(senseEntryTranslations);
-          console.log(`Inserted ${senseEntryTranslations.length} sense entry translations for ${item.entry}`);
-        }
-
-        // Step 9: Queue newly created senses for example sentences (don't worry about existing senses)
-        const newSensesToQueue: string[] = [];
-
-        for (const sense of senses) {
-          if (sense.id && (!sense.exampleSentences || sense.exampleSentences.length < 3)) {
-            newSensesToQueue.push(sense.id);
-          }
-        }
-
-        if (newSensesToQueue.length > 0) {
-          await addExampleSentenceQueueEntries(newSensesToQueue);
-          console.log(`Queued ${newSensesToQueue.length} new senses for example sentences`);
-
-          // Set the status back to 'Processing' since senses were queued for example sentences
-          await upsertEntryInfo(item.entry, item.lang, senses, 'Processing');
-          console.log(`Updated status to Processing for ${item.entry} due to queued senses`);
-        }
-
-      } catch (error) {
-        console.error(`Error processing entry ${item.entry}:`, error);
-
-        // Update status to Error
         try {
-          await upsertEntryInfo(item.entry, item.lang, [], 'Error');
-        } catch (dbError) {
-          console.error(`Failed to update error status for ${item.entry}:`, dbError);
+          await processQueueItem(promptTemplate, queueItem);
+
+          await removeFromEntryInfoQueue(queueItem.entry, queueItem.lang);
+          console.log(`Removed ${queueItem.entry} (${queueItem.lang}) from entry info queue`);
+        } catch (error) {
+          if (isGeminiTimeoutError(error)) {
+            console.warn(
+              `Gemini timeout processing ${queueItem.entry}; ending run phase for 1 hour pause...`,
+            );
+            break;
+          }
+
+          console.error(`Error processing entry ${queueItem.entry}:`, error);
+
+          try {
+            await updateEntryLoadingStatus(queueItem.entry, queueItem.lang, 'Error');
+            await removeFromEntryInfoQueue(queueItem.entry, queueItem.lang);
+            console.log(
+              `Marked ${queueItem.entry} as Error and removed from entry info queue`,
+            );
+          } catch (dbError) {
+            console.error(`Failed to update error status for ${queueItem.entry}:`, dbError);
+          }
         }
       }
+
+      await pauseBetweenRunPhases('entryInfoGenerator');
     }
-
-    console.log('Entry info generation completed');
-
   } catch (error) {
     console.error('Fatal error in entryInfoGenerator:', error);
     throw error;
   }
 }
+

@@ -26,6 +26,7 @@ import {
 import { Entry } from 'cruzi-models';
 import {
   getRunPhaseDeadline,
+  isGeminiTimeoutError,
   isRunPhaseActive,
   pauseBetweenRunPhases,
 } from './lib/runPauseCycle';
@@ -41,12 +42,6 @@ export type { ParsedIdiomacityResult };
 export { parseIdiomacityResponse };
 
 const geminiProvider = new GeminiWebAiProvider();
-const MAX_BATCH_RETRIES = 5;
-
-function isGeminiTimeoutError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /timed out/i.test(message);
-}
 
 function getPromptText(item: EntryWithoutIdiomacity): string {
   return item.display_text ?? item.entry;
@@ -163,26 +158,17 @@ export async function idiomacityGenerator(): Promise<void> {
         batchNumber++;
         console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
 
-        let batchSucceeded = false;
-        for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
-          try {
-            await processBatch(entries, promptTemplate);
-            batchSucceeded = true;
-            break;
-          } catch (error) {
-            if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
-              console.warn(
-                `Gemini timeout processing idiomacity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
-              );
-              continue;
-            }
-
-            console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
+        try {
+          await processBatch(entries, promptTemplate);
+        } catch (error) {
+          if (isGeminiTimeoutError(error)) {
+            console.warn(
+              `Gemini timeout processing idiomacity batch ${batchNumber}; ending run phase for 1 hour pause...`,
+            );
             break;
           }
-        }
 
-        if (!batchSucceeded) {
+          console.error(`Error processing idiomacity batch ${batchNumber}:`, error);
           break;
         }
       }

@@ -1,11 +1,8 @@
 import fs from 'fs';
 import { LanguageNames } from 'cruzi-models';
-import { batchArray, entryToAllCaps, stripAccents } from '../lib/utils';
+import { entryToAllCaps, stripAccents } from '../lib/utils';
 import { GeminiWebAiProvider } from './geminiWebProvider';
 import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
-
-const SCORE_BATCH_SIZE = 40;
-const MAX_BATCH_RETRIES = 5;
 
 export interface ParsedIdiomacityResult {
   parsedForm: string;
@@ -31,33 +28,22 @@ export interface ScoredPhrase {
   familiarityScore: number;
 }
 
-function isGeminiTimeoutError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /timed out/i.test(message);
-}
-
-async function withGeminiRetries<T>(label: string, operation: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
-        console.warn(`${label} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`);
-        continue;
-      }
-      throw error;
-    }
-  }
-
-  throw new Error(`${label} failed after ${MAX_BATCH_RETRIES} attempts`);
-}
-
 export async function loadIdiomacityPromptAsync(): Promise<string> {
   try {
     const promptPath = './src/ai/phrase_idiomacity_prompt.txt';
     return await fs.promises.readFile(promptPath, 'utf-8');
   } catch (err) {
     console.error('Error reading idiomacity prompt file:', err);
+    throw err;
+  }
+}
+
+async function loadPhraseGeneratorIdiomacityPromptAsync(): Promise<string> {
+  try {
+    const promptPath = './src/ai/phrase_idiomacity_prompt_2.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading phrase generator idiomacity prompt file:', err);
     throw err;
   }
 }
@@ -70,6 +56,33 @@ export function parseIdiomacityResponse(response: string): ParsedIdiomacityResul
 
   const summaryText = response.slice(summaryIndex + 'SUMMARY:'.length);
   const lines = summaryText.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+
+  const results: ParsedIdiomacityResult[] = [];
+  for (const line of lines) {
+    const parts = line.split(' : ').map((part) => part.trim());
+    if (parts.length < 3) {
+      continue;
+    }
+
+    const score = parseInt(parts[2], 10);
+    if (Number.isNaN(score)) {
+      continue;
+    }
+
+    results.push({
+      parsedForm: parts[0],
+      category: parts[1],
+      score,
+    });
+  }
+
+  return results;
+}
+
+function parsePhraseGeneratorIdiomacityResponse(response: string): ParsedIdiomacityResult[] {
+  const summaryIndex = response.indexOf('SUMMARY:');
+  const textToParse = summaryIndex === -1 ? response : response.slice(summaryIndex + 'SUMMARY:'.length);
+  const lines = textToParse.split('\n').map((line) => line.trim()).filter((line) => line !== '');
 
   const results: ParsedIdiomacityResult[] = [];
   for (const line of lines) {
@@ -175,28 +188,27 @@ export async function scorePhrasesForIdiomacity(
   phrases: string[],
   provider: GeminiWebAiProvider,
 ): Promise<Map<string, ParsedIdiomacityResult>> {
-  const promptTemplate = await loadIdiomacityPromptAsync();
   const resultsByPhrase = new Map<string, ParsedIdiomacityResult>();
+  if (phrases.length === 0) {
+    return resultsByPhrase;
+  }
 
-  for (const batch of batchArray(phrases, SCORE_BATCH_SIZE)) {
-    const promptData = batch.join('\n');
-    const prompt = promptTemplate.replace('[[DATA]]', promptData);
+  const promptTemplate = await loadPhraseGeneratorIdiomacityPromptAsync();
+  const promptData = phrases.join('\n');
+  const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
-    console.log(`Sending idiomacity prompt for ${batch.length} phrases`);
-    const aiResponse = await withGeminiRetries('Idiomacity scoring', () =>
-      provider.generateResultsAsync(prompt),
-    );
-    console.log(`Received idiomacity response (${aiResponse.length} characters)`);
+  console.log(`Sending idiomacity prompt for ${phrases.length} phrases`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received idiomacity response (${aiResponse.length} characters)`);
 
-    const parsedResults = parseIdiomacityResponse(aiResponse);
-    const matches = matchIdiomacityResultsToPhrases(batch, parsedResults);
+  const parsedResults = parsePhraseGeneratorIdiomacityResponse(aiResponse);
+  const matches = matchIdiomacityResultsToPhrases(phrases, parsedResults);
 
-    for (const match of matches) {
-      if (!match) {
-        continue;
-      }
-      resultsByPhrase.set(match.phrase, match.parsed);
+  for (const match of matches) {
+    if (!match) {
+      continue;
     }
+    resultsByPhrase.set(match.phrase, match.parsed);
   }
 
   return resultsByPhrase;
@@ -207,29 +219,28 @@ export async function scorePhrasesForFamiliarity(
   lang: string,
   provider: GeminiWebAiProvider,
 ): Promise<Map<string, ParsedFamiliarityResult>> {
+  const resultsByPhrase = new Map<string, ParsedFamiliarityResult>();
+  if (phrases.length === 0) {
+    return resultsByPhrase;
+  }
+
   const promptTemplate = await loadFamiliarityPromptAsync();
   const langName = LanguageNames[lang] ?? lang;
-  const resultsByPhrase = new Map<string, ParsedFamiliarityResult>();
+  const promptData = phrases.map((phrase) => entryToAllCaps(phrase)).join('\n');
+  const prompt = promptTemplate.replace(/\[\[LANG\]\]/g, langName).replace('[[DATA]]', promptData);
 
-  for (const batch of batchArray(phrases, SCORE_BATCH_SIZE)) {
-    const promptData = batch.map((phrase) => entryToAllCaps(phrase)).join('\n');
-    const prompt = promptTemplate.replace(/\[\[LANG\]\]/g, langName).replace('[[DATA]]', promptData);
+  console.log(`Sending familiarity prompt for ${phrases.length} ${lang} phrases`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received familiarity response for ${lang} (${aiResponse.length} characters)`);
 
-    console.log(`Sending familiarity prompt for ${batch.length} ${lang} phrases`);
-    const aiResponse = await withGeminiRetries('Familiarity scoring', () =>
-      provider.generateResultsAsync(prompt),
-    );
-    console.log(`Received familiarity response for ${lang} (${aiResponse.length} characters)`);
+  const parsedResults = parseFamiliarityResponse(aiResponse) as ParsedFamiliarityResult[];
+  const matches = matchFamiliarityResultsToPhrases(phrases, parsedResults);
 
-    const parsedResults = parseFamiliarityResponse(aiResponse) as ParsedFamiliarityResult[];
-    const matches = matchFamiliarityResultsToPhrases(batch, parsedResults);
-
-    for (const match of matches) {
-      if (!match) {
-        continue;
-      }
-      resultsByPhrase.set(match.phrase, match.parsed);
+  for (const match of matches) {
+    if (!match) {
+      continue;
     }
+    resultsByPhrase.set(match.phrase, match.parsed);
   }
 
   return resultsByPhrase;

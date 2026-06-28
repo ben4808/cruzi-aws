@@ -1,50 +1,56 @@
-Task: Analyze the distinct senses of the following word or phrase: [[PHRASE]]
-Language code of word of phrase: [[LANGUAGE CODE]]
-Context/Reference Senses: ([[REFERECE SENSES]])
+TASK 
+Analyze the distinct senses of the following word or phrase: [[PHRASE]]
+Language of word of phrase: [[SOURCE_LANGUAGE]]
+Language of translations: [[TRANSLATION_LANGUAGE]]
 
-Instructions:
-1.  Other than translations, output should be done in the language of the word or phrase.
-2.  Identify all distinct senses. Treat different parts of speech (e.g., Noun vs. Verb) as separate senses.
-3.  If "Reference Senses" are provided above, indicate which one matches the generated sense.
-4.  Classify the frequency of the sense. One sense must be designated as Primary, even if it is uncommon.
-    * Primary: The single most immediate meaning.
-    * Common: Standard and recognizable usage.
-    * Uncommon: Rare, archaic, or highly specific usage.
-5. If the word or phrase is non-sensical, misspelled, or doesn't exist, return a blank response.
+EXISTING SENSES
+[[REFERENCE SENSES]]
 
-For each sense of the word, provide the following:
+INSTRUCTIONS
+1. Identify Senses: Find all distinct senses of the word/phrase in the Source Language.
+  - Treat different parts of speech (e.g., Noun vs. Verb) as separate senses.
+  - Try interpreting as all of these classifications: Word, Phrase, Proper Name, Acronym, Abbreviation, Prefix, Suffix.
+  - Avoid compound senses (i.e. this OR this). Prefer creating separate senses.
+  - Apply the Substitution Test: If a core synonym of the primary sense (e.g., "assist" for *help*) cannot naturally replace the word in a specific context (e.g., "help yourself to food" or "cannot help but laugh"), classify it as a distinct sense.
+  - Do not include independent derived nouns, adjectives, or gerunds that have independent lexical entries (e.g., treat "helping" as a separate word, not a sense of "help").
+  - Map your generated senses to the provided "Existing Senses" list where applicable. Look for senses that might not be covered by the existing senses.
 
-- A short, focused description that allows people to easily distinguish it from other senses. This should be as short as possible. 
-- A normal description of the sense.
-- The part of speech of the sense.
-- Some translations of the word or phrase into Spanish, or if the word or phrase in not originally in English, into English.
-  Don't include any ancillary text, just the translations.
-  - 1-3 natural translations in the target lanugage.
-  - 1-3 colloquial translations in the target language.
-  - 1-3 alternative ways to say the word or phrase in the same language. If there are none, output “(None)”.
+2. Classify Frequency: Assign exactly one frequency tier to each sense:
+  - Primary: The single most dominant, immediate usage. If two are equally dominant, pick the most historically rooted or widely used.
+  - Common: Standard and recognizable usage.
+  - Uncommon: Rare, archaic, or highly technical usage.
 
-Output the results following the given example, paying attention to the newline structure. (Examples are for the word "tree"). 
+3. Validation: If the word or phrase is non-sensical, completely unintelligible, or misspelled (and the misspelling doesn't mean anything), reply ONLY with the word "Nonsense".
+
+4. Translations & Alternatives: For each sense, provide:
+  - 1-3 natural translations in the Translation Language.
+  - 1-3 colloquial translations in the Translation Language.
+  - 1-3 alternative ways to say it in the Source Language. If there are none, output “(None)”.
+
+OUTPUT
+- The Short Description is a short, focused description that allows people to easily distinguish it from other senses. This should be as short as possible.
+  
+Output the results strictly following the given format. Examples are for the word "tree". 
 Don't include any extra explanatory or auxiliary text. Don't include any images, only text.
 Always output the part of speech and the classification in English.
+Pay special attention to the newline structure and include 2 newlines between each sense.
 
-(Noun, Primary) Large plant : A large perennial plant with a single main trunk or stem from which branches grow, bearing leaves, flowers, or fruit.
+([Part of Speech], [Classification], [Frequency]) [Short Description] : [Normal Description]
+Natural: [Translation 1; Translation 2]
+Colloquial: [Translation 1; Translation 2]
+Alternatives: [Alternative 1; Alternative 2]
+Corresponding existing sense: [Exact match from list, or "None" if no match exists]
+
+EXAMPLE
+
+(Noun, Word, Primary) Large plant : A large perennial plant with a single main trunk or stem from which branches grow, bearing leaves, flowers, or fruit.
 Natural: árbol
 Colloquial: palo
 Alternatives: (None)
+Corresponding existing sense: None
 
-(Noun, Common) Diagrammatic representation : In computer science, a tree is a data structure in which nodes are arranged in a hierarchy. In mathematics, it's a type of graph. This sense also applies to a family tree, which shows the relationships among family members.
-Natural: árbol, diagrama arborescente, esquema en árbol
-Colloquial: ramificación, mapa de ramas
-Alternatives: hierarchical chart, tree diagram
-Corresponds with: Diagram with branches
-
-(Noun, Uncommon) Gallows : The gallows, a structure for hanging as punishment
-Natural: horca, patíbulo
-Colloquial: ahorcadero
-Alternatives: gallows, gibbet
-
-(Verb, Common) Force something up a tree: Often used in the context of hunting, such as "The hounds treed the raccoon," meaning they chased it up a tree.
-Natural: obligar a refugiarse en un árbol, acorralar en un árbol
-Colloquial: trepar a alguien, encaramar
-Alternatives: chase up a tree
-Corresponds with: Chase up a tree
+(Noun, Word, Common) Diagrammatic representation : In computer science, a tree is a data structure in which nodes are arranged in a hierarchy. In mathematics, it's a type of graph. This sense also applies to a family tree, which shows the relationships among family members.
+Natural: árbol; diagrama arborescente; esquema en árbol
+Colloquial: ramificación; mapa de ramas
+Alternatives: hierarchical chart; tree diagram
+Corresponding existing sense: Diagram with branches

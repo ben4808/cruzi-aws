@@ -3,6 +3,11 @@ const HOUR_MS = 60 * 60 * 1000;
 export const RUN_DURATION_MS = 2 * HOUR_MS;
 export const PAUSE_DURATION_MS = 1 * HOUR_MS;
 
+export function isGeminiTimeoutError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /timed out/i.test(message);
+}
+
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

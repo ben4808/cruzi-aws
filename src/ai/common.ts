@@ -14,7 +14,7 @@ export async function getFamiliarityResults(
   let entryMap = arrayToMap(entries, entry => entry.entry);
 
   try {
-    let batches = batchArray(entries, 40) as Entry[][];
+    let batches = batchArray(entries, 50) as Entry[][];
 
     for (let batch of batches) {
       let batchNumber = Math.random().toString(36).substring(2, 5);
@@ -127,7 +127,7 @@ export async function getQualityResults(
   let entryMap = arrayToMap(entries, entry => entry.entry);
 
   try {
-    let batches = batchArray(entries, 40) as Entry[][];
+    let batches = batchArray(entries, 50) as Entry[][];
 
     for (let batch of batches) {
       let batchNumber = Math.random().toString(36).substring(2, 5);

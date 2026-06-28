@@ -25,18 +25,13 @@ import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './ai/commo
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import {
   getRunPhaseDeadline,
+  isGeminiTimeoutError,
   isRunPhaseActive,
   pauseBetweenRunPhases,
 } from './lib/runPauseCycle';
 import { entryToAllCaps, stripAccents } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
-const MAX_BATCH_RETRIES = 5;
-
-function isGeminiTimeoutError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /timed out/i.test(message);
-}
 
 function groupEntriesByLang(
   entries: EntryWithoutFamiliarity[],
@@ -178,26 +173,17 @@ export async function familiarityGenerator(): Promise<void> {
         batchNumber++;
         console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
 
-        let batchSucceeded = false;
-        for (let attempt = 1; attempt <= MAX_BATCH_RETRIES; attempt++) {
-          try {
-            await processBatch(entries, promptTemplate);
-            batchSucceeded = true;
-            break;
-          } catch (error) {
-            if (isGeminiTimeoutError(error) && attempt < MAX_BATCH_RETRIES) {
-              console.warn(
-                `Gemini timeout processing familiarity batch ${batchNumber} (attempt ${attempt}/${MAX_BATCH_RETRIES}), retrying...`,
-              );
-              continue;
-            }
-
-            console.error(`Error processing familiarity batch ${batchNumber}:`, error);
+        try {
+          await processBatch(entries, promptTemplate);
+        } catch (error) {
+          if (isGeminiTimeoutError(error)) {
+            console.warn(
+              `Gemini timeout processing familiarity batch ${batchNumber}; ending run phase for 1 hour pause...`,
+            );
             break;
           }
-        }
 
-        if (!batchSucceeded) {
+          console.error(`Error processing familiarity batch ${batchNumber}:`, error);
           break;
         }
       }

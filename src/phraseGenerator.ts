@@ -7,8 +7,8 @@ Populate the banned list with the results from step 2. Send the prompt to Gemini
 4. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon. Parse all
 the phrases into a single list and insert each phrase into the phrase_generator_result table.
 5. Take the list of phrases and run them through two more API calls to Gemini (using GeminiWebAiProvider) using the Standard Flash model.
-    a. idiomacity_prompt.txt
-    b. familiarity_prompt.txt
+    a. phrase_idiomacity_prompt_2.txt (all phrases in one call)
+    b. familiarity_prompt.txt (all phrases in one call)
     - Reference the code used in idiomacity_generator.ts and familiarity_generator.ts. Refactor out common code so that there isn't
     excessive duplication.
 6. Aggregate the results from both of these calls, and make a new list of all phrases that scored at least 3 on the idiomacity scale
@@ -44,6 +44,7 @@ import {
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import {
   getRunPhaseDeadline,
+  isGeminiTimeoutError,
   isRunPhaseActive,
   pauseBetweenRunPhases,
 } from './lib/runPauseCycle';
@@ -51,23 +52,18 @@ import { entryToAllCaps, stripAccents } from './lib/utils';
 
 const extendedFlashProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
 const standardFlashProvider = new GeminiWebAiProvider('gemini-web');
-const MAX_ITEM_RETRIES = 5;
 const MIN_IDIOMACITY_SCORE = 3;
 const MIN_FAMILIARITY_SCORE = 2.5;
 const REQUEUE_THRESHOLD = 5;
 const BLANK_PLACEHOLDER = '____';
 const MIN_BASE_WORD_LETTERS = 3;
 const SKIPPED_RESULT_MARKER = '__PHRASE_GENERATOR_SKIPPED__';
+const MAX_BANNED_PHRASES = 200;
 
 export interface ParsedQueuePrompt {
   query: string;
   base: string;
   position: 'start' | 'end';
-}
-
-function isGeminiTimeoutError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /timed out/i.test(message);
 }
 
 async function loadPhraseGeneratorPromptAsync(): Promise<string> {
@@ -199,8 +195,23 @@ async function processQueueItem(
     `Processing phrase generator queue item ${queueId}: "${formatDisplayQuery(parsedPrompt)}" (base="${parsedPrompt.base}", position=${parsedPrompt.position})`,
   );
 
-  const bannedPhrases = await getEntriesByBaseWord(parsedPrompt.base, lang, parsedPrompt.position);
-  console.log(`Found ${bannedPhrases.length} existing entries with base word "${parsedPrompt.base}" at ${parsedPrompt.position} for ban list`);
+  let bannedPhrases = await getEntriesByBaseWord(parsedPrompt.base, lang, parsedPrompt.position);
+  console.log(
+    `Found ${bannedPhrases.length} existing entries with base word "${parsedPrompt.base}" at ${parsedPrompt.position} for ban list`,
+  );
+
+  if (bannedPhrases.length > MAX_BANNED_PHRASES) {
+    console.log(
+      `Ban list exceeds ${MAX_BANNED_PHRASES}; re-querying with space/comma-separated base word filter`,
+    );
+    bannedPhrases = await getEntriesByBaseWord(
+      parsedPrompt.base,
+      lang,
+      parsedPrompt.position,
+      true,
+    );
+    console.log(`Strict ban list has ${bannedPhrases.length} entries`);
+  }
 
   const prompt = buildPhraseGeneratorPrompt(promptTemplate, parsedPrompt, bannedPhrases);
   console.log(`Sending phrase generator prompt to Gemini Extended Flash for queue item ${queueId}`);
@@ -306,31 +317,22 @@ export async function phraseGenerator(): Promise<void> {
         itemNumber++;
         console.log(`Processing phrase generator item ${itemNumber} (queue id ${queueItem.id})`);
 
-        let itemSucceeded = false;
-        for (let attempt = 1; attempt <= MAX_ITEM_RETRIES; attempt++) {
-          try {
-            await processQueueItem(
-              promptTemplate,
-              queueItem.id,
-              queueItem.prompt,
-              queueItem.lang,
+        try {
+          await processQueueItem(
+            promptTemplate,
+            queueItem.id,
+            queueItem.prompt,
+            queueItem.lang,
+          );
+        } catch (error) {
+          if (isGeminiTimeoutError(error)) {
+            console.warn(
+              `Gemini timeout processing phrase generator item ${itemNumber}; ending run phase for 1 hour pause...`,
             );
-            itemSucceeded = true;
-            break;
-          } catch (error) {
-            if (isGeminiTimeoutError(error) && attempt < MAX_ITEM_RETRIES) {
-              console.warn(
-                `Gemini timeout processing phrase generator item ${itemNumber} (attempt ${attempt}/${MAX_ITEM_RETRIES}), retrying...`,
-              );
-              continue;
-            }
-
-            console.error(`Error processing phrase generator item ${itemNumber}:`, error);
             break;
           }
-        }
 
-        if (!itemSucceeded) {
+          console.error(`Error processing phrase generator item ${itemNumber}:`, error);
           break;
         }
       }
