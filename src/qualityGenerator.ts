@@ -4,7 +4,6 @@ Keep looping through the following steps:
 2. For each entry, generate a prompt using the quality_prompt.txt file. Use the display_text field as the input.
 3. Send the prompt to Gemini (using GeminiWebAiProvider) and get the response.
 4. Update the quality_score field in the entry table with the results.
-5. Use the runPauseCycle to pause for 1 hour every 2 hours.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -20,13 +19,7 @@ import {
 import { Entry, LanguageNames } from 'cruzi-models';
 import { loadQualityPromptAsync, parseQualityResponse } from './ai/common';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import {
-  getRunPhaseDeadline,
-  isGeminiTimeoutError,
-  isRunPhaseActive,
-  pauseBetweenRunPhases,
-} from './lib/runPauseCycle';
-import { entryToAllCaps } from './lib/utils';
+import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
 
@@ -156,41 +149,32 @@ async function processBatch(
 
 export async function qualityGenerator(): Promise<void> {
   try {
-    console.log('Starting quality generation (2h run / 1h pause cycle)...');
+    console.log('Starting quality generation...');
 
     const promptTemplate = await loadQualityPromptAsync();
     let batchNumber = 0;
 
     while (true) {
-      const runDeadline = getRunPhaseDeadline();
-      console.log('Starting quality run phase (2 hours)...');
-
-      while (isRunPhaseActive(runDeadline)) {
-        const entries = await getEntriesWithoutQualityTop50();
-        if (entries.length === 0) {
-          console.log('No entries remaining without quality scores; ending run phase early');
-          break;
-        }
-
-        batchNumber++;
-        console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
-
-        try {
-          await processBatch(entries, promptTemplate);
-        } catch (error) {
-          if (isGeminiTimeoutError(error)) {
-            console.warn(
-              `Gemini timeout processing quality batch ${batchNumber}; ending run phase for 1 hour pause...`,
-            );
-            break;
-          }
-
-          console.error(`Error processing quality batch ${batchNumber}:`, error);
-          break;
-        }
+      const entries = await getEntriesWithoutQualityTop50();
+      if (entries.length === 0) {
+        console.log('No entries remaining without quality scores');
+        break;
       }
 
-      await pauseBetweenRunPhases('Quality generator');
+      batchNumber++;
+      console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
+
+      try {
+        await processBatch(entries, promptTemplate);
+      } catch (error) {
+        if (isGeminiTimeoutError(error)) {
+          console.warn(`Gemini timeout processing quality batch ${batchNumber}`);
+          break;
+        }
+
+        console.error(`Error processing quality batch ${batchNumber}:`, error);
+        break;
+      }
     }
   } catch (error) {
     console.error('Fatal error in qualityGenerator:', error);

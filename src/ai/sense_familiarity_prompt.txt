@@ -1,30 +1,12 @@
 TASK
 Analyze the provided list of words and phrases in the [[LANG]] language. 
 
-For each item:
-- Parse the word/phrase in the most natural/common way.
-- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters in the exact sequence provided. Do not substitute letters for digits, do not reinterpret, respell, add, remove, or change any words.
-- Assign exactly one category. Select the most natural/familiar category for the word/phrase.
-- Score using the rubric below.
-
-Strict Rules:
-- If a term is misspelled, awkwardly phrased, or requires reinterpretation to make sense, score it 0 or 1.
-- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
-
-CATEGORIES
-Word: Single lexical item. Includes contractions.
-Derived Word: E.g., plurals and conjugated single verbs. Score based on the familiarity of the derived form, not the base form. Include the base form in parentheses.
-Phrase: Multi-word coherent expression in its base/standard form. Includes phrasal verbs complete with mandatory prepositions (e.g., "applies for", "argued with").
-Derived Phrase: Multi-word coherent expression that contains a derived element (e.g., plurals, past tense verbs, progressive verbs). Include the base phrase form in parentheses. Examples: arc welders (arc welder), argued over (argue over).
-Proper Name: Person's name, place, brand, or organization.
-Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
-Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
-Partial Phrase: Broken grammatical fragments that lack syntactic coherence or are missing mandatory elements (e.g., "age of", "buys a").
-
 RUBRIC
 General:
+- Every word or phrase will be given together with the sense in which it should be interpreted. Score based on the familiarity of that particular sense, not of the word or phrase in general. For example, "bed (Piece of furniture for sleep)" would score a 5, but "bed (Bottom of a body of water)" would score a 3.5.
 - Score phrases based on their familiarity as a single cohesive unit/single term. For example, in "Pacific chorus frog" every constituent word is at least a 3.5, but together it they form a niche species name that scores probably 1.5.
 - Score phrases based on the familiarity of the specific given phrasing. For example "Pacific Ring" is uncommon/awkward as a phrasing and would score 1.5, while "Pacific Rim" or "Pacific Ring of Fire" are both recognized and would score around 3. "Pacific Trench", though understood upon hearing it, is not really used in this form and would also be 1.5.
+- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
 
 5 - Extremely fundamental. These are among the first few words and phrases learned. Highly active vocabulary. No contractions, abbreviations, or acronyms.
 Examples: sit, else, gone, tree, my, thank you, red, less, year, are you sure?
@@ -49,19 +31,14 @@ Examples: Marli Miller, Cantor Set, Three Forks
 OUTPUT
 Present each evaluation in the following strict format, without any introductory or auxiliary text:
 
-<original word/phrase> : <written naturally> : <category> (optional base form) : <score>
+<original word/phrase> (<summary>) : <score>
 
 Example Outputs:
-quixotic : quixotic : Word : 2.5
-DIVING : diving : Derived Word (dive) : 4
-SNOWFORT : snow fort : Phrase : 3.5
-ATTN : attn. : Abbreviation : 3
-TRI : tri- : Prefix/Suffix : 3
-OSS : OSS : Acronym : 1.5
-CAMELBAK : Camelbak : Brand Name : 2.5
-WHOOPIGOLDBERG : Whoopi Goldberg : Proper Name : 3.5
-IVE : I've : Word : 4
-CANDIES : candies : Derived Word (candy) : 4
+goal (Desired result or objective) : 5
+pan (Wash gravel for gold) : 4
+quasar (Active galaxy) : 3
+Arctic char (alpine lake fish) : 2
+break and run (pool feat) : 3.5
 
 WORDS/PHRASES
 

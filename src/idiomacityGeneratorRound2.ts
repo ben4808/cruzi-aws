@@ -23,7 +23,7 @@ import {
 } from 'cruzi-db';
 import { entryToAllCaps, stripAccents } from './lib/utils';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import { ParsedIdiomacityResult } from './idiomacityGenerator';
+import { ParsedIdiomacityResult } from './ai/phraseScoring';
 
 const geminiProvider = new GeminiWebAiProvider();
 const BATCH_SIZE = 150;

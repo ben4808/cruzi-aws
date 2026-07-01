@@ -13,14 +13,14 @@ the phrases into a single list and insert each phrase into the phrase_generator_
     excessive duplication.
 6. Aggregate the results from both of these calls, and make a new list of all phrases that scored at least 3 on the idiomacity scale
   and 2.5 on the familiarity scale.
-7. Insert these phrases into the entry table, including their respective idiomacity and familiarity scores. For entries that were
-not already in the entry table, insert an entry_tag record with the tag "phrase_generator".
+7. Insert these phrases into the entry table, including their respective idiomacity and familiarity scores. Do not overwrite
+existing non-null entry fields; only insert new rows or populate null fields on existing rows. For entries that were not already
+in the entry table, insert an entry_tag record with the tag "phrase_generator".
 8. Count the number of phrases that were inserted into the entry table AND that actually start or end with the base word (depending 
 on the original query). If it is 5 or more, reinsert the original row into the phrase_generator_queue table (will generate a new id).
 
-Use the runPauseCycle to pause for 1 hour every 2 hours.
 Output messages to the console updating all progress.
-All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Use upsertEntries to update entries where necessary.
+All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Use insertEntriesOrFillNulls for entry persistence.
 cruzi-db/sql/schema.sql is the source of truth for the database schema. 
 Keep these requirements in the file.
 */
@@ -33,7 +33,7 @@ import {
   getEntries,
   getEntriesByBaseWord,
   getPhraseGeneratorQueueTop1,
-  upsertEntries,
+  insertEntriesOrFillNulls,
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
 import {
@@ -42,12 +42,7 @@ import {
   scorePhrasesForIdiomacity,
 } from './ai/phraseScoring';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import {
-  getRunPhaseDeadline,
-  isGeminiTimeoutError,
-  isRunPhaseActive,
-  pauseBetweenRunPhases,
-} from './lib/runPauseCycle';
+import { isGeminiTimeoutError } from './lib/utils';
 import { entryToAllCaps, stripAccents } from './lib/utils';
 
 const extendedFlashProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
@@ -59,6 +54,7 @@ const BLANK_PLACEHOLDER = '____';
 const MIN_BASE_WORD_LETTERS = 3;
 const SKIPPED_RESULT_MARKER = '__PHRASE_GENERATOR_SKIPPED__';
 const MAX_BANNED_PHRASES = 200;
+const MAX_STRICT_BANNED_PHRASES = 300;
 
 export interface ParsedQueuePrompt {
   query: string;
@@ -211,6 +207,14 @@ async function processQueueItem(
       true,
     );
     console.log(`Strict ban list has ${bannedPhrases.length} entries`);
+
+    if (bannedPhrases.length > MAX_STRICT_BANNED_PHRASES) {
+      console.log(
+        `Strict ban list still exceeds ${MAX_STRICT_BANNED_PHRASES}; skipping and removing queue item ${queueId}`,
+      );
+      await addPhraseGeneratorResults(queueId, [SKIPPED_RESULT_MARKER]);
+      return;
+    }
   }
 
   const prompt = buildPhraseGeneratorPrompt(promptTemplate, parsedPrompt, bannedPhrases);
@@ -263,8 +267,8 @@ async function processQueueItem(
     rootEntry: item.rootEntry,
   }));
 
-  await upsertEntries(entriesToPersist);
-  console.log(`Upserted ${entriesToPersist.length} qualifying phrases into entry table`);
+  await insertEntriesOrFillNulls(entriesToPersist);
+  console.log(`Inserted/filled-null ${entriesToPersist.length} qualifying phrases into entry table`);
 
   const newEntries = qualifyingPhrases.filter((item) => !existingEntryKeys.has(item.entryKey));
   if (newEntries.length > 0) {
@@ -298,46 +302,37 @@ async function processQueueItem(
 
 export async function phraseGenerator(): Promise<void> {
   try {
-    console.log('Starting phrase generation (2h run / 1h pause cycle)...');
+    console.log('Starting phrase generation...');
 
     const promptTemplate = await loadPhraseGeneratorPromptAsync();
     let itemNumber = 0;
 
     while (true) {
-      const runDeadline = getRunPhaseDeadline();
-      console.log('Starting phrase generator run phase (2 hours)...');
-
-      while (isRunPhaseActive(runDeadline)) {
-        const queueItem = await getPhraseGeneratorQueueTop1();
-        if (!queueItem) {
-          console.log('No phrase generator queue items remaining; ending run phase early');
-          break;
-        }
-
-        itemNumber++;
-        console.log(`Processing phrase generator item ${itemNumber} (queue id ${queueItem.id})`);
-
-        try {
-          await processQueueItem(
-            promptTemplate,
-            queueItem.id,
-            queueItem.prompt,
-            queueItem.lang,
-          );
-        } catch (error) {
-          if (isGeminiTimeoutError(error)) {
-            console.warn(
-              `Gemini timeout processing phrase generator item ${itemNumber}; ending run phase for 1 hour pause...`,
-            );
-            break;
-          }
-
-          console.error(`Error processing phrase generator item ${itemNumber}:`, error);
-          break;
-        }
+      const queueItem = await getPhraseGeneratorQueueTop1();
+      if (!queueItem) {
+        console.log('No phrase generator queue items remaining');
+        break;
       }
 
-      await pauseBetweenRunPhases('Phrase generator');
+      itemNumber++;
+      console.log(`Processing phrase generator item ${itemNumber} (queue id ${queueItem.id})`);
+
+      try {
+        await processQueueItem(
+          promptTemplate,
+          queueItem.id,
+          queueItem.prompt,
+          queueItem.lang,
+        );
+      } catch (error) {
+        if (isGeminiTimeoutError(error)) {
+          console.warn(`Gemini timeout processing phrase generator item ${itemNumber}`);
+          break;
+        }
+
+        console.error(`Error processing phrase generator item ${itemNumber}:`, error);
+        break;
+      }
     }
   } catch (error) {
     console.error('Fatal error in phraseGenerator:', error);

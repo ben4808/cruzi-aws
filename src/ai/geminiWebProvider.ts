@@ -60,11 +60,8 @@ const MODEL_SELECTOR_SELECTORS = [
 
 const RESPONSE_STABLE_POLLS = 4;
 const RESPONSE_POLL_INTERVAL_MS = 800;
-const STANDARD_RESPONSE_APPEAR_TIMEOUT_MS = 120_000;
-const EXTENDED_RESPONSE_APPEAR_TIMEOUT_MS = 300_000;
-const STANDARD_GENERATION_TIMEOUT_MS = 300_000;
-const EXTENDED_GENERATION_TIMEOUT_MS = 300_000;
-const PUPPETEER_OPERATION_TIMEOUT_MS = EXTENDED_GENERATION_TIMEOUT_MS;
+const GEMINI_GENERATION_TIMEOUT_MS = 180_000;
+const PUPPETEER_OPERATION_TIMEOUT_MS = GEMINI_GENERATION_TIMEOUT_MS;
 
 const GENERATING_INDICATOR_SELECTORS = [
   'button[aria-label="Stop response"]',
@@ -78,26 +75,17 @@ const WAIT_LOG_INTERVAL_MS = 30_000;
 const GEMINI_EDITOR_WAIT_MS = 60_000;
 const GEMINI_MANUAL_LOGIN_WAIT_MS = 300_000;
 
-type GeminiWebTimeouts = {
-  responseAppearTimeoutMs: number;
-  generationTimeoutMs: number;
-};
-
 function thinkingLevelForSource(source: GeminiWebSourceAi): GeminiWebThinkingLevel {
   return source === 'gemini-web-extended-flash' ? 'extended' : 'standard';
 }
 
-function timeoutsForThinkingLevel(thinkingLevel: GeminiWebThinkingLevel): GeminiWebTimeouts {
-  if (thinkingLevel === 'extended') {
-    return {
-      responseAppearTimeoutMs: EXTENDED_RESPONSE_APPEAR_TIMEOUT_MS,
-      generationTimeoutMs: EXTENDED_GENERATION_TIMEOUT_MS,
-    };
-  }
+type GeminiWebTimeouts = {
+  generationTimeoutMs: number;
+};
 
+function timeoutsForThinkingLevel(_thinkingLevel: GeminiWebThinkingLevel): GeminiWebTimeouts {
   return {
-    responseAppearTimeoutMs: STANDARD_RESPONSE_APPEAR_TIMEOUT_MS,
-    generationTimeoutMs: STANDARD_GENERATION_TIMEOUT_MS,
+    generationTimeoutMs: GEMINI_GENERATION_TIMEOUT_MS,
   };
 }
 
@@ -667,7 +655,7 @@ class GeminiWebSession {
     const queue = this.operationQueues[thinkingLevel] ?? Promise.resolve();
     const run = async (): Promise<string> => {
       const timeouts = timeoutsForThinkingLevel(thinkingLevel);
-      const maxAttempts = 2;
+      const maxAttempts = 5;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {

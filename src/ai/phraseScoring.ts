@@ -246,6 +246,31 @@ export async function scorePhrasesForFamiliarity(
   return resultsByPhrase;
 }
 
+function combinedScore(item: ScoredPhrase): number {
+  return item.idiomacityScore + item.familiarityScore / 10;
+}
+
+export function dedupeScoredPhrasesByEntryKey(phrases: ScoredPhrase[]): ScoredPhrase[] {
+  const byEntryKey = new Map<string, ScoredPhrase>();
+
+  for (const item of phrases) {
+    const existing = byEntryKey.get(item.entryKey);
+    if (!existing || combinedScore(item) > combinedScore(existing)) {
+      byEntryKey.set(item.entryKey, item);
+    }
+  }
+
+  const deduped = [...byEntryKey.values()];
+  const collapsed = phrases.length - deduped.length;
+  if (collapsed > 0) {
+    console.log(
+      `Collapsed ${collapsed} qualifying phrases that mapped to duplicate entry keys`,
+    );
+  }
+
+  return deduped;
+}
+
 export function combinePhraseScores(
   phrases: string[],
   idiomacityByPhrase: Map<string, ParsedIdiomacityResult>,
@@ -283,5 +308,5 @@ export function combinePhraseScores(
     });
   }
 
-  return qualifying;
+  return dedupeScoredPhrasesByEntryKey(qualifying);
 }

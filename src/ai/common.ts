@@ -81,6 +81,49 @@ export async function loadFamiliarityPromptAsync(): Promise<string> {
   }
 }
 
+export async function loadSenseFamiliarityPromptAsync(): Promise<string> {
+  try {
+    const content: string = await fs.promises.readFile('./src/ai/sense_familiarity_prompt.txt', 'utf-8');
+    return content;
+  } catch (err) {
+    console.error('Error reading file:', err);
+    throw err;
+  }
+}
+
+export const parseSenseFamiliarityResponse = (
+  response: string,
+): Array<{ displayText: string; summary: string; familiarityScore: number }> => {
+  const results: Array<{ displayText: string; summary: string; familiarityScore: number }> = [];
+  const lines = response.split('\n').filter((line) => line.trim() !== '');
+
+  for (const line of lines) {
+    const colonIndex = line.lastIndexOf(' : ');
+    if (colonIndex === -1) {
+      continue;
+    }
+
+    const score = parseFloat(line.substring(colonIndex + 3).trim());
+    if (Number.isNaN(score)) {
+      continue;
+    }
+
+    const leftPart = line.substring(0, colonIndex).trim();
+    const parenMatch = leftPart.match(/^(.+?) \((.+)\)$/);
+    if (!parenMatch) {
+      continue;
+    }
+
+    results.push({
+      displayText: parenMatch[1].trim(),
+      summary: parenMatch[2].trim(),
+      familiarityScore: Math.round(score * 10),
+    });
+  }
+
+  return results;
+};
+
 export const parseFamiliarityResponse = (response: string): any[] => {
   const results: any[] = [];
   const lines = response.split('\n').filter(line => line.trim() !== '');

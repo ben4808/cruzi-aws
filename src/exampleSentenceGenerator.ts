@@ -1,42 +1,28 @@
 import fs from 'fs';
-import { getExampleSentenceQueueTop10, addExampleSentences, updateEntriesLoadingStatus } from 'cruzi-db';
-import { GeminiAiProvider } from './ai/gemini';
+import {
+  getSensesWithoutExampleSentencesTop10,
+  addExampleSentences,
+  SenseWithoutExampleSentences,
+} from 'cruzi-db';
+import { GeminiWebAiProvider } from './ai/geminiWebProvider';
+import { isGeminiTimeoutError } from './lib/utils';
 import { ExampleSentence } from 'cruzi-models';
 
 /**
-This script should be written in Node.js/TypeScript.
+Keep looping through the following steps:
+1. Query the database for the top 10 records in the sense table that:
+  - have no example_sentences record and
+  - either are a Primary sense or have a familiarity score of 50
 
-Tasks:
-1. Query the database for the top 10 entries in the example_sentence_queue table.
-  - Use DAO function get_example_sentence_queue_top_10()
-  - Entries should be removed from the queue after being selected.
-  - Output will be in the following structure:
-  [
-    {
-      sense_id: string,
-      entry: string,
-      display_text: string,
-      lang: string,
-      sense_summary: string,
-    },
-    ...
-  ]
-2. Using the prompt in example_sentences_prompt.txt, send a request to the Gemini 2.5 API to generate example sentences for the sense.
-3. Update the database with the example sentences returned from the API.
-  - Use the DAO function add_example_sentences(sense_id: string, example_sentences: ExampleSentence[])
-  - The status of the entry should be updated. If everything was successful, the status should be set to 'Ready'. If there was an error,
-    the status should be set to 'Error'.
+2. Using the prompt in example_sentences_prompt.txt, send a request to the Gemini (using GeminiWebAiProvider standard mode).
+3. Update the database with the example sentences returned.
  */
 
-const geminiProvider = new GeminiAiProvider();
+const geminiProvider = new GeminiWebAiProvider();
 
 async function loadExampleSentencesPromptAsync(): Promise<string> {
   try {
-    // In Lambda environment, files are relative to the handler location in dist/
-    const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-    //const promptPath = isLambda ? './ai/example_sentences_prompt.txt' : './src/ai/example_sentences_prompt.txt';
-    const promptPath = './src/ai/example_sentences_prompt.txt';
-    const content: string = await fs.promises.readFile(promptPath, 'utf-8');
+    const content: string = await fs.promises.readFile('./src/ai/example_sentences_prompt.txt', 'utf-8');
     return content;
   } catch (err) {
     console.error('Error reading example sentences prompt file:', err);
@@ -52,10 +38,12 @@ interface ParsedExampleSentences {
   }>;
 }
 
-function parseExampleSentencesBatchResponse(response: string): ParsedExampleSentences[] | null {
-  const lines = response.split('\n');
+function promptLineForSense(sense: SenseWithoutExampleSentences): string {
+  return `${sense.displayText} (lang: ${sense.lang}, sense: ${sense.senseSummary})`;
+}
 
-  // Group lines into blocks separated by blank lines
+function parseExampleSentencesBatchResponse(response: string): ParsedExampleSentences[] {
+  const lines = response.split('\n');
   const blocks: string[][] = [];
   let currentBlock: string[] = [];
 
@@ -70,7 +58,6 @@ function parseExampleSentencesBatchResponse(response: string): ParsedExampleSent
     }
   }
 
-  // Add the last block if it exists
   if (currentBlock.length > 0) {
     blocks.push(currentBlock);
   }
@@ -78,44 +65,36 @@ function parseExampleSentencesBatchResponse(response: string): ParsedExampleSent
   const parsedResults: ParsedExampleSentences[] = [];
 
   for (const block of blocks) {
-    // Filter out empty lines within the block
-    const filteredLines = block.filter(line => line.trim() !== '');
-
+    const filteredLines = block.filter((line) => line.trim() !== '');
     if (filteredLines.length === 0) {
       continue;
     }
 
-    // First line should be the word/phrase
     const wordPhrase = filteredLines[0].trim();
-
     const sentences: Array<{ english: string; spanish: string }> = [];
 
-    // Parse sentences (3 sentences, each with English and Spanish)
     for (let i = 1; i < filteredLines.length; i += 2) {
       if (i + 1 < filteredLines.length) {
-        const english = filteredLines[i].trim();
-        const spanish = filteredLines[i + 1].trim();
-        sentences.push({ english, spanish });
+        sentences.push({
+          english: filteredLines[i].trim(),
+          spanish: filteredLines[i + 1].trim(),
+        });
       }
     }
 
-    // We expect exactly 3 sentences
     if (sentences.length !== 3) {
       console.warn(`Expected 3 sentences but got ${sentences.length} for ${wordPhrase}`);
-      return null;
+      continue;
     }
 
-    parsedResults.push({
-      wordPhrase,
-      sentences
-    });
+    parsedResults.push({ wordPhrase, sentences });
   }
 
-  return parsedResults.length > 0 ? parsedResults : null;
+  return parsedResults;
 }
 
 function createExampleSentencesFromParsedData(parsedData: ParsedExampleSentences): ExampleSentence[] {
-  return parsedData.sentences.map(sentence => ({
+  return parsedData.sentences.map((sentence) => ({
     senseId: '',
     translations: {
       en: sentence.english,
@@ -124,92 +103,108 @@ function createExampleSentencesFromParsedData(parsedData: ParsedExampleSentences
   }));
 }
 
+function matchParsedResultToSense(
+  sense: SenseWithoutExampleSentences,
+  parsedResults: ParsedExampleSentences[],
+): ParsedExampleSentences | null {
+  const promptLine = promptLineForSense(sense);
+  const normalizedDisplayText = sense.displayText.toLowerCase();
+
+  let matchIndex = parsedResults.findIndex((parsed) => parsed.wordPhrase === promptLine);
+  if (matchIndex === -1) {
+    matchIndex = parsedResults.findIndex((parsed) => parsed.wordPhrase === sense.displayText);
+  }
+  if (matchIndex === -1) {
+    matchIndex = parsedResults.findIndex(
+      (parsed) => parsed.wordPhrase.toLowerCase() === normalizedDisplayText,
+    );
+  }
+  if (matchIndex === -1) {
+    matchIndex = parsedResults.findIndex((parsed) =>
+      parsed.wordPhrase.toLowerCase().startsWith(normalizedDisplayText),
+    );
+  }
+
+  if (matchIndex === -1) {
+    return null;
+  }
+
+  const [parsed] = parsedResults.splice(matchIndex, 1);
+  return parsed;
+}
+
+async function processBatch(
+  senses: SenseWithoutExampleSentences[],
+  promptTemplate: string,
+): Promise<number> {
+  const wordPhraseEntries = senses.map((sense) => promptLineForSense(sense)).join('\n');
+  const prompt = promptTemplate.replace('[[WORDS AND PHRASES]]', wordPhraseEntries);
+
+  const aiResponse = await geminiProvider.generateResultsAsync(prompt);
+  console.log(`Received example sentence response (${aiResponse.length} characters)`);
+
+  const parsedResults = parseExampleSentencesBatchResponse(aiResponse);
+  console.log(`Parsed ${parsedResults.length} example sentence results`);
+
+  if (parsedResults.length === 0) {
+    console.warn('No example sentence results parsed; skipping batch update');
+    return 0;
+  }
+
+  const unmatchedParsed = [...parsedResults];
+  let savedCount = 0;
+
+  for (const sense of senses) {
+    const parsedData = matchParsedResultToSense(sense, unmatchedParsed);
+    if (!parsedData) {
+      console.warn(`Failed to match example sentences for sense ${sense.senseId} (${sense.displayText})`);
+      continue;
+    }
+
+    const exampleSentences = createExampleSentencesFromParsedData(parsedData);
+    await addExampleSentences(sense.senseId, exampleSentences);
+    savedCount++;
+    console.log(`Saved ${exampleSentences.length} example sentences for sense ${sense.senseId} (${sense.displayText})`);
+  }
+
+  return savedCount;
+}
+
 export async function exampleSentenceGenerator(): Promise<void> {
   try {
     console.log('Starting example sentence generation...');
 
-    // Step 1: Get top 10 entries from queue
-    const queueItems = await getExampleSentenceQueueTop10();
-    console.log(`Processing ${queueItems.length} senses from queue`);
-
-    if (queueItems.length === 0) {
-      console.log('No senses in queue');
-      return;
-    }
-
-    // Track processed entries for status update
-    const processedEntries = new Set<string>();
-
-    // Load the example sentences prompt template
     const promptTemplate = await loadExampleSentencesPromptAsync();
+    let batchNumber = 0;
 
-    // Process senses in batches of 5
-    for (let i = 0; i < queueItems.length; i += 5) {
-      const batch = queueItems.slice(i, i + 5);
-      console.log(`Processing batch of ${batch.length} senses (batch starting at index ${i})`);
+    while (true) {
+      const senses = await getSensesWithoutExampleSentencesTop10();
+      if (senses.length === 0) {
+        console.log('No senses remaining that need example sentences');
+        break;
+      }
+
+      batchNumber++;
+      console.log(`Processing batch ${batchNumber} with ${senses.length} senses`);
 
       try {
-        // Step 2: Create prompt for this batch of senses
-        const wordPhraseEntries = batch.map(item =>
-          `${item.display_text} (lang: ${item.lang}, sense: ${item.sense_summary})`
-        ).join('\n');
-
-        let prompt = promptTemplate
-          .replace('[[WORDS AND PHRASES]]', wordPhraseEntries);
-
-        // Step 3: Call Gemini API
-        const aiResponse = await geminiProvider.generateResultsAsync(prompt);
-        console.log(`AI response for batch:`, aiResponse);
-
-        // Step 4: Parse the response for all items in batch
-        const parsedBatchData = parseExampleSentencesBatchResponse(aiResponse);
-
-        if (!parsedBatchData || parsedBatchData.length !== batch.length) {
-          console.warn(`Failed to parse AI response for batch - expected ${batch.length} items, got ${parsedBatchData?.length || 0}`);
-          continue;
+        const savedCount = await processBatch(senses, promptTemplate);
+        if (savedCount === 0) {
+          console.warn(`No example sentences saved in batch ${batchNumber}; stopping`);
+          break;
         }
-
-        // Step 5: Process each item in the batch
-        for (let j = 0; j < batch.length; j++) {
-          const item = batch[j];
-          const parsedData = parsedBatchData[j];
-
-          if (!parsedData) {
-            console.warn(`Failed to parse data for sense ${item.sense_id} in batch`);
-            continue;
-          }
-
-          console.log(`Parsed ${parsedData.sentences.length} example sentences for ${item.entry}`);
-
-          // Step 6: Convert parsed data to ExampleSentence objects
-          const exampleSentences: ExampleSentence[] = createExampleSentencesFromParsedData(parsedData);
-
-          // Step 7: Save example sentences to database
-          await addExampleSentences(item.sense_id, exampleSentences);
-          console.log(`Saved ${exampleSentences.length} example sentences for sense ${item.sense_id}`);
-
-          // Track successfully processed entry for status update
-          processedEntries.add(`${item.entry}:${item.lang}`);
-        }
-
       } catch (error) {
-        console.error(`Error processing batch starting at index ${i}:`, error);
-        // Continue processing other batches even if one fails
+        if (isGeminiTimeoutError(error)) {
+          console.warn(`Gemini timeout processing example sentence batch ${batchNumber}`);
+          break;
+        }
+
+        console.error(`Error processing example sentence batch ${batchNumber}:`, error);
+        break;
       }
     }
 
-    // Step 8: Update loading status to 'Ready' for all successfully processed entries
-    if (processedEntries.size > 0) {
-      const entriesToUpdate = Array.from(processedEntries).map(entryKey => {
-        const [entry, lang] = entryKey.split(':');
-        return { entry, lang };
-      });
-      await updateEntriesLoadingStatus(entriesToUpdate, 'Ready');
-      console.log(`Updated loading status to 'Ready' for ${entriesToUpdate.length} entries`);
-    }
-
     console.log('Example sentence generation completed');
-
   } catch (error) {
     console.error('Fatal error in exampleSentenceGenerator:', error);
     throw error;

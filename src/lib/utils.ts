@@ -192,3 +192,8 @@ export function displayTextToEntry(text: string): string {
     // accented and tilded letters from various languages, and apostrophes.
     return text.replace(/[^a-zA-Z0-9áéíóúüñãõẽĩũỹÁÉÍÓÚÜÑÃÕẼĨŨỸ']/g, '').toUpperCase();
 }
+
+export function isGeminiTimeoutError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return /timed out/i.test(message);
+}

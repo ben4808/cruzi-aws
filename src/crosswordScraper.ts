@@ -15,7 +15,7 @@ import {
   ScrapedPuzzle,
 } from 'cruzi-models';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getCrosswordCollectionId, ILoaderDao, LoaderDao } from 'cruzi-db';
+import { getCrosswordCollectionId, ILoaderDao, insertEntries, LoaderDao } from 'cruzi-db';
 import { formatDateKey, generateId, getPuzzleDate, mapValues } from './lib/utils';
 import { PuzzleSource, PuzzleSources } from './scraper/PuzzleSource';
 import fs from 'fs';
@@ -272,7 +272,14 @@ let processPuzzle = async (puzzle: ScrapedPuzzle): Promise<void> => {
 
       await dao.saveClueCollection(clueCollection); // Adds id to collection
       await dao.addCluesToCollection(clueCollection.id!, clueCollection.clues as CollectionClue[]);
-      await dao.upsertEntries(familiarityQueueItems);
+      await insertEntries(
+        familiarityQueueItems.map(({ entry, lang }) => ({
+          entry,
+          lang,
+          length: entry.length,
+          display_text: entry,
+        })),
+      );
       await dao.addCrosswordFamiliarityQueueEntries(familiarityQueueItems);
 
       console.log(`${puzzle.publicationId} entry info queued.`);

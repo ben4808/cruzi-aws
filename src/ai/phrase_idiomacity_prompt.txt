@@ -1,45 +1,68 @@
-Rate the given words and phrases according to the following rubric.
+TASK
+Analyze the provided list of words and phrases. For each item:
+- Parse the word/phrase in the most natural/common way.
+- Attempt multiple parsings of the item. For example, ACTSAPART can parse as "acts apart" (not idiomatic) or "acts a part" (quite idiomatic)
+- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters in the exact sequence provided. Do not substitute letters for digits, do not reinterpret, respell, add, remove, or change any words. Don't capitalize just becasue it's the first word.
+- Assign exactly one category. Select the most natural/familiar category for the word/phrase.
+- Score using the rubric below.
 
-Also, parse the words and output them in their most natural form (lowercase anything not naturally lowercase), but do NOT change the word order or the spelling of the given phrase (e.g. "water loo" would be output as "Waterloo", "INNOUT" would be output as "In-N-Out").
-Especially try parsing each term as a proper name as well as a word or phrase.
-Parse each term into one of the following categories:
-Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Partial Phrase, Nonsense
+Strict Rules:
+- If a term is misspelled, awkwardly phrased, or requires reinterpretation to make sense, score it 0 or 1.
+- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
 
-RUBRIC: Syntactic & Idiomatic Naturalness (0-5 points)
+CATEGORIES
+Word: Single lexical item.
+Phrase: Multi-word coherent expression.
+Proper Name: Specific person, place, brand, or organization.
+Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+Partial Phrase: Broken grammatical fragment (e.g., "age of", "acts in").
+Nonsense: Unintelligible or grammatically impossible sequences.
 
-5 points: Absolute Fixed Term. A non-negotiable, standard technical, cultural, or highly idiomatic term. Replacing any word changes the meaning entirely or sounds completely wrong. It strongly feels like a single lexical unit. The word or phrase must be the best way to the say the thing and the best spelling. 
-- Includes any globally recognized Proper Noun commonly in the vocabulary of the educated public.
-- Includes complete idiomatic frames including their necessary linking prepositions (e.g., "show the door to").
-Examples: spray paint, water vapor, watch your step, world class, fast food, brain drain, water under the bridge, Statue of Liberty
+RUBRIC
+5 Points: Absolute Fixed Term / Primary Proper Noun
+A non-negotiable, standard cultural, technical, or highly idiomatic unit. Replacing any word destroys the meaning or sounds entirely wrong (unless the new word forms a new idiomatic unit). It is the absolute best way to say the thing.
+- Includes globally recognized Proper Nouns in common public vocabulary.
+- Includes complete idiomatic frames with necessary prepositions.
+- Single words naturally score a 5 
+- Includes foundational, universally understood acronyms and abbreviations (FBI, abbr.)
+Examples: spray paint, water vapor, watch your step, fast food, brain drain, Statue of Liberty, acclimating
 
-4 points: Strong Collocation / Variation. Highly predictable and cohesive, but slightly less rigid than a 5. This tier captures technical terms, slight variations of a 5-point term, or inflections.
-- Includes any globally recognized Proper Noun, even if it's less known.
-- Inflection of a 5 point term ("spray painted", "good-naturedly")
-- Slight variation on the absolute best way to say it while still being idiomatic ("hybrid vehicle" 4 instead of "hybrid" 5, "traffic flow" 4 instead of "flow of traffic" 5). 
-- Includes phrasal-prepositional verbs where the trailing preposition is standard syntax for connecting an object (e.g., "show up for").
-- E.g. "Heavy rain": "Heavy" is the preferred, highly idiomatic modifier for rain. While you can say "intense rain" or "pouring rain," "heavy rain" is a standard meteorological and conversational unit.
-- E.g. "Running shoes": A distinct category of footwear. It just misses a 5 because it's a sub-category of "shoes" rather than a totally unique, non-substitutable concept like "software."
+4 Points: Strong Collocation / Variation / Minor Proper Noun
+Highly predictable, cohesive, and idiomatic, but slightly less rigid than a 5.
+- Includes concrete, highly predictable technical, industrial, legal, or physical collocations and technical terms (e.g., adoptive mother as a legal status, aggregate sand as an industrial material).
+- Includes lesser-known or regional Proper Nouns.
+- Includes acronyms and abbreviations must represent a unique, irreplaceable concept
+- Inflections of a 5-point term (Examples: spray painted, good-naturedly).
+- Must be the preferred conversational unit for saying that thing (Example: "heavy rain" over "intense rain").
+- Includes phrases that serve as immediate, highly predictable native reactions or transitions in speech (e.g., 'about that...', 'watch out')
+Examples: paint can, boiling water, take care, Asian food, brain food, galaxy cluster
 
-3 points: Common Formulaic Expression. These are phrases we hear all the time, but the words haven't fused into a single new entity. They keep their literal, dictionary definitions, but they frequently travel as a pair.
-- Includes highly frequent, culturally predictable combinations that describe standard scenarios, distinguishing them from random grammar combinations (e.g., "show up uninvited")
-- Often conjures up a specific mental image or recognizable scenario that native speakers reference constantly (e.g. poop bucket, pool toy) 
-Examples: front door, car keys, word order, water pipe
+3 Points: Common Formulaic Expression
+Possesses specific lexical, technical, cultural, or conversational weight. Carries with it narrative gravity, a specific culturally understood saying, scenario, or image.
+- Must be a complete syntactic unit. If it requires a missing verb/noun to make sense or sound natural, it is a Partial Phrase and scores 1.
+- Includes syntactically complete phrasal verbs or predicate adjectives with their mandatory prepositions, even if they typically take an object later in a sentence. (look for, active in, accustoms to).
+- Includes extremely common and cohesive predicate phrases (read a book, cooked dinner)
+Examples: after class, front door, car keys, pool toy, poop bucket, acts in, advanced on, accustoms to, afraid of, afternoon social, act a part
 
-2 points: Awkward or Sub-Optimal. Grammatically correct, but a native speaker or industry expert would likely correct it because a more cohesive, standard alternative exists, whether it's a different phrasing or spelling.
-- If the given term and the alternative are both idiomatically accepted, it should be scored higher (whisky vs whiskey)
-- Includes terms that are more idiomatic with less words ("Liquid Death" is better than "Liquid Death water")
-Examples: hover vehicle (preferred "hovercraft"), water paint (preferred "watercolor"), tooth doctor (preferred "dentist"), heat machine (preferred "heater"), water density (preferred "density of water"), water spring (preferred just "spring"), tonite (preferred "tonight")
+2 Points: Awkward / Sub-Optimal
+Grammatically possible or phonetically understandable, but conceptually unstable or non-standard. Changing a single word or correcting a spelling results in a significantly higher-frequency native idiom.
+- Includes common phonetic shortcuts or homophone errors where an incorrect word choice undermines the standard, high-frequency native idiom.
+- Includes terms with unnecessary or redundant words (Example: "Liquid Death water" vs preferred "Liquid Death").
+- Includes common phonetic shortcuts or slightly dated text-slang (Example: tonite).
+Examples: affect change (preferred: effect change), hover vehicle (preferred: hovercraft), water paint (preferred: watercolor), tooth doctor (preferred: dentist), absent days (preferred: days of absence)
 
-1 point: Purely Descriptive / Free Combination. Perfectly natural English, but there is zero lexical "glue" here. These words are just passing neighbors meeting via normal grammar rules. Often purely descriptive or partial phrases that don't mean anything on their own.
-- Restricted only to accidental neighbors or random, non-frequent combinations (e.g., "show up with shoes").
-Examples: green paint, buy a newspaper, play basketball, tall tree, poor as
+1 Point: Purely Descriptive / Free Combination
+Literal, generic combinations that possess zero unique cultural or lexical "glue".
+- Includes fragments that rely entirely on a missing verb or noun to form a recognizable conversational unit.
+Examples: green paint, buy a newspaper, play basketball, tall tree, age of, poor as, a goner, accept it, age of, ABCD, after dusk
 
-0 points: Syntactic Nonsense / Error. The words cannot legally sit next to each other like this in English, or there is a disqualifying typo.
-- Includes misspellings 
-Examples: tree tall, baking sdoa, quickly ran dog, hehhhehoiojj
+0 Points: Syntactic Nonsense / Disqualifying Error
+Words that cannot legally sit next to each other in English syntax, or contain critical typos that ruin the lexical unit.
+Examples: tree tall, baking sdoa, quickly ran dog.
 
-
-Output the scores in this exact format, without explanatory or auxiliary text:
+OUTPUT FORMAT
+Output items in this exact format (one per line, no extra text):
 
 SUMMARY:
 <parsed form> : <parsed category> : <score>
@@ -47,6 +70,6 @@ SUMMARY:
 ...
 
 
-WORDS AND PHRASES:
+WORDS AND PHRASES
 
 [[DATA]]

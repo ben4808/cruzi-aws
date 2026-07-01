@@ -20,15 +20,11 @@ Loop through the following tasks until the queue is empty:
 3. Update the database with the info returned from the API.
   - The senses should be updated whether or not they already existed. If the sense is referenced to an existing
     sense, that sense ID should be conserved even as the summary etc. are updated.
-  - The status of the entry should be updated. If everything was successful, the status should be set to 'Ready'. If there was an error,
-    the status should be set to 'Error'. If there were no senses returned ("Nonsense"), the status should be set to 'Invalid'.
 4. For any returned senses, existing or new, that have less than 3 example sentences, add the sense to the example_sentence_queue table.
-  - Set the status of the entry back to 'Processing'.
 5. Query for any clues in the database with the specified entry and no sense_id or custom_clue. Assign these clues the sense_id that was determined as Primary.
   - Use the DAO function assign_primary_sense_to_clues(entry: string, lang: string, primary_sense_id: string)
 6. Remove the entry from the queue after being successfully processed.
 
-Use the runPauseCycle to pause for 1 hour every 2 hours.
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Sense summary and definition are stored directly on the sense row. Natural and colloquial translations are stored in sense_entry_translation; alternatives are stored in sense.similar_entries.
 cruzi-db/sql/schema.sql is the source of truth for the database schema. 
@@ -39,7 +35,6 @@ import fs from 'fs';
 import {
   getEntryInfoQueueTop1,
   upsertSense,
-  updateEntriesLoadingStatus,
   addExampleSentenceQueueEntries,
   assignPrimarySenseToClues,
   getSensesForEntry,
@@ -49,12 +44,7 @@ import {
 } from 'cruzi-db';
 import { EntryRef, LanguageNames, Sense } from 'cruzi-models';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import {
-  getRunPhaseDeadline,
-  isGeminiTimeoutError,
-  isRunPhaseActive,
-  pauseBetweenRunPhases,
-} from './lib/runPauseCycle';
+import { isGeminiTimeoutError } from './lib/utils';
 import { displayTextToEntry, generateId } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
@@ -299,26 +289,10 @@ function countExampleSentences(sense: Sense): number {
   return exampleIds.size;
 }
 
-type EntryLoadingStatus = 'Ready' | 'Error' | 'Invalid' | 'Processing';
-
-async function updateEntryLoadingStatus(
-  entry: string,
-  lang: string,
-  status: EntryLoadingStatus,
-): Promise<void> {
-  await updateEntriesLoadingStatus([{ entry, lang }], status);
-}
-
-async function saveSensesAndStatus(
-  entry: string,
-  lang: string,
-  senses: Sense[],
-  status: EntryLoadingStatus,
-): Promise<void> {
+async function saveSenses(entry: string, lang: string, senses: Sense[]): Promise<void> {
   for (const sense of senses) {
     await upsertSense(entry, lang, sense);
   }
-  await updateEntryLoadingStatus(entry, lang, status);
 }
 
 async function processQueueItem(
@@ -334,8 +308,7 @@ async function processQueueItem(
   console.log(`AI response for ${item.entry}:`, aiResponse);
 
   if (aiResponse.trim().toLowerCase() === 'nonsense') {
-    await updateEntryLoadingStatus(item.entry, item.lang, 'Invalid');
-    console.log(`Marked ${item.entry} as Invalid (Nonsense response)`);
+    console.log(`Skipping ${item.entry} (Nonsense response)`);
     return;
   }
 
@@ -343,8 +316,7 @@ async function processQueueItem(
   console.log(`Parsed ${parsedSenses.length} senses for ${item.entry}`);
 
   if (parsedSenses.length === 0) {
-    await updateEntryLoadingStatus(item.entry, item.lang, 'Invalid');
-    console.log(`Marked ${item.entry} as Invalid (no senses parsed)`);
+    console.log(`Skipping ${item.entry} (no senses parsed)`);
     return;
   }
 
@@ -359,8 +331,8 @@ async function processQueueItem(
     ),
   );
 
-  await saveSensesAndStatus(item.entry, item.lang, senses, 'Ready');
-  console.log(`Updated database for ${item.entry} with status: Ready`);
+  await saveSenses(item.entry, item.lang, senses);
+  console.log(`Updated senses in database for ${item.entry}`);
 
   const primarySense = senses.find((sense) => sense.frequency === 'Primary');
   if (primarySense?.id) {
@@ -377,61 +349,46 @@ async function processQueueItem(
   if (sensesToQueue.length > 0) {
     await addExampleSentenceQueueEntries(sensesToQueue);
     console.log(`Queued ${sensesToQueue.length} senses for example sentences`);
-
-    await updateEntryLoadingStatus(item.entry, item.lang, 'Processing');
-    console.log(`Updated status to Processing for ${item.entry} due to queued senses`);
   }
 }
 
 export async function entryInfoGenerator(): Promise<void> {
   try {
-    console.log('Starting entry info generation (2h run / 1h pause cycle)...');
+    console.log('Starting entry info generation...');
 
     const promptTemplate = await loadSensesPromptAsync();
     let itemNumber = 0;
 
     while (true) {
-      const runDeadline = getRunPhaseDeadline();
-      console.log('Starting entry info generator run phase (2 hours)...');
+      const queueItem = await getEntryInfoQueueTop1();
+      if (!queueItem) {
+        console.log('No entries in queue');
+        break;
+      }
 
-      while (isRunPhaseActive(runDeadline)) {
-        const queueItem = await getEntryInfoQueueTop1();
-        if (!queueItem) {
-          console.log('No entries in queue; ending run phase early');
+      itemNumber++;
+      console.log(`Processing entry info item ${itemNumber}: ${queueItem.entry} (${queueItem.lang})`);
+
+      try {
+        await processQueueItem(promptTemplate, queueItem);
+
+        await removeFromEntryInfoQueue(queueItem.entry, queueItem.lang);
+        console.log(`Removed ${queueItem.entry} (${queueItem.lang}) from entry info queue`);
+      } catch (error) {
+        if (isGeminiTimeoutError(error)) {
+          console.warn(`Gemini timeout processing ${queueItem.entry}`);
           break;
         }
 
-        itemNumber++;
-        console.log(`Processing entry info item ${itemNumber}: ${queueItem.entry} (${queueItem.lang})`);
+        console.error(`Error processing entry ${queueItem.entry}:`, error);
 
         try {
-          await processQueueItem(promptTemplate, queueItem);
-
           await removeFromEntryInfoQueue(queueItem.entry, queueItem.lang);
-          console.log(`Removed ${queueItem.entry} (${queueItem.lang}) from entry info queue`);
-        } catch (error) {
-          if (isGeminiTimeoutError(error)) {
-            console.warn(
-              `Gemini timeout processing ${queueItem.entry}; ending run phase for 1 hour pause...`,
-            );
-            break;
-          }
-
-          console.error(`Error processing entry ${queueItem.entry}:`, error);
-
-          try {
-            await updateEntryLoadingStatus(queueItem.entry, queueItem.lang, 'Error');
-            await removeFromEntryInfoQueue(queueItem.entry, queueItem.lang);
-            console.log(
-              `Marked ${queueItem.entry} as Error and removed from entry info queue`,
-            );
-          } catch (dbError) {
-            console.error(`Failed to update error status for ${queueItem.entry}:`, dbError);
-          }
+          console.log(`Removed ${queueItem.entry} from entry info queue after error`);
+        } catch (dbError) {
+          console.error(`Failed to remove ${queueItem.entry} from entry info queue:`, dbError);
         }
       }
-
-      await pauseBetweenRunPhases('entryInfoGenerator');
     }
   } catch (error) {
     console.error('Fatal error in entryInfoGenerator:', error);

@@ -11,12 +11,13 @@ import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
 import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
 import { phraseGenerator } from './phraseGenerator';
+import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 
-entryInfoGenerator()
- .then(() => console.log("Entry info generator completed successfully."))
- .catch(error => console.error("Error in entry info generator: ", error));
+// entryInfoGenerator()
+//  .then(() => console.log("Entry info generator completed successfully."))
+//  .catch(error => console.error("Error in entry info generator: ", error));
 
-//exampleSentenceGenerator()
+// exampleSentenceGenerator()
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
 
@@ -60,6 +61,11 @@ entryInfoGenerator()
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-// phraseGenerator()
-//   .then(() => console.log("Phrase generator completed successfully."))
-//   .catch(error => console.error("Error in phrase generator: ", error));
+phraseGenerator()
+  .then(() => console.log("Phrase generator completed successfully."))
+  .catch(error => console.error("Error in phrase generator: ", error));
+
+// senseFamiliarityGenerator()
+//   .then(() => console.log("Sense familiarity generator completed successfully."))
+//   .catch(error => console.error("Error in sense familiarity generator: ", error));
+  
