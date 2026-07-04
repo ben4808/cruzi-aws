@@ -21,9 +21,9 @@ import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
 
-// runTasks()
-//   .then(() => console.log("Crossword loading tasks completed successfully."))
-//   .catch(error => console.error("Error in crossword loading tasks: ", error));
+runTasks()
+  .then(() => console.log("Crossword loading tasks completed successfully."))
+  .catch(error => console.error("Error in crossword loading tasks: ", error));
 
 // crosswordFamiliarityGenerator()
 //   .then(() => console.log("Crossword familiarity generator completed successfully."))
@@ -61,9 +61,9 @@ import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-phraseGenerator()
-  .then(() => console.log("Phrase generator completed successfully."))
-  .catch(error => console.error("Error in phrase generator: ", error));
+// phraseGenerator()
+//   .then(() => console.log("Phrase generator completed successfully."))
+//   .catch(error => console.error("Error in phrase generator: ", error));
 
 // senseFamiliarityGenerator()
 //   .then(() => console.log("Sense familiarity generator completed successfully."))

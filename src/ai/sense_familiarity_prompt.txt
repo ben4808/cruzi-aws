@@ -1,32 +1,58 @@
 TASK
-Analyze the provided list of words and phrases in the [[LANG]] language. 
+Analyze the provided list of words and phrases in the English language from the point of view of the United States. 
+Every word or phrase will be given together with the sense in which it should be interpreted.
 
-RUBRIC
-General:
-- Every word or phrase will be given together with the sense in which it should be interpreted. Score based on the familiarity of that particular sense, not of the word or phrase in general. For example, "bed (Piece of furniture for sleep)" would score a 5, but "bed (Bottom of a body of water)" would score a 3.5.
-- Score phrases based on their familiarity as a single cohesive unit/single term. For example, in "Pacific chorus frog" every constituent word is at least a 3.5, but together it they form a niche species name that scores probably 1.5.
+CORE EVALUATION RULES
+- The Sense Isolation Rule: Evaluate only the specific sense and definition provided. Completely ignore the word's primary or most common meaning if it differs from the target sense.
+- Part-of-Speech Shift Penalty: If the target sense forces a word into a syntactic category different from its most common, intuitive usage, deduct 0.5 to 1.0 points from what its baseline score would be.
+Example: she (pronoun) is a 5.0, but she (noun: a female person/animal) drops to 3.5.
+- Metaphorical Extension Cap: Senses that are vivid, figurative, or cognitive extensions of a physical action or shape are capped at a maximum of 4.0.
+Example: shoulder (to bear a burden) or jump (a sudden numerical increase).
+- Collocation & Context Cap: If a word relies heavily on a highly specific surrounding phrase or modifier to sound natural in the target sense, cap it at a maximum of 4.0.
+Example: sex (demographic total of males/females) usually requires "distribution by sex" or "broken down by sex" to feel natural. somewhere (approximately) requires "somewhere around", "somewhere in the ballpark of", etc.
+- Register & Tone Filter: Senses confined to formal, legal, literary, or bureaucratic contexts rather than casual spoken conversation are capped at a maximum of 4.0.
+Example: right (to rectify or correct a mistake).
+- Synonym Replacement Check: If the target audience almost universally prefers and uses a completely different synonym in daily speech, cap the target word at a maximum of 3.5.
+Example: coach (long-distance bus) is eclipsed by "bus" or "charter" in American speech.
 - Score phrases based on the familiarity of the specific given phrasing. For example "Pacific Ring" is uncommon/awkward as a phrasing and would score 1.5, while "Pacific Rim" or "Pacific Ring of Fire" are both recognized and would score around 3. "Pacific Trench", though understood upon hearing it, is not really used in this form and would also be 1.5.
 - Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
 
-5 - Extremely fundamental. These are among the first few words and phrases learned. Highly active vocabulary. No contractions, abbreviations, or acronyms.
-Examples: sit, else, gone, tree, my, thank you, red, less, year, are you sure?
-4.5 - Extremely common everyday phrases and expressions. Active conversational vocabulary. No contractions, abbreviations, or acronyms.
-Examples: oil, song, normal, boss, ones, own, go ahead, come on, comma, toast, star, hobby, trip, are you done?
-4 - Very Common. In practically everyone's active vocabulary. Highly recognizable phrasal verbs, contractions, and abbreviations.
-Examples: attic, bark, dinosaurs, I've, social media, water bottle, gasp, sleep in, SOS, beat it, etc., OK, scarce, applies for, April Fools
-3.5 - Quite Common: In the active vocabulary of most but not all. Readily understood phrasal verbs, common noun phrases, and well-known names.
-Examples: thrive, cash register, caw, speed trap, malaria, photo booth, alias, CNN, abbr., lol, ASAP, Jimmy Kimmel, Ben, arable land, argued over
-3 - Active Recall/Common Knowledge: Recognized by the vast majority of speakers but recalled by around half. The Active Recall Test: The majority of native speakers (but not vast majority) could recall this word/phrase as the direct answer to a trivia question.
-Examples: SSN, bento, tres, deuce, THC, BTU, USSR, stage name, U-boat, D-list, ID'ed, master gardener, attn., tri-, Big Data, box score, eagled, Melinda, contrite, dear sir, souffle, orcs, Deuteronomy
-2.5 - Moderate Recall / Borderline Niche: Recognized by many but not the majority. Slightly niche terms that are familiar but not universal. Passable trivia fodder for a general audience. Less common derivatives. Less common synonyms. Less common single names.
-Examples: udon, e-cig, midis, Elio, accede, event horizon, avow, slier, Emil, disused, REM, acerbic, Alp, b-days, quixotic, cad, Arctic hare
-2 - Limited Familiarity: Known only to a smaller segment of the population. For phrases, people might understand the constituent words, but they are not familiar with the  standalone technical term. Rare names. Abbreviations not often used. Often niche to a specific field. Fodder for tough trivia.
-Examples: Elle, Moondance, Manu, Mekong, persiflage, Mr. Ed, ATCs, moment of inertia, Peak TV, Goa, Emerson, Apso, tatterdemalion, Arctic char
-1.5 - Generally Obscure: Known only in very specific, highly technical, or regional contexts. Too obscure to make good general trivia. Grammatical fragments that are rare. Obscure alternative spellings. Too obscure to make good trivia. Partial phrases that don't stand on their own. Rarely used abbreviations. Verb forms almost never seen.
-Examples: ade, plagioclase, Ilana, Erivo, ctr., -ose, meeter, Nomo, Entebbe, Sao, tra-las, cdr., aqua fortis, iterative deepening
+RUBRIC
+5 — Foundational Bedrock. You cannot navigate life without these. These words appear in the first few weeks of any introductory language course. No contractions, abbreviations, or acronyms. It is extremely hard to achieve this level.
+Criteria: Literal, direct meanings. Highly active vocabulary for 100% of native speakers. Must be the primary part of speech. No contractions, abbreviations, or acronyms.
+Examples: sit (rest on a seat), tree (perennial woody plant), difficult (not easy; requiring effort), red (the color), check (restaurant bill in the US—learned immediately due to sheer daily necessity).
+
+4.5 - Extremely Common: Everyday phrases and expressions. Active conversational vocabulary. No contractions, abbreviations, or acronyms.
+Criteria: Fully integrated into daily life, but slightly less primitive than Tier 5. These feel like 5's but don't quite pass as absolutely 100% essential. Fundamental phrases.
+Examples: bow (Decorative knot of ribbon), toast (sliced bread browned by heat), under (experiencing a state or condition, like "under pressure"), go ahead (proceed).
+
+4 - Very Common: In practically every native speaker's active vocabulary. Highly recognizable phrasal verbs, contractions, and abbreviations. Non-native speakers might still struggle with them.
+Examples: public (the community in general—penalized for noun shift), shoulder (accept a burden—capped for metaphor), right (to rectify—capped for formal register), extra (dramatic/over-the-top—slang), social media (online community), I've (contraction of I and have), attic (area above the ceiling).
+
+3.5 - Quite Common: In the active vocabulary of the majority of natives. Non-native speakers might not recognize them.
+- Includes common single generic names.
+Examples: coach (long-distance bus—capped by synonym replacement), train (point or aim a device), she (a female person/animal—penalized for noun shift), thrive (live and grow successfully), speed trap (police enmplacement), arable land (land that can be farmed)
+
+3 - Active Recall/Common Knowledge: Recognized by the vast majority of native speakers, but only recalled/used actively by about half.
+Criteria: The Active Recall Test applies here: the majority of native speakers could accurately produce or identify this word as the direct answer to a trivia question or a specific technical need, but they don't use it in daily conversation. Includes common acronyms.
+Examples: ladder (a run in fabric—niche), deuce (tennis or dice term), DEA (Drug Enforcement Admininistration), U-boat (German submarine), contrite (deeply sorry), souffle (French egg dish), orcs (Tolkien evil minions).
+
+2.5 - Moderate Recall / Borderline Niche: Recognized by a distinct minority of native speakers. 
+Criteria: Slightly niche terms, minor academic jargon, less common derivatives, or words tied to specific cultural sub-groups. Passable trivia fodder for a general audience. Less common derivatives. Less common synonyms. Less common single names.
+Examples: kitchen (hair at the nape of the neck—demographically/culturally specific), event horizon (black hole border), accede (yield to a demand), slier (more crafty-less common derivative), quixotic (impractical or impulsive), Arctic hare (species)
+
+2 - Limited Familiarity: Known only to a small segment of the population.
+Criteria: Standalone technical terms where the layperson might understand the individual words but does not recognize the phrase as an official concept. Rare names, highly specific domain jargon, or tough trivia fodder.
+Examples: wow (audio pitch fluctuation—restricted to analog audio engineering), moment of inertia (physics concept), persiflage (frivolous banter), tatterdemalion (person in tattered clothing), Arctic char (fish species)
+
+1.5 - Generally Obscure: Known only in highly technical, hyper-regional, or archaic contexts.
+Criteria: Too obscure to make good general trivia. Grammatical fragments that are rare, obscure alternative spellings, or abbreviations almost never seen.
+Examples: plagioclase (mineralogy), iterative deepening (computer science), aqua fortis (historical chemistry), meeter (rare agent noun)
+
 1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Everyone has to look it up.
-Examples: Marli Miller, Cantor Set, Three Forks
-0 - Not a real thing, couldn't make any sense of the word/phrase.
+Examples: Cantor Set (advanced mathematics), Three Forks (specific geographic micro-locations)
+
+0 - Non-Existent. Total nonsense, typographic errors, or a combination of words that communicates no real-world meaning or concept.
 
 OUTPUT
 Present each evaluation in the following strict format, without any introductory or auxiliary text:

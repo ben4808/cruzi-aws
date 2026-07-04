@@ -15,6 +15,8 @@ Keep looping through the following steps:
   - either are a Primary sense or have a familiarity score of 50
 
 2. Using the prompt in example_sentences_prompt.txt, send a request to the Gemini (using GeminiWebAiProvider standard mode).
+   Each input line is "<display_text> (<sense summary>)". The model returns at least 3 English/Spanish sentence pairs per item,
+   with the target word/phrase highlighted via {{double brackets}} in the English sentence.
 3. Update the database with the example sentences returned.
  */
 
@@ -39,8 +41,10 @@ interface ParsedExampleSentences {
 }
 
 function promptLineForSense(sense: SenseWithoutExampleSentences): string {
-  return `${sense.displayText} (lang: ${sense.lang}, sense: ${sense.senseSummary})`;
+  return `${sense.displayText} (${sense.senseSummary})`;
 }
+
+const MIN_SENTENCE_PAIRS = 3;
 
 function parseExampleSentencesBatchResponse(response: string): ParsedExampleSentences[] {
   const lines = response.split('\n');
@@ -82,8 +86,8 @@ function parseExampleSentencesBatchResponse(response: string): ParsedExampleSent
       }
     }
 
-    if (sentences.length !== 3) {
-      console.warn(`Expected 3 sentences but got ${sentences.length} for ${wordPhrase}`);
+    if (sentences.length < MIN_SENTENCE_PAIRS) {
+      console.warn(`Expected at least ${MIN_SENTENCE_PAIRS} sentence pairs but got ${sentences.length} for ${wordPhrase}`);
       continue;
     }
 
@@ -103,25 +107,34 @@ function createExampleSentencesFromParsedData(parsedData: ParsedExampleSentences
   }));
 }
 
+function normalizeWordPhrase(wordPhrase: string): string {
+  return wordPhrase.trim().toLowerCase();
+}
+
 function matchParsedResultToSense(
   sense: SenseWithoutExampleSentences,
   parsedResults: ParsedExampleSentences[],
 ): ParsedExampleSentences | null {
   const promptLine = promptLineForSense(sense);
-  const normalizedDisplayText = sense.displayText.toLowerCase();
+  const normalizedPromptLine = normalizeWordPhrase(promptLine);
+  const normalizedDisplayText = normalizeWordPhrase(sense.displayText);
 
-  let matchIndex = parsedResults.findIndex((parsed) => parsed.wordPhrase === promptLine);
-  if (matchIndex === -1) {
-    matchIndex = parsedResults.findIndex((parsed) => parsed.wordPhrase === sense.displayText);
-  }
+  let matchIndex = parsedResults.findIndex(
+    (parsed) => normalizeWordPhrase(parsed.wordPhrase) === normalizedPromptLine,
+  );
   if (matchIndex === -1) {
     matchIndex = parsedResults.findIndex(
-      (parsed) => parsed.wordPhrase.toLowerCase() === normalizedDisplayText,
+      (parsed) => normalizeWordPhrase(parsed.wordPhrase) === normalizedDisplayText,
     );
   }
   if (matchIndex === -1) {
     matchIndex = parsedResults.findIndex((parsed) =>
-      parsed.wordPhrase.toLowerCase().startsWith(normalizedDisplayText),
+      normalizeWordPhrase(parsed.wordPhrase).startsWith(`${normalizedDisplayText} (`),
+    );
+  }
+  if (matchIndex === -1) {
+    matchIndex = parsedResults.findIndex((parsed) =>
+      normalizeWordPhrase(parsed.wordPhrase).startsWith(normalizedDisplayText),
     );
   }
 
