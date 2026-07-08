@@ -16,17 +16,18 @@ Quality: Keep sentences concise (6-20 words), grammatically flawless, and polish
 
 Generate at least 3 sentences for each input item.
 IMPORTANT: Maintain the part of speech of the given sense in all sentences.
-For non-plural nouns, include at least one sentence with the plural form. Example: for "tree (woody plant)", generate at least one sentence for "tree" and "trees".
-For base form verbs, include at least one sentence for the Infinitive, the Third-Person singular, Past, Gerund, and Past Participle
+IMPORTANT: All sentences should specifically highlight the given sense of each word or phrases. Ignore all other possible senses.
+For base form verbs, include at least one sentence for the Infinitive, the Third-Person singular, Past, Gerund, and Past Participle, when they exist and are common.
 - Example: For "ride (go somewhere by vehicle)", generate at least one sentence for "ride", "rides", "rode", "riding", and "ridden".
-For phrases, do the same for whatever inflections make sense.
-- Example: For "hay bale (farm animal feed)", generate at least one sentences for "hay bale" and "hay bales"
+For verb phrases, do the same for whatever inflections make sense.
+- Example: For "give up", generate at least one sentence for "give up", "gives up", "gave up", "giving up", and "given up".
 - Example: For "watch your step (walk with care)", no other inflections make sense.
 - Example: For "play pool (play cue and ball game)", generate at least one sentence for "play pool", "plays pool", "played pool", and "playing pool". 
 
 Additionally, for the sentence in the language of the original word or phrase, enclose the word or phrase in double brackets.
 For example, for the word "contribute", "The prize was available for everyone that had {{contributed}} to fund throughout the year."
 For the phrase "watch your step", "Make sure to {{watch your step}} when entering the train."
+IMPORTANT: Do not generate any sentences in the original language without the double curly brackets somewhere.
 
 OUTPUT
 Generate the results in the following format. For each word/phrase, output the word/phrase on its own line, followed alternating lines of English and Spanish.

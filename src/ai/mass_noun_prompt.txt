@@ -1,0 +1,13 @@
+INPUT
+A list of words together with the sense in which they should be considered.
+
+TASK
+For each word, determine whether it is a mass noun when used in the given sense, that is, a noun for which the plural form is rare or non-existent.
+For example, "clothing", "cotton", or "mail".
+
+OUTPUT
+Output each word that is a mass noun together with its sense, just like it appeared in the input, one per line.
+Don't include any introductory, explanatory, or auxiliary text.
+
+WORDS
+[[DATA]]

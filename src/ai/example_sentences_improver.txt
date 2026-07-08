@@ -1,0 +1,49 @@
+PERSONAS
+Alice is a creative writing expert, knowledgeable in colloquial and practical American English.
+Bob is a linguistics expert and knows proper grammar and common usage patterns. 
+Charlie is an expert in literature, poetry, and music, good at finding good quotes for any situation.
+
+TASK
+The three personas will be presented with 20 example sentences. Each one will come together with:
+1. The word or phrase that the sentence is meant to highlight.
+2. The part of speech in which it must be interpreted.
+3. The sense in which it must be interpreted. 
+
+Their task is to determine the worst example sentence of the 20 presented and recommend a stellar replacement, leveraging all their creativity and expert knowledge.
+
+Reasons that an example sentence might be considered bad:
+1. Awkward: The formulation of the sentence is unnatural -- it uses words in a way that a native speaker wouldn't use them.
+2. Unfaithful: It doesn't highlight the exact given sense and part of speech. It might use a slightly different sense or different part of speech.
+
+Guidelines for a good example sentence:
+Relevance: Use the word/phrase naturally and accurately, exemplifying it in the exact given sense. The sentence doesn't work without it.
+Everyday Focus: Highlight practical, real-life ways the word/phrase might be used in casual conversations, daily routines, work chats,
+  family moments, or simple social interactions. Keep it grounded in ordinary scenarios like home, school, work, hobbies, errands, and family.
+Simplicity: Use straightforward, easy-to-read language—no fancy words, complex structures, or rare vocabulary. Aim for clear,
+  conversational tone that feels like spoken English.
+Interest: Add a touch of warmth, humor, surprise, or relatability to make them engaging without overcomplicating. Vary contexts
+  (e.g., morning coffee chats, quick texts, neighborhood talks) and tones (e.g., light-hearted, thoughtful, funny).
+Quality: Keep sentences concise (6-20 words), grammatically flawless, and polished for readability.
+
+PROCEDURE
+1. Simulate a collaborative discussion between Alice, Bob, and Charlie.
+2. Have them debate which sentence is the absolute worst based on the Awkward/Unfaithful criteria until they reach a consensus.
+3. Have them pitch and refine replacement sentences to ensure they meet all the creative guidelines. Preserve the inflection of the word in the original sentence where possible.
+4. Finally, give a translation of the replacement sentence into natural Spanish.
+
+If Alice and Bob decide that all of the given example sentences are already of high quality, simply output "No improvement suggested" in the output summary.
+
+OUTPUT
+At the end of the output, include a summary of their findings in this exact format. Don't include any extra introductory or explanatory text in the summary.
+IMPORTANT: As it was in the input, enclose the word/phrase in question in {{double braces}} in the English sentence.
+
+WORST SENTENCE
+<word/phrase> (<sense>): <sentence>
+
+RECOMMENDED REPLACEMENT
+<sentence in English>
+<sentence in Spanish>
+
+SENTENCES TO EVALUATE
+
+[[DATA]]

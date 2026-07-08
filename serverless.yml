@@ -12,10 +12,8 @@ provider:
     DB_HOST: ${env:DB_HOST}
     DB_USER: ${env:DB_USER}
     DB_PASSWORD: ${env:DB_PASSWORD}
-    # AI API configuration
-    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
-    GROK_API_KEY: ${env:GROK_API_KEY}
-    AI_API_HOST: ${env:AI_API_HOST}
+    DB_NAME: ${env:DB_NAME}
+    DB_PORT: ${env:DB_PORT}
 
   iam:
     role:
@@ -32,33 +30,12 @@ provider:
           Action:
             - events:PutEvents
           Resource: "*"
-        # S3 permissions - allow functions to add files to scraped-crosswords bucket
-        - Effect: Allow
-          Action:
-            - s3:PutObject
-            - s3:PutObjectAcl
-          Resource:
-            - arn:aws:s3:::scraped-crosswords
-            - arn:aws:s3:::scraped-crosswords/*
 
 package:
   include:
     - dist/**
 
 functions:
-  # Crossword scraper - scrapes crossword puzzles from various sources
-  crosswordScraper:
-    handler: dist/crosswordScraperLambda.handler
-    description: Scrapes crossword puzzles from various sources and generates entry info
-    timeout: 900  # 15 minutes - AI processing can take time
-    memorySize: 1024  # 1GB - Need more memory for AI processing
-    environment:
-      DB_HOST: ${self:provider.environment.DB_HOST}
-      DB_USER: ${self:provider.environment.DB_USER}
-      DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
-      GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
-      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
-
   # Entry info generator - processes entries and generates sense information
   entryInfoGenerator:
     handler: dist/entryInfoGeneratorLambda.handler
@@ -70,7 +47,6 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
-      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
   # Example sentence generator - generates example sentences for senses
   exampleSentenceGenerator:
@@ -83,7 +59,6 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
-      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
   # Crossword familiarity generator - generates familiarity scores and metadata
   crosswordFamiliarityGenerator:
@@ -96,7 +71,6 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
-      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
   # Crossword quality generator - generates quality scores
   crosswordQualityGenerator:
@@ -109,7 +83,6 @@ functions:
       DB_USER: ${self:provider.environment.DB_USER}
       DB_PASSWORD: ${self:provider.environment.DB_PASSWORD}
       GEMINI_API_KEY: ${self:provider.environment.GEMINI_API_KEY}
-      AI_API_HOST: ${self:provider.environment.AI_API_HOST}
 
 custom:
   enableGenerators: ${env:ENABLE_GENERATORS, 'true'}

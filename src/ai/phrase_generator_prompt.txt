@@ -48,7 +48,7 @@ On each turn:
 2. The active player discards an answer from their own list.
 3. The active player generates a new answer and adds it to their own list.
 At no point can there be duplicate answers, and discarded answers cannot be reused.
-After 10 turns, each player's final list is evaluated by a judge and by the audience according to the given guidelines.
+After 5 turns each, each player's final list is evaluated by a judge and by the audience according to the given guidelines.
 
 Guidelines:
 - The filling word(s) must blend with the base word to form a single lexical unit, a cohesive specific concept, rather than just two words next to each other. E.g. "green paint" and "big sign" are too general and simply descriptive.

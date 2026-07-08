@@ -1,13 +1,3 @@
-import fs from 'fs';
-import {
-  getSensesWithoutExampleSentencesTop10,
-  addExampleSentences,
-  SenseWithoutExampleSentences,
-} from 'cruzi-db';
-import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import { isGeminiTimeoutError } from './lib/utils';
-import { ExampleSentence } from 'cruzi-models';
-
 /**
 Keep looping through the following steps:
 1. Query the database for the top 10 records in the sense table that:
@@ -18,7 +8,22 @@ Keep looping through the following steps:
    Each input line is "<display_text> (<sense summary>)". The model returns at least 3 English/Spanish sentence pairs per item,
    with the target word/phrase highlighted via {{double brackets}} in the English sentence.
 3. Update the database with the example sentences returned.
+
+Output messages to the console updating all progress.
+All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
+cruzi-db/sql/schema.sql is the source of truth for the database schema.
+Keep these requirements in the file.
  */
+
+import fs from 'fs';
+import {
+  getSensesWithoutExampleSentencesTop10,
+  addExampleSentences,
+  SenseWithoutExampleSentences,
+} from 'cruzi-db';
+import { GeminiWebAiProvider } from './ai/geminiWebProvider';
+import { isGeminiTimeoutError } from './lib/utils';
+import { ExampleSentence } from 'cruzi-models';
 
 const geminiProvider = new GeminiWebAiProvider();
 

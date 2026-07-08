@@ -1,7 +1,6 @@
 import { allExploredLoader } from './allExploredLoader';
 import { crosswordFamiliarityGenerator } from './crosswordFamiliarityGenerator';
 import { crosswordQualityGenerator } from './crosswordQualityGenerator';
-import { runTasks } from './crosswordScraper';
 import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 import { familiarityGenerator } from './familiarityGenerator';
@@ -12,6 +11,8 @@ import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
 import { phraseGenerator } from './phraseGenerator';
 import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
+import { massNounFixer } from './massNounFixer';
+import { exampleSentenceImprover } from './exampleSentenceImprover';
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -20,10 +21,6 @@ import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 // exampleSentenceGenerator()
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
-
-runTasks()
-  .then(() => console.log("Crossword loading tasks completed successfully."))
-  .catch(error => console.error("Error in crossword loading tasks: ", error));
 
 // crosswordFamiliarityGenerator()
 //   .then(() => console.log("Crossword familiarity generator completed successfully."))
@@ -61,11 +58,19 @@ runTasks()
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-// phraseGenerator()
-//   .then(() => console.log("Phrase generator completed successfully."))
-//   .catch(error => console.error("Error in phrase generator: ", error));
+phraseGenerator()
+  .then(() => console.log("Phrase generator completed successfully."))
+  .catch(error => console.error("Error in phrase generator: ", error));
 
 // senseFamiliarityGenerator()
 //   .then(() => console.log("Sense familiarity generator completed successfully."))
 //   .catch(error => console.error("Error in sense familiarity generator: ", error));
+
+// massNounFixer()
+//   .then(() => console.log("Mass noun fixer completed successfully."))
+//   .catch(error => console.error("Error in mass noun fixer: ", error));
+
+// exampleSentenceImprover()
+//   .then(() => console.log("Example sentence improver completed successfully."))
+//   .catch(error => console.error("Error in example sentence improver: ", error));
   
