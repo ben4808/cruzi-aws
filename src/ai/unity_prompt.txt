@@ -1,0 +1,76 @@
+TASK
+Rate each word or phrase for Phrase Unity in US English.
+
+Primary question: How strongly is this string treated as a single conventional naming or expression unit?
+
+Score only that. Do not score familiarity, usefulness, grammaticality alone, or whether outsiders know the term.
+
+CORE RULES
+- Locale: US English. Prefer US-dominant forms when regional variants compete (e.g. "cell phone" over "mobile phone").
+- Domain-relative: Evaluate jargon inside its own field. Do not penalize obscurity to outsiders.
+- Be strict. On borderline cases, choose the weaker (lower-numbered) tier.
+- Simple single-word rule: An attested simple lexical word (not a compound) scores Tier 5. Typos, nonwords, bound fragments, and unattested coinages do not.
+- Compounds and hyphenates: Open, closed, and hyphenated compounds are not automatic Tier 5. Score them with the same tests as multi-word phrases (default-name, fixedness, substitutability).
+- Conflict order (apply top-down; stop at the first match):
+  1. Ungrammatical, typo-ruined, or conceptually incoherent string → Tier 1
+  2. Purely compositional / catalog-style description with no unit status → Tier 2
+  3. Coherent real phrase, but not the default or tightly entrenched form → Tier 3
+  4. Strong unit that is clearly secondary to a more dominant form, or has mild accepted redundancy → Tier 4
+  5. Dominant default name, fully lexicalized compound, or entrenched idiom → Tier 5
+
+DECISION TESTS (use these instead of search-engine guesses)
+- Default-name test: Is this the usual way people name the thing in its primary domain?
+- Fixedness test: Can you freely swap synonyms, insert modifiers, or drop words without losing the sense of "the name"? If yes, it is less unified.
+- Substitutability test: If a clearly more dominant synonym/form exists, cap at Tier 4 (or lower if the form is weak).
+
+RUBRIC
+Tier 5 — Fully Canonical Unit
+The absolute default, most natural, dominant way to refer to a concept in its primary domain. Evokes one specific idea with no interpretation required.
+- Includes dominant industry/society names.
+- Includes attested simple lexical words.
+- Includes fully lexicalized compounds only when they are the clear default unit (not merely because they are written as one word or hyphenated).
+- Includes entrenched idioms that are the standard way to express that thought.
+Examples: climate change, screwdriver, ATM, web design, cell phone, stuff, bite the bullet
+
+Tier 4 — Strong but Non-Exclusive Canonical Unit
+Extremely clear, specific, and highly unified, but secondary to a Tier 5 dominant term, or carrying mild accepted redundancy.
+- Synonym Rule: Highly canonical, but clearly the secondary option to a Tier 5 form.
+- Mild Redundancy Rule: Universally used despite a redundant word society ignores (RAS-style).
+Examples: mobile phone (secondary to "cell phone" in US English), ATM machine (specific and universal despite redundant "machine"), PIN number
+
+Tier 3 — Recognizable & Useful but Not Fully Canonical
+A coherent phrase people instantly understand as a specific idea, but it lacks deep entrenchment or has more natural alternatives.
+- Passes as a real conversational phrase, not a random description, but has not fused into a tight optimized unit.
+Examples: webpage design (clear, but less entrenched than "web design"), computer screen (cohesive, but "monitor"/"display" are more canonical)
+
+Tier 2 — Descriptive but Cohesive Phrase
+A purely compositional string. It describes a real thing and the words cooperate, but it has no idiomatic or naming-unit status.
+- Catalog Effect: Feels like modifiers from a product listing or free description, not a conventional name.
+- Fixedness fails: synonyms and extra modifiers can be swapped freely with little change in "unit-ness."
+Examples: digital computer screen, brown leather wallet, how to fix a zipper
+
+Tier 1 — Loose / Broken / Incoherent String
+No semantic cohesion as a single idea, or the string is grammatically broken / typo-ruined.
+- Includes arbitrary word salad, fragments that do not form a concept, and critical typos that destroy the unit.
+Examples: quickly wallet window, the blue desk tomorrow, baking sdoa
+
+Tier 3 vs Tier 2 tie-breaker
+- Tier 3: sounds like something people actually say as a ready-made phrase.
+- Tier 2: sounds like an on-the-spot description or catalog line.
+Contrast: "computer screen" (3) vs "digital computer screen" / "brown leather wallet" (2)
+
+OUTPUT
+Present each evaluation in the following strict format, with no introductory or auxiliary text:
+
+<original word/phrase> : <tier>
+
+Example outputs:
+climate change : 5
+mobile phone : 4
+webpage design : 3
+brown leather wallet : 2
+quickly wallet window : 1
+
+WORDS/PHRASES
+
+[[DATA]]

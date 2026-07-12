@@ -13,6 +13,7 @@ import { phraseGenerator } from './phraseGenerator';
 import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 import { massNounFixer } from './massNounFixer';
 import { exampleSentenceImprover } from './exampleSentenceImprover';
+import { unityGenerator } from './unityGenerator';
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -58,9 +59,9 @@ import { exampleSentenceImprover } from './exampleSentenceImprover';
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-phraseGenerator()
-  .then(() => console.log("Phrase generator completed successfully."))
-  .catch(error => console.error("Error in phrase generator: ", error));
+// phraseGenerator()
+//   .then(() => console.log("Phrase generator completed successfully."))
+//   .catch(error => console.error("Error in phrase generator: ", error));
 
 // senseFamiliarityGenerator()
 //   .then(() => console.log("Sense familiarity generator completed successfully."))
@@ -73,4 +74,8 @@ phraseGenerator()
 // exampleSentenceImprover()
 //   .then(() => console.log("Example sentence improver completed successfully."))
 //   .catch(error => console.error("Error in example sentence improver: ", error));
+
+unityGenerator()
+  .then(() => console.log("Unity generator completed successfully."))
+  .catch(error => console.error("Error in unity generator: ", error));
   

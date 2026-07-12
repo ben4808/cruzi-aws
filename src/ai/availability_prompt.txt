@@ -1,0 +1,61 @@
+TASK
+Rate each word or phrase for Availability/Familiarity in English. 
+Score only familiarity/availability. Do not score usefulness, cleverness, or unity/idiomaticity.
+
+CORE RULES
+- US Audience Perspective: Assume a general audience of well-rounded educated adult native speakers with zero specialist or expert expertise.
+- Recognition over Rubric: Score based on actual, real-world usage (including common nonstandard slang/idioms), not formal dictionary rules.
+- Strict String Matching: Score the exact spelling and casing provided. Do not score a better-known variant.
+- Tie-Breaker: On borderline cases, default to the more obscure tier (closer to 5-).
+
+RUBRIC
+Tier 1 — Beginner Core
+The simplest building blocks of English: words and phrases typical of early beginner instruction. 
+Nearly anyone with any exposure to English knows and uses them.
+Examples: hello, water, thank you, good morning, I don't know, how are you?, Monday, OK
+
+Tier 2+ — Everyday Active
+Everyday active vocabulary, highly available: educated adults say or write this routinely, unprimed.
+Examples: probably, actually, make sense, figure out, on the other hand, no big deal, take a break, Google, Starbucks, New York, ASAP, DIY, Wi-Fi, ID, DNA, GPS, PDF, a lot
+
+Tier 2- — Infrequent but Productive
+Available but less frequent: it pops into mind and people can use it confidently — just not often in everyday conversation. Universally understood.
+Examples: nevertheless, by and large, food for thought, err on the side of caution, for what it's worth, devil's advocate, the tip of the iceberg, Shakespeare, NASA, Harvard, the Oscars, Wall Street, RSVP, ETA, FYI, CEO, espresso
+
+Tier 3+ — Solid Passive
+Solidly familiar, but not readily available: almost everybody knows exactly what it means; if primed they might produce it, but it does not readily pop into mind.
+Examples: serendipity, ubiquitous, ephemeral, idiosyncratic, ostensibly, esoteric, Freud, Picasso, the Louvre
+
+Tier 3- — Shaky Passive
+Passive and shaky: most people recognize it and have some idea of the meaning, but it's not in their solid vocabulary.
+Examples: quixotic, panacea, sycophant, obfuscate, a Pyrrhic victory, rest on one's laurels, gild the lily, Kafka, Machiavelli, Byzantine, QED, N.B.
+
+Tier 4+ — Partial Grasp
+Most understand it in context, but without context they probably couldn't tell you what it means. The might stop reading to look it up to be sure.
+Examples: defenestration, perspicacious, sesquipedalian, procrustean bed, a sop to Cerberus, Procrustes, Damocles, Cincinnatus, ibid., viz.
+
+Tier 4- — Vague Recognition
+Rings a bell for many, but the definition is insecure even in context; they would need to look it up to have any confidence.
+Examples: ultracrepidarian, absquatulate, mumpsimus, callipygian, buy a pig in a poke, Croesus, Babbitt
+
+Tier 5+ — Niche-Known
+A small specialized segment knows it; the target adult might never have seen it. Not encountered in ordinary reading without explanation.
+Examples: boustrophedon, illeism, quiddity, hapax legomenon, argumentum ad verecundiam, reductio ad Hitlerum, Saussure, Quine, Paracelsus, POSIX, ASN.1, IETF, WIPO, GAAP
+
+Tier 5- — Near-Nonexistent
+Virtually nobody knows it; may surface only in obscure sources. Barely present in the language.
+Examples: floccinaucinihilipilification, honorificabilitudinitatibus, pneumonoultramicroscopicsilicovolcanoconiosis, nudiustertian, Zenzizenzizenzic, tyromancy
+
+OUTPUT
+Present each evaluation in the following strict format, with no introductory or auxiliary text:
+
+<original word/phrase> : <tier>
+
+Example outputs:
+thank you : 1
+a Pyrrhic victory : 3-
+nudiustertian : 5-
+
+WORDS/PHRASES
+
+[[DATA]]

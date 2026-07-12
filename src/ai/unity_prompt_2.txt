@@ -1,0 +1,76 @@
+TASK
+Classify each provided English word or phrase into one of five buckets for Phrase Unity. 
+
+Primary question: Is this string a conventional, reusable unit in the language? If so, which bucket does it belong to?
+
+Do NOT score familiarity, usefulness, or regionality/dialect.
+
+CORE RULES
+- Domain-Relative: Evaluate jargon inside its own field. A technical term is a Concept within its domain even if outsiders do not know it.
+- Borderline Tie-Breaker: If a string sits on the border between categories, always default to the less unified, more literal category. 
+   The priority order is: Nonsense → Non-unit → Formula → Collocation → Concept.
+- Single Words: Any single written word (containing no spaces or hyphens) is automatically either a Concept or Nonsense.
+- Hyphenated Phrases: Phrases containing hyphens cannot be considered automatically Single Words. Evaluate them as multi-word phrases.
+- Proper Names: Attempt to parse all phrases as a proper name. A proper name is a Concept—even when it includes a generic category word 
+   (bar, cup, sauce, etc.), if that full string is how the specific thing is referred to.
+- Strict Canonicity: The phrase must match its conventional word order and complete framing. Awkward inversions (roof synthetic underlayment), 
+  truncated phrases ("count your chickens", "isn't my first rodeo" vs "this isn't my first rodeo"), or non-default naming variants 
+  ("diving site" when "dive site" is the standard name) break Concept status. These must be demoted to Non-unit.
+- Simple Inflections: If the citation/base form would be a Concept, simple grammatical inflections of that same unit remain Concepts.
+   Tense, person, number, gerund, and participle changes do not demote a Concept to Collocation or Non-unit.
+- Gestalt/cultural baggage: If the phrase evokes a unified cultural script and causes the mind to make many associations beyond the literal
+   meaning, classify it as Concept as long as it remains a canonical unit.
+- For Collocation vs. Concept, use the Substitution Test. If you change a modifier (e.g., 'light dinner' to 'small dinner' or 'heavy rain' to 'intense rain') 
+   and the phrase loses a specific, culturally understood slot or function, the original is a Concept.
+- Look at the full range of a phrase's polysemy (multiple meanings) in order to catch potential non-literal meanings. Especially consider
+   possible meanings in Internet slang.
+
+CLASSIFICATION BUCKETS
+1. Concept — Semantic Fusion / Established Name
+The string functions as a locked, canonical unit for an established idea, thing, idiom, product, or title.
+Includes: Technical terms, idioms, proper names, acronyms, and distinct multi-word ideas.
+Examples: climate change, screwdriver, ATM, cell phone, parallel parking, bit the bullet, making sense, Reese's Peanut Butter Cup, bag of chips, stuff
+
+2. Collocation — Type-Level Statistical Habit
+The words mean exactly what they say and are paired together often. It feel like a real phrase in practice and in the language. 
+Includes: Highly frequent modifier–noun or noun–noun pairings that describe a general type of thing.
+Examples: private parking, song release, chip bag, heavy rain, strong coffee
+
+3. Formula — Social Script
+A literal phrase or sentence used as a conversational reflex, routine, or social script. The literal meaning of the words remains intact, 
+  but the phrase is used as a pre-packaged social interaction.
+Formulas must be the absolute dominant, reflex version of the social script. If a minor word substitution makes the phrase feel less like 
+  a pre-packaged reflex and more like an on-the-spot sentence, default to Non-unit.
+Examples: thank you, how are you?, I had fun!, I'm gonna head out, how was your day, let me know, no worries
+
+4. Non-unit — Grammatical Free Combination
+A grammatically correct string that describes something real, but is an on-the-spot description rather than a pre-packaged chunk. 
+Modifiers or synonyms can be swapped in freely without destroying a recognizable phrase.
+Includes: Catalog-like descriptions, random adjective–noun chains, run-on phrases that don't form a unit
+Examples: digital computer screen, brown leather wallet, how to fix a zipper, tall green tree
+
+5. Nonsense — Broken / Incoherent String
+The string has no semantic cohesion as a single idea, is grammatically broken, or is ruined by typos.
+Examples: quickly wallet window, the blue desk tomorrow, baking sdoa
+
+OUTPUT
+Present each evaluation in the following strict format, with no introductory, explanatory, or auxiliary text:
+
+<original word/phrase> : <bucket>
+
+Example outputs:
+cell phone : Concept
+Abba-Zaba bar : Concept
+bit the bullet : Concept
+making sense : Concept
+chip bag : Collocation
+private parking : Collocation
+how are you : Formula
+I'm gonna head out : Formula
+a beautiful mess : Non-unit
+brown leather wallet : Non-unit
+quickly wallet window : Nonsense
+
+WORDS/PHRASES
+
+[[DATA]]

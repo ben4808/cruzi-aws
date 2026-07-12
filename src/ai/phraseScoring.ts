@@ -10,6 +10,11 @@ export interface ParsedIdiomacityResult {
   score: number;
 }
 
+export interface ParsedUnityBucketResult {
+  parsedForm: string;
+  bucket: string;
+}
+
 export interface ParsedFamiliarityResult {
   entry: string;
   displayText: string;
@@ -17,6 +22,14 @@ export interface ParsedFamiliarityResult {
   baseForm?: string;
   familiarityScore: number;
 }
+
+const UNITY_BUCKETS = new Set([
+  'Concept',
+  'Collocation',
+  'Formula',
+  'Non-unit',
+  'Nonsense',
+]);
 
 export interface ScoredPhrase {
   phrase: string;
@@ -38,12 +51,22 @@ export async function loadIdiomacityPromptAsync(): Promise<string> {
   }
 }
 
-async function loadPhraseGeneratorIdiomacityPromptAsync(): Promise<string> {
+async function loadUnityPromptAsync(): Promise<string> {
   try {
-    const promptPath = './src/ai/phrase_idiomacity_prompt_2.txt';
+    const promptPath = './src/ai/unity_prompt.txt';
     return await fs.promises.readFile(promptPath, 'utf-8');
   } catch (err) {
-    console.error('Error reading phrase generator idiomacity prompt file:', err);
+    console.error('Error reading unity prompt file:', err);
+    throw err;
+  }
+}
+
+export async function loadUnityBucketPromptAsync(): Promise<string> {
+  try {
+    const promptPath = './src/ai/unity_prompt_2.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading unity bucket prompt file:', err);
     throw err;
   }
 }
@@ -79,31 +102,116 @@ export function parseIdiomacityResponse(response: string): ParsedIdiomacityResul
   return results;
 }
 
-function parsePhraseGeneratorIdiomacityResponse(response: string): ParsedIdiomacityResult[] {
-  const summaryIndex = response.indexOf('SUMMARY:');
-  const textToParse = summaryIndex === -1 ? response : response.slice(summaryIndex + 'SUMMARY:'.length);
-  const lines = textToParse.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+function parseUnityResponse(response: string): ParsedIdiomacityResult[] {
+  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
 
   const results: ParsedIdiomacityResult[] = [];
   for (const line of lines) {
-    const parts = line.split(' : ').map((part) => part.trim());
-    if (parts.length < 3) {
+    const separatorIndex = line.lastIndexOf(' : ');
+    if (separatorIndex === -1) {
       continue;
     }
 
-    const score = parseInt(parts[2], 10);
-    if (Number.isNaN(score)) {
+    const parsedForm = line.slice(0, separatorIndex).trim();
+    const score = parseInt(line.slice(separatorIndex + 3).trim(), 10);
+    if (!parsedForm || Number.isNaN(score)) {
       continue;
     }
 
     results.push({
-      parsedForm: parts[0],
-      category: parts[1],
+      parsedForm,
+      category: '',
       score,
     });
   }
 
   return results;
+}
+
+export function parseUnityBucketResponse(response: string): ParsedUnityBucketResult[] {
+  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+
+  const results: ParsedUnityBucketResult[] = [];
+  for (const line of lines) {
+    const separatorIndex = line.lastIndexOf(' : ');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const parsedForm = line.slice(0, separatorIndex).trim();
+    const bucket = line.slice(separatorIndex + 3).trim();
+    if (!parsedForm || !UNITY_BUCKETS.has(bucket)) {
+      continue;
+    }
+
+    results.push({ parsedForm, bucket });
+  }
+
+  return results;
+}
+
+export function matchUnityBucketResultsToPhrases(
+  phrases: string[],
+  parsedResults: ParsedUnityBucketResult[],
+): Array<{ phrase: string; parsed: ParsedUnityBucketResult } | null> {
+  const unmatchedParsed = [...parsedResults];
+  const matches: Array<{ phrase: string; parsed: ParsedUnityBucketResult } | null> = [];
+
+  for (const phrase of phrases) {
+    let matchIndex = unmatchedParsed.findIndex(
+      (parsed) => normalizeForPhraseMatch(parsed.parsedForm) === normalizeForPhraseMatch(phrase),
+    );
+
+    if (matchIndex === -1) {
+      matchIndex = unmatchedParsed.findIndex(
+        (parsed) => entryToAllCaps(parsed.parsedForm) === entryToAllCaps(phrase),
+      );
+    }
+
+    if (matchIndex === -1 && unmatchedParsed.length > 0) {
+      matchIndex = 0;
+    }
+
+    if (matchIndex === -1) {
+      matches.push(null);
+      continue;
+    }
+
+    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
+    matches.push({ phrase, parsed });
+  }
+
+  return matches;
+}
+
+export async function scorePhrasesForUnityBucket(
+  phrases: string[],
+  provider: GeminiWebAiProvider,
+): Promise<Map<string, ParsedUnityBucketResult>> {
+  const resultsByPhrase = new Map<string, ParsedUnityBucketResult>();
+  if (phrases.length === 0) {
+    return resultsByPhrase;
+  }
+
+  const promptTemplate = await loadUnityBucketPromptAsync();
+  const promptData = phrases.join('\n');
+  const prompt = promptTemplate.replace('[[DATA]]', promptData);
+
+  console.log(`Sending unity bucket prompt for ${phrases.length} phrases`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received unity bucket response (${aiResponse.length} characters)`);
+
+  const parsedResults = parseUnityBucketResponse(aiResponse);
+  const matches = matchUnityBucketResultsToPhrases(phrases, parsedResults);
+
+  for (const match of matches) {
+    if (!match) {
+      continue;
+    }
+    resultsByPhrase.set(match.phrase, match.parsed);
+  }
+
+  return resultsByPhrase;
 }
 
 function normalizeForPhraseMatch(text: string): string {
@@ -193,15 +301,15 @@ export async function scorePhrasesForIdiomacity(
     return resultsByPhrase;
   }
 
-  const promptTemplate = await loadPhraseGeneratorIdiomacityPromptAsync();
+  const promptTemplate = await loadUnityPromptAsync();
   const promptData = phrases.join('\n');
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
-  console.log(`Sending idiomacity prompt for ${phrases.length} phrases`);
+  console.log(`Sending unity (idiomacity) prompt for ${phrases.length} phrases`);
   const aiResponse = await provider.generateResultsAsync(prompt);
-  console.log(`Received idiomacity response (${aiResponse.length} characters)`);
+  console.log(`Received unity response (${aiResponse.length} characters)`);
 
-  const parsedResults = parsePhraseGeneratorIdiomacityResponse(aiResponse);
+  const parsedResults = parseUnityResponse(aiResponse);
   const matches = matchIdiomacityResultsToPhrases(phrases, parsedResults);
 
   for (const match of matches) {

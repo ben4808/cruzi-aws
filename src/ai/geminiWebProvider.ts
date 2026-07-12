@@ -74,6 +74,8 @@ const GENERATING_INDICATOR_SELECTORS = [
 const WAIT_LOG_INTERVAL_MS = 30_000;
 const GEMINI_EDITOR_WAIT_MS = 60_000;
 const GEMINI_MANUAL_LOGIN_WAIT_MS = 300_000;
+const GEMINI_ATTEMPTS_PER_ROUND = 5;
+const GEMINI_ROUND_COOLDOWN_MS = 10 * 60 * 1000;
 
 function thinkingLevelForSource(source: GeminiWebSourceAi): GeminiWebThinkingLevel {
   return source === 'gemini-web-extended-flash' ? 'extended' : 'standard';
@@ -655,24 +657,36 @@ class GeminiWebSession {
     const queue = this.operationQueues[thinkingLevel] ?? Promise.resolve();
     const run = async (): Promise<string> => {
       const timeouts = timeoutsForThinkingLevel(thinkingLevel);
-      const maxAttempts = 5;
+      let round = 1;
 
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-          return await this.generateOnce(prompt, thinkingLevel, timeouts, attempt);
-        } catch (error) {
-          if (!isResponseWaitTimeoutError(error) || attempt >= maxAttempts) {
-            throw error;
+      while (true) {
+        for (let attempt = 1; attempt <= GEMINI_ATTEMPTS_PER_ROUND; attempt++) {
+          const absoluteAttempt = (round - 1) * GEMINI_ATTEMPTS_PER_ROUND + attempt;
+          try {
+            return await this.generateOnce(prompt, thinkingLevel, timeouts, absoluteAttempt);
+          } catch (error) {
+            if (!isResponseWaitTimeoutError(error)) {
+              throw error;
+            }
+
+            const isLastInRound = attempt >= GEMINI_ATTEMPTS_PER_ROUND;
+            console.warn(
+              `Gemini ${thinkingLevel} response timed out after ${timeouts.generationTimeoutMs / 1000}s (attempt ${attempt}/${GEMINI_ATTEMPTS_PER_ROUND} in round ${round}); ${
+                isLastInRound
+                  ? `waiting ${GEMINI_ROUND_COOLDOWN_MS / 60_000} minutes before next round...`
+                  : 'restarting browser and retrying...'
+              }`,
+            );
+            await this.restartBrowser(thinkingLevel);
           }
-
-          console.warn(
-            `Gemini ${thinkingLevel} response timed out after ${timeouts.generationTimeoutMs / 1000}s (attempt ${attempt}/${maxAttempts}); restarting browser and retrying...`,
-          );
-          await this.restartBrowser(thinkingLevel);
         }
-      }
 
-      throw new Error('Gemini web generate failed after browser restart retry');
+        console.log(
+          `Gemini ${thinkingLevel} round ${round} exhausted (${GEMINI_ATTEMPTS_PER_ROUND} attempts). Cooling down for ${GEMINI_ROUND_COOLDOWN_MS / 60_000} minutes...`,
+        );
+        await sleep(GEMINI_ROUND_COOLDOWN_MS);
+        round++;
+      }
     };
 
     const result = queue.then(run);

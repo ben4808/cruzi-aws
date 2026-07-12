@@ -7,8 +7,8 @@ Populate the banned list with the results from step 2. Send the prompt to Gemini
 4. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon. Parse all
 the phrases into a single list and insert each phrase into the phrase_generator_result table.
 5. Take the list of phrases and run them through two more API calls to Gemini (using GeminiWebAiProvider) using the Standard Flash model.
-    a. phrase_idiomacity_prompt_2.txt (all phrases in one call)
-    b. familiarity_prompt.txt (all phrases in one call)
+    a. familiarity_prompt.txt (all phrases in one call) — parses display text and classification
+    b. unity_prompt.txt (display texts from familiarity, all in one call) — idiomacity/unity scores only
     - Reference the code used in idiomacity_generator.ts and familiarity_generator.ts. Refactor out common code so that there isn't
     excessive duplication.
 6. Aggregate the results from both of these calls, and make a new list of all phrases that scored at least 3 on the idiomacity scale
@@ -38,6 +38,7 @@ import {
 import { Entry } from 'cruzi-models';
 import {
   combinePhraseScores,
+  ParsedIdiomacityResult,
   scorePhrasesForFamiliarity,
   scorePhrasesForIdiomacity,
 } from './ai/phraseScoring';
@@ -234,8 +235,47 @@ async function processQueueItem(
   await addPhraseGeneratorResults(queueId, phrases);
   console.log(`Saved ${phrases.length} phrases to phrase_generator_result for queue item ${queueId}`);
 
-  const idiomacityByPhrase = await scorePhrasesForIdiomacity(phrases, standardFlashProvider);
   const familiarityByPhrase = await scorePhrasesForFamiliarity(phrases, lang, standardFlashProvider);
+
+  const uniqueDisplayTexts: string[] = [];
+  const seenDisplayTexts = new Set<string>();
+  for (const phrase of phrases) {
+    const familiarity = familiarityByPhrase.get(phrase);
+    if (!familiarity?.displayText) {
+      continue;
+    }
+
+    const displayKey = entryToAllCaps(familiarity.displayText);
+    if (seenDisplayTexts.has(displayKey)) {
+      continue;
+    }
+
+    seenDisplayTexts.add(displayKey);
+    uniqueDisplayTexts.push(familiarity.displayText);
+  }
+
+  const idiomacityByDisplayText = await scorePhrasesForIdiomacity(
+    uniqueDisplayTexts,
+    standardFlashProvider,
+  );
+
+  const idiomacityByDisplayKey = new Map<string, ParsedIdiomacityResult>();
+  for (const [displayText, result] of idiomacityByDisplayText) {
+    idiomacityByDisplayKey.set(entryToAllCaps(displayText), result);
+  }
+
+  const idiomacityByPhrase = new Map<string, ParsedIdiomacityResult>();
+  for (const phrase of phrases) {
+    const familiarity = familiarityByPhrase.get(phrase);
+    if (!familiarity?.displayText) {
+      continue;
+    }
+
+    const idiomacity = idiomacityByDisplayKey.get(entryToAllCaps(familiarity.displayText));
+    if (idiomacity) {
+      idiomacityByPhrase.set(phrase, idiomacity);
+    }
+  }
 
   const qualifyingPhrases = combinePhraseScores(
     phrases,
