@@ -1,0 +1,145 @@
+TASK
+Rate each given word or phrase for availability/familiarity in English.
+
+Input words and phrases will come along with a classification, which will be one of the following:
+Concept, Collocation, Formula, Non-unit, Nonsense
+Don't read into the given classifications, but do follow Core Rules referring to them.
+
+CORE RULES (Run through these mentally for EVERY item before outputting)
+- US Audience Perspective: Assume a general audience of well-rounded educated adult native speakers without any particular expert knowledge.
+- Real Usage over Formal Rules: Score based on actual, real-world usage (including common nonstandard slang/idioms), not formal dictionary rules.
+- Tie-Breaker: On borderline cases, default to the higher numbered tier (e.g., choosing Tier 4 over Tier 3).
+- For the Spoken Tiers, do not score based on how easy a phrase is to understand. 
+  The Coffee Shop Test: Imagine overhearing 100 hours of casual, unstructured chatter in a local coffee shop. If the probability of hearing the 
+  EXACT string spoken naturally is close to zero, it must go to a Written Tier (typically WT1 or WT2), no matter how simple or transparent the meaning is.
+  Only items classified as Concept or Formula can be rated in these tiers.
+- For the Written Tiers, score on how easily the phrase is to understand, not how often it appears.
+  Any classification can be rated here, but items classified as Collocation must be rated in these tiers.
+
+RUBRIC
+------
+SPOKEN TIERS - Active / Conversational Vocabulary
+
+S1 — Beginner Core
+The fundamental building blocks of English: words and phrases typical of early beginner instruction. 
+It's extremely difficult to achieve this level.
+Examples: hello, water, thank you, good morning, OK, please, how are you
+
+S2 — Everyday Active Vocabulary
+Seen or heard every day. The ubiquitous terms of everyday life. Feels fundamental to a native speaker. 
+- The Dominance Rule: If a phrase has a more common, direct synonym that a native speaker would default to 80% of the time 
+  (e.g., "gone crazy" vs. "gone nuts"), the less common synonym cannot be ST2.
+- The 24-Hour Reality Check: To qualify for S2, a word or phrase must be something the target adult has personally spoken or heard out loud 
+  in the last 24 hours.
+Examples: schedule, neighbor, make sense, hang out, Starbucks, Disney, TV, deal with
+
+S3 — Infrequent Active Vocabulary (Simple but Situational)
+Universally known and used effortlessly without thought, but highly situational. 
+These are words a 10-year-old knows perfectly, but doesn't need to use unless a specific event triggers them.
+Examples: gut feeling, blackout, Shakespeare, Tiger Woods, RSVP, learning curve, coincidence 
+
+S4 — Particular Active Vocabulary
+Universally recognized, but not produced conversationally by all. 
+Some people like to say it, to others it never occurs to them. Might be various ways to say the same thing.
+Examples: devil's advocate, apocalypse, the elephant in the room, a double-edged sword, smoke and mirrors, ego, guru, cliché, micromanage
+
+WRITTEN TIERS - Items seen mainly in written material
+
+W1 — Transparent Meaning
+Universally understood by target adult readers.
+Includes easy collocations and common concepts and phrases. Doesn't include many single words because qualifying ones would likely be in Spoken Tiers.
+Examples: aquatic animal, self-organizing, prior success, foreign national
+
+W2 — Good Understanding
+The target adult understands it, even though the meaning isn't completely transparent. 
+Feels like easy general knowledge trivia.
+Examples: retroactive, paradox, synthesize, caveat, vicious cycle, cognitive dissonance
+
+W3 — Partial Understanding
+The target adult understands it only in context. 
+Attentive readers will look it up to ensure correct interpretation.
+Examples: Sisyphean, a Faustian bargain, anachronism, obfuscate, Schrödinger's cat
+
+W4 — Vague Recognition
+The target adult has seen it before, but the definition is insecure even in context.
+It rings a bell. They would need to look it up to have any confidence.
+Examples: anathema, loquacious, ad hominem, deus ex machina, Machiavellian, mercurial, et al.
+
+W5 — Niche Only
+A small specialized segment knows it; the target adult might never have seen it. 
+Not encountered in ordinary reading without explanation.
+Examples: catachresis, anagnorisis, terminus ante quem, sub specie aeternitatis, Frege, op. cit., sine qua non, epistemic, Derrida
+
+W6 — Near-Nonexistent
+Virtually nobody knows it; may surface only in obscure sources. Barely present in the language.
+Examples: nudiustertian, gongoozler, lucus a non lucendo, ignotum per ignotius, Chrysippus, Philolaus, sc., sqq.
+
+OTHER TIERS
+
+Uninterpretable
+Was not able to interpret the exact provided string.
+This could be due to a misspelling, bad grammar, or the inability to extract any meaning.
+
+OUTPUT
+At the end of the output, present each final evaluation in the following strict format, with no introductory or auxiliary text:
+
+<original word/phrase> : <tier>
+
+Example outputs:
+thank you : S1
+Franz Kafka : W3
+nudiustertian : W6
+candy once flown : Uninterpretable
+
+WORDS/PHRASES
+
+environment scanning (Concept)
+Bohemian (Concept)
+high-tension (Concept)
+advertiser's dream (Collocation)
+Sunset Strip (Concept)
+I'm listening (Formula)
+colonial college (Concept)
+taken in hand (Concept)
+piercing the veil (Concept)
+gone forever (Collocation)
+seeker (Concept)
+mental torture (Collocation)
+here we go (Formula)
+crystalline form (Collocation)
+jiminy (Concept)
+program execution (Concept)
+Jove (Concept)
+bigamists (Concept)
+hide one's light under a bushel (Concept)
+on probation (Concept)
+club card (Concept)
+customer support (Concept)
+descend (Concept)
+approaching winter (Non-unit)
+stood behind (Concept)
+arcana (Concept)
+drill site (Concept)
+weight loss tea (Collocation)
+hair removal (Concept)
+Sedaris (Concept)
+electrical installation (Collocation)
+curling brooms (Concept)
+froze up (Concept)
+black turtleneck (Collocation)
+loose nut (Collocation)
+glowing review (Collocation)
+Harvard University (Concept)
+electron hole (Concept)
+fake passport (Collocation)
+tres bien (Formula)
+Brahms (Concept)
+mummy's tomb (Collocation)
+NLP (Concept)
+seal off (Collocation)
+Mr. Belvedere (Concept)
+once-blooming (Concept)
+championship final (Collocation)
+permutated (Concept)
+exactly as many (Non-unit)
+toasted bagel (Collocation)

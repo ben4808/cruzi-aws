@@ -1,13 +1,11 @@
 /*
 Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that do not have a familiarity score and have no entry_tags record with tag 'scrabble'.
-2. For each entry, generate a prompt using the familiarity_prompt.txt file. Send the prompt to Gemini (using GeminiWebAiProvider standard mode)
+1. Select the first 50 entries from the entry table that have loading_status "P".
+2. For each entry, generate a prompt using the availability_prompt.txt file. Send the prompt to Gemini (using GeminiWebAiProvider extended mode)
    and get the response.
 3. Update a few fields in the entry table with the results:
-    - familiarity_score (save as the returned score * 10 to fit in an integer column)
-    - upsert display_text to the parsed form in the response
-    - upsert entry_type to the parsed category in the response
-    - upsert root_entry to the parsed base form in the response, in the case of derived words or derived phrases
+    - familiarity_score (Tier 1 = 50, Tier 2+ = 45, Tier 2- = 40, Tier 3+ = 35, Tier 3- = 30, Tier 4+ = 25, Tier 4- = 20, Tier 5+ = 15, Tier 5- = 10)
+    - loading_status = "PF"
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -16,38 +14,29 @@ Keep these requirements in the file.
 */
 
 import {
-  getEntriesWithoutFamiliarityTop50,
+  getEntriesForFamiliarityGeneratorTop50,
   upsertEntries,
-  EntryWithoutFamiliarity,
+  EntryForFamiliarityGenerator,
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
-import { scorePhrasesForFamiliarity } from './ai/phraseScoring';
+import { scorePhrasesForAvailability } from './ai/phraseScoring';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import { isGeminiTimeoutError, stripAccents } from './lib/utils';
+import { isGeminiTimeoutError } from './lib/utils';
 
-const geminiProvider = new GeminiWebAiProvider();
+const geminiProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
 
-function groupEntriesByLang(
-  entries: EntryWithoutFamiliarity[],
-): Map<string, EntryWithoutFamiliarity[]> {
-  const byLang = new Map<string, EntryWithoutFamiliarity[]>();
-  for (const entryItem of entries) {
-    const items = byLang.get(entryItem.lang) ?? [];
-    items.push(entryItem);
-    byLang.set(entryItem.lang, items);
-  }
-  return byLang;
+function getPromptText(item: EntryForFamiliarityGenerator): string {
+  return item.display_text;
 }
 
-async function processLangGroup(entries: EntryWithoutFamiliarity[]): Promise<void> {
-  const lang = entries[0].lang;
-  const phrases = entries.map((entryItem) => entryItem.entry);
-  const resultsByPhrase = await scorePhrasesForFamiliarity(phrases, lang, geminiProvider);
+async function processBatch(entries: EntryForFamiliarityGenerator[]): Promise<void> {
+  const phrases = entries.map(getPromptText);
+  const resultsByPhrase = await scorePhrasesForAvailability(phrases, geminiProvider);
 
   const resultsToPersist: Entry[] = [];
 
   for (const entryItem of entries) {
-    const parsed = resultsByPhrase.get(entryItem.entry);
+    const parsed = resultsByPhrase.get(getPromptText(entryItem));
     if (!parsed) {
       continue;
     }
@@ -56,27 +45,17 @@ async function processLangGroup(entries: EntryWithoutFamiliarity[]): Promise<voi
       entry: entryItem.entry,
       lang: entryItem.lang,
       familiarityScore: parsed.familiarityScore,
-      displayText: stripAccents(parsed.displayText),
-      entryType: parsed.entryType,
-      rootEntry: parsed.baseForm || undefined,
+      loadingStatus: 'PF',
     });
 
     console.log(
-      `Processed ${entryItem.entry} (${entryItem.lang}): score=${parsed.familiarityScore / 10}, category=${parsed.entryType}, form=${parsed.displayText}${parsed.baseForm ? `, base=${parsed.baseForm}` : ''}`,
+      `Processed ${entryItem.entry} (${entryItem.lang}): tier=${parsed.tier}, score=${parsed.familiarityScore}`,
     );
   }
 
   if (resultsToPersist.length > 0) {
     await upsertEntries(resultsToPersist);
-    console.log(`Updated familiarity fields for ${resultsToPersist.length} ${lang} entries`);
-  }
-}
-
-async function processBatch(entries: EntryWithoutFamiliarity[]): Promise<void> {
-  const entriesByLang = groupEntriesByLang(entries);
-
-  for (const [, langEntries] of entriesByLang.entries()) {
-    await processLangGroup(langEntries);
+    console.log(`Updated familiarity fields for ${resultsToPersist.length} entries`);
   }
 }
 
@@ -87,9 +66,9 @@ export async function familiarityGenerator(): Promise<void> {
     let batchNumber = 0;
 
     while (true) {
-      const entries = await getEntriesWithoutFamiliarityTop50();
+      const entries = await getEntriesForFamiliarityGeneratorTop50();
       if (entries.length === 0) {
-        console.log('No entries remaining without familiarity scores');
+        console.log('No entries remaining with loading_status P');
         break;
       }
 

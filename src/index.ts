@@ -11,9 +11,12 @@ import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
 import { phraseGenerator } from './phraseGenerator';
 import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
+import { spokenFamiliarityGenerator } from './spokenFamiliarityGenerator';
 import { massNounFixer } from './massNounFixer';
 import { exampleSentenceImprover } from './exampleSentenceImprover';
 import { unityGenerator } from './unityGenerator';
+import { entryParser } from './entryParser';
+import { strictDomainNames } from './strictDomainNames';
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -75,7 +78,19 @@ import { unityGenerator } from './unityGenerator';
 //   .then(() => console.log("Example sentence improver completed successfully."))
 //   .catch(error => console.error("Error in example sentence improver: ", error));
 
-unityGenerator()
-  .then(() => console.log("Unity generator completed successfully."))
-  .catch(error => console.error("Error in unity generator: ", error));
-  
+// unityGenerator()
+//   .then(() => console.log("Unity generator completed successfully."))
+//   .catch(error => console.error("Error in unity generator: ", error));
+
+// entryParser()
+//   .then(() => console.log("Entry parser completed successfully."))
+//   .catch(error => console.error("Error in entry parser: ", error));
+
+// strictDomainNames()
+//   .then(() => console.log("Strict domain names completed successfully."))
+//   .catch(error => console.error("Error in strict domain names: ", error));
+
+// spokenFamiliarityGenerator(1) for 1 worker / 50 entries; spokenFamiliarityGenerator(5) for 5 workers / 250 entries
+spokenFamiliarityGenerator(1)
+  .then(() => console.log("Spoken familiarity generator completed successfully."))
+  .catch(error => console.error("Error in spoken familiarity generator: ", error));

@@ -1,6 +1,4 @@
 import * as dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { Entry, FamiliarityResult, QualityResult } from 'cruzi-models';
 import { getFamiliarityResults, getQualityResults } from './common';
@@ -13,18 +11,6 @@ export type GeminiWebSourceAi = 'gemini-web' | 'gemini-web-extended-flash';
 type GeminiWebThinkingLevel = 'standard' | 'extended';
 
 const GEMINI_APP_URL = 'https://gemini.google.com/app';
-const LEGACY_USER_DATA_DIR = path.join(process.cwd(), '.gemini-user-data');
-
-function userDataDirForThinkingLevel(thinkingLevel: GeminiWebThinkingLevel): string {
-  const dir = path.join(process.cwd(), `.gemini-user-data-${thinkingLevel}`);
-  if (!fs.existsSync(dir) && fs.existsSync(LEGACY_USER_DATA_DIR)) {
-    fs.cpSync(LEGACY_USER_DATA_DIR, dir, { recursive: true });
-  }
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  return dir;
-}
 
 const EDITOR_SELECTORS = [
   'div.ql-editor',
@@ -44,19 +30,7 @@ const RESPONSE_SELECTORS = [
   '[class*="model-response"]',
 ];
 
-const SIGN_IN_SELECTORS = [
-  'a[href*="accounts.google.com"]',
-  'button[data-test-id="sign-in-button"]',
-  'a[aria-label="Sign in"]',
-];
-
 const SEND_BUTTON_SELECTOR = 'button[aria-label="Send message"]';
-
-const MODEL_SELECTOR_SELECTORS = [
-  'button.input-area-switch-label',
-  '[data-test-id="model-selector"]',
-  'button[aria-haspopup="menu"].mat-mdc-menu-trigger',
-];
 
 const RESPONSE_STABLE_POLLS = 4;
 const RESPONSE_POLL_INTERVAL_MS = 800;
@@ -73,7 +47,6 @@ const GENERATING_INDICATOR_SELECTORS = [
 
 const WAIT_LOG_INTERVAL_MS = 30_000;
 const GEMINI_EDITOR_WAIT_MS = 60_000;
-const GEMINI_MANUAL_LOGIN_WAIT_MS = 300_000;
 const GEMINI_ATTEMPTS_PER_ROUND = 5;
 const GEMINI_ROUND_COOLDOWN_MS = 10 * 60 * 1000;
 
@@ -91,26 +64,8 @@ function timeoutsForThinkingLevel(_thinkingLevel: GeminiWebThinkingLevel): Gemin
   };
 }
 
-function getGoogleCredentials(): { email: string; password: string } | null {
-  const email = process.env.GOOGLE_EMAIL;
-  const password = process.env.GOOGLE_PASSWORD;
-  if (!email || !password) {
-    return null;
-  }
-  return { email, password };
-}
-
 function isGeminiWebHeadless(): boolean {
   return process.env.GEMINI_WEB_HEADLESS !== 'false';
-}
-
-async function waitForGeminiEditor(page: Page, timeoutMs: number): Promise<boolean> {
-  try {
-    await waitForAnySelector(page, EDITOR_SELECTORS, timeoutMs);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -144,115 +99,12 @@ async function waitForAnySelector(
   throw new Error(`Timed out waiting for selectors: ${selectors.join(', ')}`);
 }
 
-async function isGoogleLoginPage(page: Page): Promise<boolean> {
-  const url = page.url();
-  return url.includes('accounts.google.com');
-}
-
-async function completeGoogleLogin(page: Page, email: string, password: string): Promise<void> {
-  await page.waitForSelector('#identifierId, input[type="email"]', { timeout: 30_000 });
-  const emailInput = (await page.$('#identifierId')) ?? (await page.$('input[type="email"]'));
-  if (!emailInput) {
-    throw new Error('Google login email field not found');
-  }
-
-  await emailInput.click({ count: 3 });
-  await emailInput.type(email, { delay: 25 });
-  await page.keyboard.press('Enter');
-
-  await page.waitForSelector('input[type="password"], input[name="Passwd"]', { timeout: 30_000 });
-  const passwordInput =
-    (await page.$('input[name="Passwd"]')) ?? (await page.$('input[type="password"]'));
-  if (!passwordInput) {
-    throw new Error('Google login password field not found');
-  }
-
-  await passwordInput.click({ count: 3 });
-  await passwordInput.type(password, { delay: 25 });
-  await page.keyboard.press('Enter');
-
-  await page.waitForFunction(
-    () => !window.location.hostname.includes('accounts.google.com'),
-    { timeout: 120_000 },
-  );
-}
-
-async function clickSignInIfPresent(page: Page): Promise<boolean> {
-  for (const selector of SIGN_IN_SELECTORS) {
-    const button = await page.$(selector);
-    if (!button) {
-      continue;
-    }
-
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60_000 }).catch(() => undefined),
-      button.click(),
-    ]);
-    return true;
-  }
-
-  const clicked = await page.evaluate(() => {
-    const candidates = Array.from(document.querySelectorAll('a, button'));
-    const signIn = candidates.find((element) => /sign in/i.test(element.textContent ?? ''));
-    if (!signIn || !(signIn instanceof HTMLElement)) {
-      return false;
-    }
-    signIn.click();
-    return true;
-  });
-
-  if (clicked) {
-    await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60_000 }).catch(() => undefined);
-  }
-
-  return clicked;
-}
-
-async function ensureGeminiLogin(page: Page): Promise<void> {
-  if (await waitForGeminiEditor(page, GEMINI_EDITOR_WAIT_MS)) {
-    return;
-  }
-
-  const credentials = getGoogleCredentials();
-
-  if (!credentials) {
-    if (!isGeminiWebHeadless()) {
-      console.log(
-        `Log in to Gemini in the browser window. Waiting up to ${GEMINI_MANUAL_LOGIN_WAIT_MS / 1000}s for the prompt editor...`,
-      );
-      if (await waitForGeminiEditor(page, GEMINI_MANUAL_LOGIN_WAIT_MS)) {
-        return;
-      }
-    }
-
+async function waitForGeminiApp(page: Page): Promise<void> {
+  try {
+    await waitForAnySelector(page, EDITOR_SELECTORS, GEMINI_EDITOR_WAIT_MS);
+  } catch {
     throw new Error(
-      'Not logged in to Gemini. Set GOOGLE_EMAIL and GOOGLE_PASSWORD in .env, or run once with GEMINI_WEB_HEADLESS=false to log in manually (sessions are saved in .gemini-user-data-extended and .gemini-user-data-standard).',
-    );
-  }
-
-  const { email, password } = credentials;
-
-  if (await isGoogleLoginPage(page)) {
-    await completeGoogleLogin(page, email, password);
-  } else {
-    await clickSignInIfPresent(page);
-    if (await isGoogleLoginPage(page)) {
-      await completeGoogleLogin(page, email, password);
-    }
-  }
-
-  await page.goto(GEMINI_APP_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-
-  if (!(await waitForGeminiEditor(page, GEMINI_EDITOR_WAIT_MS))) {
-    if (await isGoogleLoginPage(page)) {
-      await completeGoogleLogin(page, email, password);
-      await page.goto(GEMINI_APP_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    }
-  }
-
-  if (!(await waitForGeminiEditor(page, GEMINI_EDITOR_WAIT_MS))) {
-    throw new Error(
-      'Failed to log in to Gemini. Check GOOGLE_EMAIL/GOOGLE_PASSWORD or complete 2FA in a persistent session.',
+      'Gemini app prompt editor did not appear. Guest access may be blocked or the page UI changed.',
     );
   }
 }
@@ -476,47 +328,62 @@ async function waitForGeminiResponse(page: Page, timeoutMs: number): Promise<str
       );
     }
 
-    if (Date.now() - lastLogAt >= WAIT_LOG_INTERVAL_MS) {
-      console.log(
-        `Still waiting for Gemini response (${Math.round(elapsed / 1000)}s, activity=${sawActivity}, generating=${await isResponseGenerating(page)})...`,
+    try {
+      if (Date.now() - lastLogAt >= WAIT_LOG_INTERVAL_MS) {
+        console.log(
+          `Still waiting for Gemini response (${Math.round(elapsed / 1000)}s, activity=${sawActivity}, generating=${await isResponseGenerating(page)})...`,
+        );
+        lastLogAt = Date.now();
+      }
+
+      const generating = await isResponseGenerating(page);
+      const currentText = await getLatestResponseText(page);
+
+      if (generating || currentText.length > 0) {
+        sawActivity = true;
+      }
+
+      if (!sawActivity) {
+        await sleep(500);
+        continue;
+      }
+
+      if (generating) {
+        stablePolls = 0;
+        lastText = '';
+        await sleep(RESPONSE_POLL_INTERVAL_MS);
+        continue;
+      }
+
+      if (currentText.length === 0) {
+        stablePolls = 0;
+        lastText = '';
+        await sleep(RESPONSE_POLL_INTERVAL_MS);
+        continue;
+      }
+
+      if (currentText === lastText) {
+        stablePolls++;
+      } else {
+        stablePolls = 0;
+        lastText = currentText;
+      }
+
+      await sleep(RESPONSE_POLL_INTERVAL_MS);
+    } catch (error) {
+      if (!isDetachedFrameError(error)) {
+        throw error;
+      }
+
+      console.warn(
+        'Gemini page frame detached while waiting for response; waiting for frame to reattach...',
       );
-      lastLogAt = Date.now();
-    }
-
-    const generating = await isResponseGenerating(page);
-    const currentText = await getLatestResponseText(page);
-
-    if (generating || currentText.length > 0) {
-      sawActivity = true;
-    }
-
-    if (!sawActivity) {
-      await sleep(500);
-      continue;
-    }
-
-    if (generating) {
+      await waitForPageFrame(page, 15_000);
+      await waitForAnySelector(page, EDITOR_SELECTORS, 30_000).catch(() => undefined);
       stablePolls = 0;
       lastText = '';
-      await sleep(RESPONSE_POLL_INTERVAL_MS);
-      continue;
+      sawActivity = false;
     }
-
-    if (currentText.length === 0) {
-      stablePolls = 0;
-      lastText = '';
-      await sleep(RESPONSE_POLL_INTERVAL_MS);
-      continue;
-    }
-
-    if (currentText === lastText) {
-      stablePolls++;
-    } else {
-      stablePolls = 0;
-      lastText = currentText;
-    }
-
-    await sleep(RESPONSE_POLL_INTERVAL_MS);
   }
 
   if (!lastText) {
@@ -526,47 +393,34 @@ async function waitForGeminiResponse(page: Page, timeoutMs: number): Promise<str
   return lastText;
 }
 
-async function getModelSelectorText(page: Page): Promise<string> {
-  return page.evaluate((selectors) => {
-    for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        const ariaLabel = element.getAttribute('aria-label') ?? '';
-        const text = element.textContent?.trim() ?? '';
-        return `${text} ${ariaLabel}`.trim();
-      }
-    }
-    return '';
-  }, MODEL_SELECTOR_SELECTORS);
-}
-
-function modelLabelForThinkingLevel(thinkingLevel: GeminiWebThinkingLevel): string {
-  return thinkingLevel === 'extended' ? 'Extended Flash' : 'Standard Flash';
-}
-
-async function logGeminiModelExpectation(
-  page: Page,
-  thinkingLevel: GeminiWebThinkingLevel,
-): Promise<void> {
-  const selectorText = await getModelSelectorText(page);
-  const expected = modelLabelForThinkingLevel(thinkingLevel);
-  const profileDir = `.gemini-user-data-${thinkingLevel}`;
-
-  if (selectorText) {
-    console.log(
-      `Gemini ${thinkingLevel} profile model: "${selectorText}". Configure ${expected} once in ${profileDir} if needed.`,
-    );
-    return;
-  }
-
-  console.log(
-    `Gemini ${thinkingLevel} profile ready. Configure ${expected} once in the browser (saved in ${profileDir}).`,
-  );
-}
-
 function isResponseWaitTimeoutError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /timed out/i.test(message);
+}
+
+function isDetachedFrameError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /detached frame/i.test(message);
+}
+
+function isRecoverableGeminiSessionError(error: unknown): boolean {
+  return isResponseWaitTimeoutError(error) || isDetachedFrameError(error);
+}
+
+async function waitForPageFrame(page: Page, timeoutMs: number): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      await page.evaluate(() => true);
+      return;
+    } catch (error) {
+      if (!isDetachedFrameError(error)) {
+        throw error;
+      }
+      await sleep(500);
+    }
+  }
+  throw new Error('Timed out waiting for Gemini page frame to reattach');
 }
 
 class GeminiWebSession {
@@ -574,6 +428,13 @@ class GeminiWebSession {
   private pages: Partial<Record<GeminiWebThinkingLevel, Page>> = {};
   private pageSetup: Partial<Record<GeminiWebThinkingLevel, Promise<void>>> = {};
   private operationQueues: Partial<Record<GeminiWebThinkingLevel, Promise<unknown>>> = {};
+  private lastResponses: Partial<Record<GeminiWebThinkingLevel, string>> = {};
+
+  constructor(private readonly workerId?: number) {}
+
+  private workerLabel(): string {
+    return this.workerId == null ? 'default' : `worker-${this.workerId}`;
+  }
 
   private async launchBrowser(thinkingLevel: GeminiWebThinkingLevel): Promise<Browser> {
     const existing = this.browsers[thinkingLevel];
@@ -583,7 +444,6 @@ class GeminiWebSession {
 
     const browser = await puppeteer.launch({
       headless: isGeminiWebHeadless(),
-      userDataDir: userDataDirForThinkingLevel(thinkingLevel),
       protocolTimeout: PUPPETEER_OPERATION_TIMEOUT_MS,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
@@ -614,14 +474,17 @@ class GeminiWebSession {
     await page.setDefaultNavigationTimeout(60_000);
     await page.setViewport({ width: 1366, height: 900 });
     await page.goto(GEMINI_APP_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await ensureGeminiLogin(page);
-    await logGeminiModelExpectation(page, thinkingLevel);
+    await waitForGeminiApp(page);
     this.pages[thinkingLevel] = page;
-    console.log(`Gemini web session ready for ${thinkingLevel} profile`);
+    console.log(
+      `Gemini web guest session ready for ${thinkingLevel} profile (${this.workerLabel()}, default Flash)`,
+    );
   }
 
   private async restartBrowser(thinkingLevel: GeminiWebThinkingLevel): Promise<void> {
-    console.log(`Restarting Gemini web browser for ${thinkingLevel} profile...`);
+    console.log(
+      `Restarting Gemini web browser for ${thinkingLevel} profile (${this.workerLabel()})...`,
+    );
 
     await this.pages[thinkingLevel]?.close().catch(() => undefined);
     await this.browsers[thinkingLevel]?.close().catch(() => undefined);
@@ -642,13 +505,12 @@ class GeminiWebSession {
     await startNewChat(page);
 
     const editorSelector = await waitForAnySelector(page, EDITOR_SELECTORS, 30_000);
-
     await setEditorText(page, editorSelector, prompt);
     await sleep(300);
     await submitPrompt(page);
 
     console.log(
-      `Waiting up to ${timeouts.generationTimeoutMs / 1000}s for Gemini ${thinkingLevel} Flash response (attempt ${attempt})...`,
+      `Waiting up to ${timeouts.generationTimeoutMs / 1000}s for Gemini Flash response (attempt ${attempt})...`,
     );
     return waitForGeminiResponse(page, timeouts.generationTimeoutMs);
   }
@@ -663,20 +525,44 @@ class GeminiWebSession {
         for (let attempt = 1; attempt <= GEMINI_ATTEMPTS_PER_ROUND; attempt++) {
           const absoluteAttempt = (round - 1) * GEMINI_ATTEMPTS_PER_ROUND + attempt;
           try {
-            return await this.generateOnce(prompt, thinkingLevel, timeouts, absoluteAttempt);
+            const response = await this.generateOnce(
+              prompt,
+              thinkingLevel,
+              timeouts,
+              absoluteAttempt,
+            );
+
+            if (response === this.lastResponses[thinkingLevel]) {
+              const isLastInRound = attempt >= GEMINI_ATTEMPTS_PER_ROUND;
+              console.warn(
+                `Gemini ${thinkingLevel} returned the exact same reply as the previous request (attempt ${attempt}/${GEMINI_ATTEMPTS_PER_ROUND} in round ${round}); ${
+                  isLastInRound
+                    ? `waiting ${GEMINI_ROUND_COOLDOWN_MS / 60_000} minutes before next round...`
+                    : 're-initializing Gemini web session and retrying...'
+                }`,
+              );
+              continue;
+            }
+
+            this.lastResponses[thinkingLevel] = response;
+            return response;
           } catch (error) {
-            if (!isResponseWaitTimeoutError(error)) {
+            if (!isRecoverableGeminiSessionError(error)) {
               throw error;
             }
 
             const isLastInRound = attempt >= GEMINI_ATTEMPTS_PER_ROUND;
+            const reason = isDetachedFrameError(error)
+              ? 'page frame detached'
+              : `response timed out after ${timeouts.generationTimeoutMs / 1000}s`;
             console.warn(
-              `Gemini ${thinkingLevel} response timed out after ${timeouts.generationTimeoutMs / 1000}s (attempt ${attempt}/${GEMINI_ATTEMPTS_PER_ROUND} in round ${round}); ${
+              `Gemini ${thinkingLevel} ${reason} (attempt ${attempt}/${GEMINI_ATTEMPTS_PER_ROUND} in round ${round}); ${
                 isLastInRound
                   ? `waiting ${GEMINI_ROUND_COOLDOWN_MS / 60_000} minutes before next round...`
                   : 'restarting browser and retrying...'
               }`,
             );
+          } finally {
             await this.restartBrowser(thinkingLevel);
           }
         }
@@ -707,23 +593,33 @@ class GeminiWebSession {
     this.pages = {};
     this.pageSetup = {};
     this.operationQueues = {};
+    this.lastResponses = {};
   }
 }
 
-let geminiWebSession: GeminiWebSession | undefined;
+const geminiWebSessions = new Map<string, GeminiWebSession>();
 
-function getGeminiWebSession(): GeminiWebSession {
-  if (!geminiWebSession) {
-    geminiWebSession = new GeminiWebSession();
+function sessionKeyForWorker(workerId?: number): string {
+  return workerId == null ? 'default' : `worker-${workerId}`;
+}
+
+function getGeminiWebSession(workerId?: number): GeminiWebSession {
+  const key = sessionKeyForWorker(workerId);
+  let session = geminiWebSessions.get(key);
+  if (!session) {
+    session = new GeminiWebSession(workerId);
+    geminiWebSessions.set(key, session);
   }
-  return geminiWebSession;
+  return session;
 }
 
 export class GeminiWebAiProvider implements IAiProvider {
   sourceAI: GeminiWebSourceAi;
+  private readonly workerId?: number;
 
-  constructor(sourceAi: GeminiWebSourceAi = 'gemini-web') {
+  constructor(sourceAi: GeminiWebSourceAi = 'gemini-web', workerId?: number) {
     this.sourceAI = sourceAi;
+    this.workerId = workerId;
   }
 
   async getFamiliarityResultsAsync(
@@ -744,7 +640,10 @@ export class GeminiWebAiProvider implements IAiProvider {
 
   async generateResultsAsync(prompt: string): Promise<string> {
     try {
-      return await getGeminiWebSession().generate(prompt, thinkingLevelForSource(this.sourceAI));
+      return await getGeminiWebSession(this.workerId).generate(
+        prompt,
+        thinkingLevelForSource(this.sourceAI),
+      );
     } catch (error) {
       console.error('Error calling Gemini web:', error);
       throw new Error(
@@ -755,8 +654,7 @@ export class GeminiWebAiProvider implements IAiProvider {
 }
 
 export async function closeGeminiWebSession(): Promise<void> {
-  if (geminiWebSession) {
-    await geminiWebSession.close();
-    geminiWebSession = undefined;
-  }
+  const sessions = [...geminiWebSessions.values()];
+  geminiWebSessions.clear();
+  await Promise.all(sessions.map((session) => session.close()));
 }

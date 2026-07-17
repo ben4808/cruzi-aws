@@ -1,32 +1,46 @@
-INPUT
-Words and phrases in ALLCAPSNOSPACES, one per line.
+TASK
+For each word or phrase given,
+1. Assign the most natural/familiar category from the choices below for an educated adult native English speaker.
+2. Write it in its natural form, according to the chosen category. Don't automatically capitalize the first letter.
+   Don't judge the obscurity or grammar of the word or phrase, just provide the most natural form possible.
 
-TASKS
-1. Parse the word or phrase into its most canonical/recognized category of the following options:
-Word: Single lexical unit. Includes contractions.
-Derived Word: E.g., plurals and conjugated single verbs. Include the base form in parentheses.
-Phrase: Multi-word phrase in its base/standard form. Includes hyphenated forms.
-Derived Phrase: Multi-word phrase that contains a derived element (e.g., plurals, past tense verbs, progressive verbs). Include the base phrase form in parentheses as long as the base form is natural. 
-- Examples: arc welders (arc welder), argued over (argue over), but NOT branding iron (brand iron) because "brand iron" isn't a natural phrase.
-Proper Name: Person's name, place, brand, organization, etc.
-Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+IMPORTANT: Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, and punctuation may change. 
+Do not fix typos, and do not convert letters to numerals or symbols. If the item is nonsense or uninterpretable, simply use the input
+  verbatim in lowercase as the natural form.
+
+CATEGORIES
+Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
+Inflected Word: A single word that is an inflection of a base lemma—verb conjugations, noun plurals, 
+  or adjective comparatives/superlatives. Not derivational forms (agent nouns, possessives, deverbal nouns, etc.). 
+  See Examples for how to output the base form.
+Phrase: Multi-word expression in its base/standard form. Hyphenated forms count as phrases, not words.
+Inflected Phrase: Multi-word expression that contains an inflection (as defined under Inflected Word). 
+  See Examples for how to output the base phrase. Only include a base phrase when that base still refers to the same thing --
+  e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
+Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
+Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.). Prefer this over Proper Name when both could apply.
 Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
-
-2. Write the word or phrase in natural form according to its chosen category.
-IMPORTANT: The letter sequence of the original input must be preserved letter for letter in order. The ONLY things that can be changed are capitalization, spacing, and punctuation. Do not convert letters to numerals or to symbols. Do not fix typos. If you cannot make any sense of the phrase, simply make your best guess what the natural form might hypothetically be, preserving all typos and errors exactly as they were in the input.
+Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
+  Before resorting to the Nonsense category, try a few different parsings. Sometimes a phrase makes more sense when parsed differently.
 
 OUTPUT
-Output the results according to the following format. Don't include any introductory, explanatory, or auxiliary text.
+One line per item, no other text.
 
-<original input> : <category> : <natural form>
+<original input> : <category> : <natural form> <(optional base form)>
 
 Examples:
 ALLCAPS : Phrase : all caps
 BASEBALL : Word : baseball
 AANDW : Phrase : A and W
 VEIGHT : Phrase : V-eight
-ORDERSFOOD : Derived Phrase : orders food (order food)
+ORDERSFOOD : Inflected Phrase : orders food (order food)
+DIVING : Inflected Word : diving (dive)
+CANDIES : Inflected Word : candies (candy)
+BIGGER : Inflected Word : bigger (big)
+BRANDINGIRON : Phrase : branding iron
 DALLASTEXAS : Proper Name : Dallas, Texas
+NASA : Acronym/Abbreviation : NASA
+HKJLJ : Nonsense : HKJLJ
 
 WORDS/PHRASES
 

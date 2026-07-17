@@ -1,7 +1,6 @@
 /*
 Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that have a null unity_bucket, have display_text populated,
-   and have no entry_tags record with tag 'scrabble'.
+1. Select the first 50 entries from the entry table that have a null unity_bucket and have display_text populated.
 2. For each entry, generate a prompt using the unity_prompt_2.txt file. Use the display_text field as the input.
    Send the prompt to Gemini (using GeminiWebAiProvider extended mode) and get the response.
 3. Update the unity_bucket field in the entry table with the results.

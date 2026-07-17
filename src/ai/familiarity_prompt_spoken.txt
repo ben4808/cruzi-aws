@@ -1,0 +1,28 @@
+TASK
+Rate the given words and phrases YES/NO according to the given criteria.
+
+CRITERIA
+For a term to be rated Yes, it must satisfy at least one of the following criteria.
+Rate based on the EXACT string given in the input, not a common variant.
+
+- All educated adults produce it somewhat often in conversation.
+- Is a standard word/phrase or common inflection that is universally understood by an 7-year-old without explanation.
+
+For those terms that achieve a Yes, give them a Yes Plus if the term satisfies all of the following criteria.
+
+- Is the absolute most canonical and natural way to say that thing. Is in its base form and not inflected.
+- Forms part of the essential bedrock of the language.  
+
+OUTPUT
+Output each result following the given format, one per line. Don't provide any explanatory or auxiliary text.
+
+<word/phrase> : <rating>
+
+Examples:
+tree : Yes Plus
+paper towel : Yes
+George Orwell : No
+
+WORDS/PHRASES
+
+[[DATA]]

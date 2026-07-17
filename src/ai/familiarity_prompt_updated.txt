@@ -1,0 +1,54 @@
+TASK
+Analyze the provided list of words and phrases in the [[LANG]] language. 
+
+For each item, score using the rubric below.
+
+Strict Rules:
+- If a term is misspelled, awkwardly phrased, or requires reinterpretation to make sense, score it 0 or 1.
+- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
+
+RUBRIC
+General:
+- Score phrases based on their familiarity as a single cohesive unit/single term. For example, in "Pacific chorus frog" every constituent word is at least a 3.5, but together it they form a niche species name that scores probably 1.5.
+- Score phrases based on the familiarity of the EXACT given string. For example "Pacific Ring" is uncommon/awkward as a phrasing and would score 1.5, while "Pacific Rim" or "Pacific Ring of Fire" are both recognized and would score around 3. "Pacific Trench", though understood upon hearing it, is not really used in this form and would also be 1.5.
+- Score only in 0.5 increments, don't generate finer grain scores.
+
+5 - Extremely fundamental. These are among the first few words and phrases learned. Highly active vocabulary. No contractions, abbreviations, or acronyms.
+Examples: sit, tree, my, thank you, red, year, water, please, hello
+4.5 - Extremely common everyday phrases and expressions. Active conversational vocabulary. No contractions, abbreviations, or acronyms.
+Examples: oil, song, normal, boss, ones, own, go ahead, come on, toast, star, hobby, trip, kitchen,are you sure?
+4 - Very Common. In practically everyone's active vocabulary. Highly recognizable phrasal verbs, contractions, and abbreviations.
+Examples: attic, bark, dinosaurs, I've, social media, water bottle, sleep in, SOS, beat it, etc., lol, scarce, ASAP, April Fools
+3.5 - Quite Common: In the active vocabulary of most but not all. Readily understood phrasal verbs, common noun phrases, and well-known names.
+Examples: thrive, cash register, speed trap, malaria, photo booth, alias, CNN, Jimmy Kimmel, Ben, argued over, freeway, high five
+3 - Active Recall/Common Knowledge: Recognized by the vast majority of speakers but recalled by around half. The Active Recall Test: The majority of native speakers (but not vast majority) could recall this word/phrase as the direct answer to a trivia question.
+Examples: SSN, bento, tres, deuce, THC, BTU, USSR, stage name, U-boat, D-list, ID'ed, attn., tri-, Big Data, box score, Melinda, dear sir, souffle, orcs, Deuteronomy, REM
+2.5 - Moderate Recall / Borderline Niche: Recognized by many but not the majority. Slightly niche terms that are familiar but not universal. Passable trivia fodder for a general audience. Less common derivatives. Less common synonyms. Less common single names.
+Examples: e-cig, midis, Elio, accede, event horizon, avow, slier, Emil, disused, REM, acerbic, Alp, b-days, quixotic, cad, Arctic hare, arable land, contrite
+2 - Limited Familiarity: Known only to a smaller segment of the population. For phrases, people might understand the constituent words, but they are not familiar with the  standalone technical term. Rare names. Abbreviations not often used. Often niche to a specific field. Fodder for tough trivia.
+Examples: Elle, Moondance, Manu, Mekong, Mr. Ed, ATCs, moment of inertia, Peak TV, Goa, Emerson, Apso, Arctic char, kibbutz
+1.5 - Generally Obscure: Known only in very specific, highly technical, or regional contexts. Too obscure to make good general trivia. Grammatical fragments that are rare. Obscure alternative spellings. Too obscure to make good trivia. Partial phrases that don't stand on their own. Rarely used abbreviations. Verb forms almost never seen.
+Examples: ade, plagioclase, Ilana, Erivo, ctr., -ose, meeter, Nomo, Sao, tra-las, cdr., aqua fortis, iterative deepening, persiflage
+1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Everyone has to look it up.
+Examples: Marli Miller, Cantor Set, Three Forks
+0 - Not a real thing, couldn't make any sense of the word/phrase.
+
+OUTPUT
+Present each evaluation in the following strict format, without any introductory or auxiliary text:
+
+<original word/phrase> : <score>
+
+Example Outputs:
+quixotic : 2.5
+diving : 4
+snow fort : 3.5
+attn. : 3
+OSS : 1.5
+Camelbak : 3
+Whoopi Goldberg : 3.5
+I've : 4
+candies : 4.5
+
+WORDS/PHRASES
+
+[[DATA]]
