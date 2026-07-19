@@ -1,8 +1,8 @@
 /*
 Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that have display_text not null and loading_status "Ready".
+1. Select the first 50 entries from the entry table that have loading_status "Ready".
 2. For each entry, generate a prompt using the entry_parser_prompt.txt file. Use the entry field as the input.
-   Send the prompt to Gemini (using GeminiWebAiProvider extended mode) and get the response.
+   Send the prompt to GeminiWebProvider and get the response.
 3. Update the display_text, entry_type, and root_entry (optionally if there is a base form) fields in the entry table with the results.
    Also set loading_status to "P".
    Overwrite the existing values for the fields.
@@ -25,7 +25,7 @@ import { entryToAllCaps, isGeminiTimeoutError, stripAccents } from './lib/utils'
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { parseEntriesWithEntryParser } from './ai/phraseScoring';
 
-const geminiProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const geminiProvider = new GeminiWebAiProvider({ enforceMinRequestInterval: false });
 
 function resolveDisplayText(entryKey: string, parsedDisplayText: string): string {
   if (entryToAllCaps(parsedDisplayText) !== entryKey) {
@@ -80,7 +80,7 @@ export async function entryParser(): Promise<void> {
     while (true) {
       const entries = await getEntriesForEntryParserTop50();
       if (entries.length === 0) {
-        console.log('No entries remaining with loading_status Ready and display_text');
+        console.log('No entries remaining with loading_status Ready');
         break;
       }
 

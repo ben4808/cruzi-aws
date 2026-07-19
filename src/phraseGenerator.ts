@@ -46,8 +46,8 @@ import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { isGeminiTimeoutError } from './lib/utils';
 import { entryToAllCaps, stripAccents } from './lib/utils';
 
-const extendedFlashProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
-const standardFlashProvider = new GeminiWebAiProvider('gemini-web');
+const extendedFlashProvider = new GeminiWebAiProvider();
+const standardFlashProvider = new GeminiWebAiProvider();
 const MIN_IDIOMACITY_SCORE = 3;
 const MIN_FAMILIARITY_SCORE = 2.5;
 const REQUEUE_THRESHOLD = 5;

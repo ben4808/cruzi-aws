@@ -25,7 +25,7 @@ import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { batchArray, isGeminiTimeoutError } from './lib/utils';
 
 const BATCH_SIZE = 100;
-const extendedFlashProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const extendedFlashProvider = new GeminiWebAiProvider();
 
 async function loadMassNounPromptAsync(): Promise<string> {
   try {

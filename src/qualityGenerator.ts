@@ -1,6 +1,6 @@
 /*
 Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that do not have a quality score, have no entry_tags records, and have display_text populated.
+1. Select the first 50 entries from the entry table that do not have a quality score and have display_text populated.
 2. For each entry, generate a prompt using the quality_prompt.txt file. Use the display_text field as the input.
 3. Send the prompt to Gemini (using GeminiWebAiProvider) and get the response.
 4. Update the quality_score field in the entry table with the results.
@@ -21,7 +21,7 @@ import { loadQualityPromptAsync, parseQualityResponse } from './ai/common';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
 
-const geminiProvider = new GeminiWebAiProvider();
+const geminiProvider = new GeminiWebAiProvider({ enforceMinRequestInterval: true });
 
 function promptTextForEntry(entryItem: EntryWithoutQuality): string {
   return entryItem.displayText;

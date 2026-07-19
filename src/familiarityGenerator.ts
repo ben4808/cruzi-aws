@@ -23,7 +23,7 @@ import { scorePhrasesForAvailability } from './ai/phraseScoring';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { isGeminiTimeoutError } from './lib/utils';
 
-const geminiProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const geminiProvider = new GeminiWebAiProvider();
 
 function getPromptText(item: EntryForFamiliarityGenerator): string {
   return item.display_text;

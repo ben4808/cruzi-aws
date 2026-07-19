@@ -21,7 +21,7 @@ import { isGeminiTimeoutError } from './lib/utils';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { scorePhrasesForUnityBucket } from './ai/phraseScoring';
 
-const geminiProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const geminiProvider = new GeminiWebAiProvider();
 
 function getPromptText(item: EntryWithoutUnityBucket): string {
   return item.display_text;

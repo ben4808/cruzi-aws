@@ -2,6 +2,7 @@ import fs from 'fs';
 import { LanguageNames } from 'cruzi-models';
 import { entryToAllCaps, stripAccents } from '../lib/utils';
 import { GeminiWebAiProvider } from './geminiWebProvider';
+import { IAiProvider } from './IAiProvider';
 import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
 
 export interface ParsedIdiomacityResult {
@@ -798,7 +799,7 @@ export function matchSpokenFamiliarityResultsToPhrases(
 export async function scorePhrasesForSpokenFamiliarity(
   phrases: string[],
   lang: string,
-  provider: GeminiWebAiProvider,
+  provider: IAiProvider,
 ): Promise<Map<string, ParsedSpokenFamiliarityResult>> {
   const resultsByPhrase = new Map<string, ParsedSpokenFamiliarityResult>();
   if (phrases.length === 0) {

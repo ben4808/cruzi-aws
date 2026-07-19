@@ -22,7 +22,7 @@ import { isGeminiTimeoutError, stripAccents } from './lib/utils';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { parseEntriesWithStrictDomainNames } from './ai/phraseScoring';
 
-const geminiProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const geminiProvider = new GeminiWebAiProvider();
 
 async function processBatch(entries: EntryWithoutDisplayText[]): Promise<void> {
   const entryKeys = entries.map((entryItem) => entryItem.entry);

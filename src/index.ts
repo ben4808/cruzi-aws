@@ -17,6 +17,7 @@ import { exampleSentenceImprover } from './exampleSentenceImprover';
 import { unityGenerator } from './unityGenerator';
 import { entryParser } from './entryParser';
 import { strictDomainNames } from './strictDomainNames';
+import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -90,7 +91,10 @@ import { strictDomainNames } from './strictDomainNames';
 //   .then(() => console.log("Strict domain names completed successfully."))
 //   .catch(error => console.error("Error in strict domain names: ", error));
 
-// spokenFamiliarityGenerator(1) for 1 worker / 50 entries; spokenFamiliarityGenerator(5) for 5 workers / 250 entries
-spokenFamiliarityGenerator(1)
-  .then(() => console.log("Spoken familiarity generator completed successfully."))
-  .catch(error => console.error("Error in spoken familiarity generator: ", error));
+// spokenFamiliarityGenerator()
+//   .then(() => console.log("Spoken familiarity generator completed successfully."))
+//   .catch(error => console.error("Error in spoken familiarity generator: ", error));
+
+// phraseGeneratorMiner("C:\\Users\\ben_z\\Desktop\\about_phrases.txt")
+//   .then(() => console.log("Phrase generator miner completed successfully."))
+//   .catch(error => console.error("Error in phrase generator miner: ", error));

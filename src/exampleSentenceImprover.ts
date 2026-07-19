@@ -21,7 +21,7 @@ import {
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { isGeminiTimeoutError } from './lib/utils';
 
-const extendedFlashProvider = new GeminiWebAiProvider('gemini-web-extended-flash');
+const extendedFlashProvider = new GeminiWebAiProvider();
 
 async function loadExampleSentencesImproverPromptAsync(): Promise<string> {
   try {
