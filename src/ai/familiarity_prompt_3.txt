@@ -1,0 +1,35 @@
+TASK
+You are given a list of words and phrases, along with their Unity Bucket, which will be one of:
+  Concept, Collocation, Formula, Non-unit, Nonsense
+Your task is to classify each item into buckets according to its familiarity.
+
+GUIDELINES
+- Consider the EXACT string given and not a similar one.
+- Target audience: A well-rounded, educated adult native speaker from the US.
+- For names, score based on the most famous person with that name.
+- Don't include any abbreviations or acronyms in Beginner Core or Fundamental.
+- Don't include any prefixes/suffixes in Beginner Core, Fundamental, or Active.
+- Before rating something as Well-Known, ask: "Is recognition of this tied to a specific subculture, decade, hobby, or trade?
+  Is it a technical term? Is it pop culture?" If yes, you MUST classify it as Inferred or further down the list.
+
+BUCKETS
+Choose the first bucket that applies.
+- Easy Collocation: In Collocation, Formula, or Non-unit unity bucket and transparently understood.
+- Beginner Core: Typical of early beginner language instruction. It's hard to achieve this level.
+- Fundamental: Building blocks of the language. Impossible to function in society without it.
+- Active: Part of a universal active vocabulary. Ubiquitous terms of everyday life.
+- Well-Known: General knowledge, doesn't belong to any specific niche. ~90% of adults know it and have personal experience with it.
+- Inferred: The meaning is easily inferred from the words even if it's not known directly.
+- Niche: Known by specific subcultures, generational cohorts, or hobbyists. Common enough to be used in a general knowledge trivia game.
+- Obscure: Rarely encountered. The information that exists on it is archaic, fragmented, or hyper-niche.
+- Barely Exists: Almost non-existent in the language.
+- Nonsense: Everything else.
+
+OUTPUT
+Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket>
+
+WORDS/PHRASES
+
+[[DATA]]

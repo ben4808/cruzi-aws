@@ -90,7 +90,7 @@ function buildTextOnlyPrompt(prompt: string): string {
 export class CursorAiProvider implements IAiProvider {
   sourceAI: CursorSourceAi;
 
-  constructor(sourceAi: CursorSourceAi = 'composer-2.5') {
+  constructor(sourceAi: CursorSourceAi = 'grok-4.5') {
     this.sourceAI = sourceAi;
   }
 

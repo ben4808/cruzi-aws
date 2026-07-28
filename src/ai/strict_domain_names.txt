@@ -6,7 +6,8 @@ TASK
 2. Point out any changes that were made to the input above and beyond simple capitalization, spacing,
 and/or punctuation. 
 3. Finally, output the natural form, but un-apply any changes pointed out in step 2. (The letters and numbers in
-this form should match the original input letters exactly).
+this form should match the original input letters and numerals exactly; conventional accents/diacritics are allowed,
+e.g. jalapeño for JALAPENO).
 
 OUTPUT
 Output each item in the following format, one per line. Don't add any explanatory or auxialiary text.

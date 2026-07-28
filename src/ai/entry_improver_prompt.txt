@@ -3,59 +3,83 @@ You are given a list of inputs written in ALLCAPS with no spacing or punctuation
 Your task is to reconstruct each entry into natural English and analyze it across 6 specific metrics.
 
 Guidelines:
-- Assign the metrics in numerical order.
-- Consider the EXACT string given, and don't correct spelling or switch out letters.
-
-TARGET AUDIENCE
-A well-rounded educated adult native speaker from the US.
+- Consider the EXACT string given, and don't correct spelling or switch out letters or numerals.
 
 METRICS
-1. Entry Type
+Step 1: Entry Type
 One of the following:
 Word, Inflected Word, Phrase, Inflected Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Nonsense.
 The entry should be placed into the entry type that best exemplifies it.
-For phrases, consider if interpreting it as a Proper Noun if it's not a fixed phrase.
 
-2. Display Text
+Step 2: Display Text
 The entry written in natural English, according to the chosen Entry Type.
-Don't automatically capitalize the first word.
-If it's an inflected form, include the base form in parenthesis.
+Punctuation and spacing can be added, but the input letters and numerals CANNOT be changed or reordered.
+Accents/diacritics may be added where conventional (e.g. JALAPENO → jalapeño).
+Don't automatically capitalize the first word. (except when conventional)
+If it's an inflected form, include the base form in parentheses.
 
-3. Unity Bucket
-Choose the first bucket that applies.
-- Concept: A canonical, unified conceptual chunk. Can include any entry type. Includes idioms.
-- Collocation: A fixed phrase whose meaning is exactly its constituent words. Not simply a descriptive phrase.
-- Formula: A fixed conversational habit.
-- Non-unit: Grammatical phrase that doesn't fit in the first 3 categories.
-- Nonsense: Everything else.
-
-4. Familiarity Bucket
+Step 3: Unity Bucket
 Guidelines:
-- For names, don't score Well-Known unless there is a universally known famous person with that name.
+- Non-canonical numbers should be rated as Non-unit.
+- Non-canonical forms of an otherwise known term are not Concept.
+  Wrong word order, nonstandard naming, or a scrambled variant of a locked name → Non-unit
+- Check if it has a stable encyclopedia headword/Wikipedia entry, Yes -> Concept.
+- Plural surnames should be rated as Concept
+- Singular sports-team demonyms naming a member of a franchise are Concept
 
 Choose the first bucket that applies.
-- Easy Collocation: In Collocation, Formula, on Non-unit bucket and transparently understood.
-- Beginner Core: Typical of early beginner language instruction. It's hard to achieve this level.
-- Fundamental: Building blocks of the language.
-- Active: Part of a universal active vocabulary. Ubiquitous terms of everyday life.
-- Well-Known: Everyone knows the underlying concept and has personal experience with it.
-- Less Known: Only some know the underlying concept and have personal experience with it.
-- Niche: Only known by those in a specific field or subculture.
-- Near-Nonexistent: Barely exists in the language.
+- Concept: A canonical (not over-specified), unified conceptual chunk. 
+    Can include any entry type. 
+    Includes idioms and conventionalized metaphors.
+    Ask: "Would a native speaker treat this exact string as one stored unit,
+      or just a description built on the fly?" Description → not Concept.
+- Collocation: A reusable, conventional phrase whose meaning is exactly its constituent words (including 
+    light verb constructions, even when inflected).
+    Ask: "Do speakers routinely reuse this exact phrase in a recognizable register (news, sports, art, 
+      medicine, everyday talk), such that a near-synonym swap sounds less natural?" If yes → Collocation.
+    Collocation examples: off-duty cops, sci-fi series, mountain peaks, one-sided victory, abstract artist, 
+    loose skin, death metal band
+- Formula: A fixed conversational habit.
+    Includes colloquial, slangy, or sarcastic habits.
+- Non-unit: Grammatical phrase that doesn't fit in the first 3 categories.
+    Includes non-canonical orderings / nonstandard names of known terms.
+    If it's a Phrase and rated Non-unit, go back to step 1 and classify it as Proper Name and
+    see if it changes the Unity Bucket classification.
 - Nonsense: Everything else.
 
-5. Quality Bucket
+Step 4: Familiarity Bucket
+Guidelines:
+- Target audience: A well-rounded, educated adult native speaker from the US.
+- For names, score based on the famousness of people with that name.
+- Don't include anything with Entry Type Acronym/Abbreviation in Beginner Core or Fundamental.
+- Don't include anything with Entry Type Prefix/Suffix in Beginner Core, Fundamental, or Active.
+- Before rating something as Well-Known, ask: "Is recognition of this tied to a specific subculture, decade, hobby, or trade?
+  Is it a technical term? Is it pop culture?" If yes, you MUST classify it as Inferred or Niche.
+
+Choose the first bucket that applies.
+- Easy Collocation: In Collocation, Formula, or Non-unit unity bucket and transparently understood.
+- Beginner Core: Typical of early beginner language instruction. It's hard to achieve this level.
+- Fundamental: Building blocks of the language. Impossible to function in society without it.
+- Active: Part of a universal active vocabulary. Ubiquitous terms of everyday life.
+- Well-Known: General knowledge, doesn't belong to any specific niche. ~90% of adults know it and have personal experience with it.
+- Inferred: The meaning is easily inferred from the words even if it's not known directly.
+- Niche: Known by specific subcultures, generational cohorts, hobbyists, or trivia fans.
+- Obscure: Rarely encountered. The information that exists on it is archaic, fragmented, or hyper-niche.
+- Barely Exists: Almost non-existent in the language.
+- Nonsense: Everything else.
+
+Step 5: Quality Bucket
 Choose in the first bucket that applies.
-- Warm: Pleasant. Evokes good feelings, good memories, vivid images, things you like.
+- Warm: Pleasant. Evokes positive feelings, good memories, vivid images, and/or enjoyable activities.
 - Fun: Fun construction, fun to say, humorous, or meme-worthy.
 - Interesting: Inspires curiosity. Worth looking up to learn more about it.
-- Non-Dominant: There is a more canonical way to say the same thing that is much more dominant.
-- Clunky: Awkward phrasing, doesn't sound natural
+- Non-Dominant: A more common everyday equivalent exists that is more dominant in casual conversation.
+- Clunky: Sounds awkward, redundant, or unnatural.
 - Barely Coherent: Syntactically mangled, sounds alien to a native speaker.
-- Nothing Special: Standard, functional language with no notable charm or flaws.
+- Normal: Nothing special. Standard, functional language with no notable charm or flaws.
 - Nonsense: Everything else.
 
-6. Vulgarity
+Step 6: Vulgarity
 Is it vulgar, i.e. unfit to say in front of children? Yes or No
 
 OUTPUT:
@@ -63,15 +87,10 @@ Output the results in the following format, one per line. Don't include any expl
 
 <original entry> : <entry type> : <display text> <(optional base form)> : <unity bucket> : <familiarity bucket> : <quality bucket> : <vulgarity>
 
+Examples:
+RUNSAROUND : Phrase : runs around (run around) : Concept : Active : Normal : No
+TIGERWOODS : Proper Name : Tiger Woods : Concept : Well-Known : Warm : No
+
 WORDS/PHRASES
 
-BRIDESHOWER
-BLOWUPASTORM
-WAAMBULANCE
-AMAD
-DICKTRACT
-PLEASEDODO
-BRIMMEDOVER
-VICEGERENCIES
-BEDTIMEHOUR
-ACSNATURAL
+[[DATA]]

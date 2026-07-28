@@ -1,0 +1,38 @@
+TASK
+You are given a list of words and phrases.
+Your task is to classify each item into buckets according to its linguistic unity.
+
+GUIDELINES
+- Consider the EXACT string given and not a similar one.
+- Non-canonical numbers should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept)
+- Non-canonical forms of an otherwise known term are not Concept. Wrong word order, nonstandard naming, or a scrambled variant of a locked phrase → Non-unit
+- Check if it has a stable encyclopedia headword/Wikipedia entry, Yes -> Concept.
+- Plural surnames should be rated as Concept.
+- Singular sports-team demonyms naming a member of a franchise are Concept.
+
+BUCKETS
+Choose the first bucket that applies.
+- Concept: A canonical (not over-specified), unified conceptual chunk. 
+    Can include any entry type. 
+    Includes idioms and conventionalized metaphors.
+    Ask: "Would a native speaker treat this exact string as one stored unit,
+      or just a description built on the fly?" Description → not Concept.
+- Collocation: A reusable, conventional phrase whose meaning is exactly its constituent words (including 
+    light verb constructions, even when inflected).
+    Ask: "Do speakers routinely reuse this exact phrase in a recognizable register (news, sports, art, 
+      medicine, everyday talk), such that a near-synonym swap sounds less natural?" If yes → Collocation.
+    Collocation examples: off-duty cops, sci-fi series, mountain peaks, one-sided victory, abstract artist, loose skin, death metal band
+- Formula: A fixed conversational habit.
+    Includes colloquial, slangy, or sarcastic habits.
+- Non-unit: Grammatical phrase that doesn't fit in the first 3 categories.
+    Before rating it as Non-unit, consider it as a Proper Name and see if that changes classification.
+- Nonsense: Everything else.
+
+OUTPUT
+Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket>
+
+WORDS/PHRASES
+
+[[DATA]]

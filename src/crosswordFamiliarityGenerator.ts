@@ -1,7 +1,6 @@
 import { getCrosswordFamiliarityQueueTop25, CrosswordFamiliarityQueueItem, upsertEntries, addCrosswordQualityQueueEntries, addCrosswordFamiliarityQueueEntries } from "cruzi-db";
 import { GeminiAiProvider } from "./ai/gemini";
 import { Entry } from 'cruzi-models';
-import { stripAccents } from "./lib/utils";
 
 const geminiProvider = new GeminiAiProvider();
 
@@ -41,8 +40,8 @@ export async function crosswordFamiliarityGenerator(): Promise<void> {
         entriesToPersist.push({
           entry: result.entry,
           lang: result.lang,
-          rootEntry: result.baseForm || undefined,
-          displayText: stripAccents(result.displayText),
+          baseForm: result.baseForm || undefined,
+          displayText: result.displayText,
           entryType: result.entryType,
           familiarityScore: result.familiarityScore,
         });

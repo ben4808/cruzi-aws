@@ -4,8 +4,9 @@ For each word or phrase given,
 2. Write it in its natural form, according to the chosen category. Don't automatically capitalize the first letter.
    Don't judge the obscurity or grammar of the word or phrase, just provide the most natural form possible.
 
-IMPORTANT: Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, and punctuation may change. 
-Do not fix typos, and do not convert letters to numerals or symbols. If the item is nonsense or uninterpretable, simply use the input
+IMPORTANT: Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, punctuation,
+  and conventional accents/diacritics may change (e.g. JALAPENO → jalapeño).
+Do not fix typos, and do not convert letters to numerals or symbols (or vice versa). If the item is nonsense or uninterpretable, simply use the input
   verbatim in lowercase as the natural form.
 
 CATEGORIES

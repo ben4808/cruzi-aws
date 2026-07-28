@@ -3,10 +3,11 @@ Keep looping through the following steps:
 1. Select the first 50 entries from the entry table that have loading_status "Ready".
 2. For each entry, generate a prompt using the entry_parser_prompt.txt file. Use the entry field as the input.
    Send the prompt to GeminiWebProvider and get the response.
-3. Update the display_text, entry_type, and root_entry (optionally if there is a base form) fields in the entry table with the results.
+3. Update the display_text, entry_type, and base_form (optionally if there is a base form) fields in the entry table with the results.
    Also set loading_status to "P".
    Overwrite the existing values for the fields.
-   - Before sending the update, perform one final check: convert the display_text to all caps and remove all spaces and punctuation.
+   - Before sending the update, perform one final check: convert the display_text to all caps, strip accents,
+     and remove all spaces and punctuation (preserving numerals).
      If the result is not exactly the same as the original input entry, set the display_text to simply the original input entry lowercased.
 
 Output messages to the console updating all progress.
@@ -21,7 +22,7 @@ import {
   EntryForEntryParser,
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
-import { entryToAllCaps, isGeminiTimeoutError, stripAccents } from './lib/utils';
+import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { parseEntriesWithEntryParser } from './ai/phraseScoring';
 
@@ -46,7 +47,8 @@ async function processBatch(entries: EntryForEntryParser[]): Promise<void> {
       continue;
     }
 
-    const aiDisplayText = stripAccents(parsed.displayText);
+    // Keep accents in display_text (e.g. jalapeño); entryToAllCaps strips them for the match check.
+    const aiDisplayText = parsed.displayText;
     const displayText = resolveDisplayText(entryItem.entry, aiDisplayText);
 
     resultsToPersist.push({
@@ -54,7 +56,7 @@ async function processBatch(entries: EntryForEntryParser[]): Promise<void> {
       lang: entryItem.lang,
       displayText,
       entryType: parsed.entryType,
-      rootEntry: parsed.baseForm || undefined,
+      baseForm: parsed.baseForm || undefined,
       loadingStatus: 'P',
     });
 

@@ -73,7 +73,7 @@ async function loadPhraseGeneratorPromptAsync(): Promise<string> {
 }
 
 export function isBaseWordTooShort(base: string): boolean {
-  const letterCount = base.replace(/[^a-zA-Z\u00C0-\u017F]/g, '').length;
+  const letterCount = stripAccents(base).replace(/[^a-zA-Z0-9]/g, '').length;
   return letterCount <= 2;
 }
 
@@ -182,7 +182,7 @@ async function processQueueItem(
 
   if (isBaseWordTooShort(parsedPrompt.base)) {
     console.log(
-      `Skipping phrase generator queue item ${queueId}: base word "${parsedPrompt.base}" has ${parsedPrompt.base.replace(/[^a-zA-Z\u00C0-\u017F]/g, '').length} letters (minimum ${MIN_BASE_WORD_LETTERS})`,
+      `Skipping phrase generator queue item ${queueId}: base word "${parsedPrompt.base}" has ${stripAccents(parsedPrompt.base).replace(/[^a-zA-Z0-9]/g, '').length} letters/numerals (minimum ${MIN_BASE_WORD_LETTERS})`,
     );
     await addPhraseGeneratorResults(queueId, [SKIPPED_RESULT_MARKER]);
     return;
@@ -304,7 +304,7 @@ async function processQueueItem(
     entryType: item.entryType,
     idiomacityScore: item.idiomacityScore,
     familiarityScore: item.familiarityScore,
-    rootEntry: item.rootEntry,
+    baseForm: item.baseForm,
   }));
 
   await insertEntriesOrFillNulls(entriesToPersist);

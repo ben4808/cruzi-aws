@@ -40,7 +40,7 @@ import {
   scorePhrasesForUnityBucket,
 } from './ai/phraseScoring';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import { batchArray, entryToAllCaps, isGeminiTimeoutError, stripAccents } from './lib/utils';
+import { batchArray, entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
 const MIN_FAMILIARITY_SCORE = 2.5;
@@ -66,7 +66,7 @@ function toCandidate(phrase: string, lang: string): CandidatePhrase | null {
     phrase,
     lang,
     entryKey,
-    displayText: stripAccents(phrase),
+    displayText: phrase,
   };
 }
 

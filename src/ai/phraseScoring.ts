@@ -79,12 +79,30 @@ const UNITY_BUCKETS = new Set([
   'Nonsense',
 ]);
 
+const FAMILIARITY_BUCKETS = new Set([
+  'Easy Collocation',
+  'Beginner Core',
+  'Fundamental',
+  'Active',
+  'Well-Known',
+  'Inferred',
+  'Niche',
+  'Obscure',
+  'Barely Exists',
+  'Nonsense',
+]);
+
+export interface ParsedFamiliarityBucketResult {
+  parsedForm: string;
+  bucket: string;
+}
+
 export interface ScoredPhrase {
   phrase: string;
   entryKey: string;
   displayText: string;
   entryType: string;
-  rootEntry?: string;
+  baseForm?: string;
   idiomacityScore: number;
   familiarityScore: number;
 }
@@ -115,6 +133,16 @@ export async function loadUnityBucketPromptAsync(): Promise<string> {
     return await fs.promises.readFile(promptPath, 'utf-8');
   } catch (err) {
     console.error('Error reading unity bucket prompt file:', err);
+    throw err;
+  }
+}
+
+export async function loadUnityBucketPrompt3Async(): Promise<string> {
+  try {
+    const promptPath = './src/ai/unity_prompt_3.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading unity bucket prompt 3 file:', err);
     throw err;
   }
 }
@@ -274,23 +302,137 @@ export function matchUnityBucketResultsToPhrases(
 
 export async function scorePhrasesForUnityBucket(
   phrases: string[],
-  provider: GeminiWebAiProvider,
+  provider: IAiProvider,
+  options: { promptVersion?: 2 | 3 } = {},
 ): Promise<Map<string, ParsedUnityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedUnityBucketResult>();
   if (phrases.length === 0) {
     return resultsByPhrase;
   }
 
-  const promptTemplate = await loadUnityBucketPromptAsync();
+  const promptVersion = options.promptVersion ?? 2;
+  const promptTemplate =
+    promptVersion === 3
+      ? await loadUnityBucketPrompt3Async()
+      : await loadUnityBucketPromptAsync();
   const promptData = phrases.join('\n');
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
-  console.log(`Sending unity bucket prompt for ${phrases.length} phrases`);
+  console.log(
+    `Sending unity bucket prompt (v${promptVersion}) for ${phrases.length} phrases`,
+  );
   const aiResponse = await provider.generateResultsAsync(prompt);
   console.log(`Received unity bucket response (${aiResponse.length} characters)`);
 
   const parsedResults = parseUnityBucketResponse(aiResponse);
   const matches = matchUnityBucketResultsToPhrases(phrases, parsedResults);
+
+  for (const match of matches) {
+    if (!match) {
+      continue;
+    }
+    resultsByPhrase.set(match.phrase, match.parsed);
+  }
+
+  return resultsByPhrase;
+}
+
+export async function loadFamiliarityBucketPrompt3Async(): Promise<string> {
+  try {
+    const promptPath = './src/ai/familiarity_prompt_3.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading familiarity bucket prompt 3 file:', err);
+    throw err;
+  }
+}
+
+export function parseFamiliarityBucketResponse(response: string): ParsedFamiliarityBucketResult[] {
+  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+
+  const results: ParsedFamiliarityBucketResult[] = [];
+  for (const line of lines) {
+    const separatorIndex = line.lastIndexOf(' : ');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const parsedForm = line.slice(0, separatorIndex).trim();
+    const bucket = line.slice(separatorIndex + 3).trim();
+    if (!parsedForm || !FAMILIARITY_BUCKETS.has(bucket)) {
+      continue;
+    }
+
+    results.push({ parsedForm, bucket });
+  }
+
+  return results;
+}
+
+function stripTrailingUnityBucketAnnotation(text: string): string {
+  return text.replace(/\s*\((Concept|Collocation|Formula|Non-unit|Nonsense)\)\s*$/i, '').trim();
+}
+
+export function matchFamiliarityBucketResultsToPhrases(
+  phrases: string[],
+  parsedResults: ParsedFamiliarityBucketResult[],
+): Array<{ phrase: string; parsed: ParsedFamiliarityBucketResult } | null> {
+  const unmatchedParsed = [...parsedResults];
+  const matches: Array<{ phrase: string; parsed: ParsedFamiliarityBucketResult } | null> = [];
+
+  for (const phrase of phrases) {
+    let matchIndex = unmatchedParsed.findIndex(
+      (parsed) =>
+        normalizeForPhraseMatch(stripTrailingUnityBucketAnnotation(parsed.parsedForm)) ===
+        normalizeForPhraseMatch(phrase),
+    );
+
+    if (matchIndex === -1) {
+      matchIndex = unmatchedParsed.findIndex(
+        (parsed) =>
+          entryToAllCaps(stripTrailingUnityBucketAnnotation(parsed.parsedForm)) ===
+          entryToAllCaps(phrase),
+      );
+    }
+
+    if (matchIndex === -1 && unmatchedParsed.length > 0) {
+      matchIndex = 0;
+    }
+
+    if (matchIndex === -1) {
+      matches.push(null);
+      continue;
+    }
+
+    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
+    matches.push({ phrase, parsed });
+  }
+
+  return matches;
+}
+
+export async function scorePhrasesForFamiliarityBucket(
+  phrases: Array<{ phrase: string; unityBucket: string }>,
+  provider: IAiProvider,
+): Promise<Map<string, ParsedFamiliarityBucketResult>> {
+  const resultsByPhrase = new Map<string, ParsedFamiliarityBucketResult>();
+  if (phrases.length === 0) {
+    return resultsByPhrase;
+  }
+
+  const promptTemplate = await loadFamiliarityBucketPrompt3Async();
+  const promptData = phrases
+    .map((item) => `${item.phrase} (${item.unityBucket})`)
+    .join('\n');
+  const prompt = promptTemplate.replace('[[DATA]]', promptData);
+
+  console.log(`Sending familiarity bucket prompt for ${phrases.length} phrases`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received familiarity bucket response (${aiResponse.length} characters)`);
+
+  const parsedResults = parseFamiliarityBucketResponse(aiResponse);
+  const phraseTexts = phrases.map((item) => item.phrase);
+  const matches = matchFamiliarityBucketResultsToPhrases(phraseTexts, parsedResults);
 
   for (const match of matches) {
     if (!match) {
@@ -900,9 +1042,9 @@ export function combinePhraseScores(
     qualifying.push({
       phrase,
       entryKey: entryToAllCaps(familiarity.displayText),
-      displayText: stripAccents(familiarity.displayText),
+      displayText: familiarity.displayText,
       entryType: familiarity.entryType,
-      rootEntry: familiarity.baseForm,
+      baseForm: familiarity.baseForm,
       idiomacityScore: idiomacity.score,
       familiarityScore: familiarity.familiarityScore,
     });

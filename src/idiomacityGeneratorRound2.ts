@@ -71,7 +71,7 @@ function getPromptText(item: EntryWithLowIdiomacity): string {
 }
 
 function normalizeForEntryMatch(text: string): string {
-  return entryToAllCaps(stripAccents(text));
+  return entryToAllCaps(text);
 }
 
 function matchParsedResultsToEntries(

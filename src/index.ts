@@ -9,6 +9,7 @@ import { idiomacityGenerator } from './idiomacityGenerator';
 import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
 import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
+import { accentFixer } from './accentFixer';
 import { phraseGenerator } from './phraseGenerator';
 import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 import { spokenFamiliarityGenerator } from './spokenFamiliarityGenerator';
@@ -16,8 +17,25 @@ import { massNounFixer } from './massNounFixer';
 import { exampleSentenceImprover } from './exampleSentenceImprover';
 import { unityGenerator } from './unityGenerator';
 import { entryParser } from './entryParser';
+import { entryImprover } from './entryImprover';
+import { CursorAiProvider } from './ai/cursor';
+import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { strictDomainNames } from './strictDomainNames';
 import { phraseGeneratorMiner } from './phraseGeneratorMiner';
+import { shortPhraseGenerator } from './shortPhraseGenerator';
+
+const aiProvider = new CursorAiProvider();
+// const aiProvider = new GeminiWebAiProvider({
+//   useWebshare: false,
+//   headless: false,
+//   enforceMinRequestInterval: false,
+//   login: true,
+//   extendedFlash: true,
+// });
+
+shortPhraseGenerator(aiProvider, 500, 10)
+  .then(() => console.log("Short phrase generator completed successfully."))
+  .catch(error => console.error("Error in short phrase generator: ", error));
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -87,6 +105,10 @@ import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 //   .then(() => console.log("Entry parser completed successfully."))
 //   .catch(error => console.error("Error in entry parser: ", error));
 
+// entryImprover(aiProvider, 1000, 10)
+//   .then(() => console.log("Entry improver completed successfully."))
+//   .catch(error => console.error("Error in entry improver: ", error));
+
 // strictDomainNames()
 //   .then(() => console.log("Strict domain names completed successfully."))
 //   .catch(error => console.error("Error in strict domain names: ", error));
@@ -98,3 +120,7 @@ import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 // phraseGeneratorMiner("C:\\Users\\ben_z\\Desktop\\about_phrases.txt")
 //   .then(() => console.log("Phrase generator miner completed successfully."))
 //   .catch(error => console.error("Error in phrase generator miner: ", error));
+
+// accentFixer()
+//   .then(() => console.log("Accent fixer completed successfully."))
+//   .catch(error => console.error("Error in accent fixer: ", error));

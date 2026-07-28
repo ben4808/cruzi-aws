@@ -3,7 +3,7 @@ Analyze the provided list of words and phrases in the [[LANG]] language.
 
 For each item:
 - Parse the word/phrase in the most natural/common way.
-- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters in the exact sequence provided. Do not substitute letters for digits, do not reinterpret, respell, add, remove, or change any words.
+- Normalize formatting only (correct casing, punctuation, and spacing to standard written language). Strict Rule: You must preserve the exact letters and numerals in the exact sequence provided. Do not substitute letters for digits (or vice versa), do not reinterpret, respell, add, remove, or change any words. Conventional accents/diacritics may be added (e.g. jalapeño).
 - Assign exactly one category. Select the most natural/familiar category for the word/phrase.
 - Score using the rubric below.
 

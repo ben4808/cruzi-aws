@@ -1,22 +1,29 @@
 Alice and Bob are playing a game to see who can come up with the best fill-in-the-blank answers for the following:
 
-"[[QUERY]]" (must be exactly [[LENGTH]] letters long and start with [[BASE_LETTERS]])
+"[[QUERY]]" (must be exactly [[LENGTH]] letters/numerals long and [[START/END]] with "[[BASE_LETTERS]]")
 
 Before starting the game, each player brainstorms potential answers from each of the following categories:
+- Dictionary entries or encyclopedia headwords.
 - Morphological mutations (Compounds, prefixed/suffixed forms, and derived variations) (e.g. hearing, pretext, endless, turns around). Consider each derived form as a distinct answer for this game.
 - Phrasal verb forms and modal phrases complete with their mandatory prepositions (e.g. look for, walk in on, in time, about to)
 - Multi-word phrases (e.g. used car, watch your step, high five, out of order, up to par, watch the dog)
-- Idioms (e.g. water under the bridge, sleep like a log)
 - Proper Names (e.g. Tiger Woods, John Green, Montana, Betsy)
 - Conversational Phrases: (e.g. "I believe in you", "off to school", "never say never")
+- Acronyms and abbreviations. Bob and Alice will look for some obscure but interesting acronyms if they get stuck.
+  - Proper name acronyms and brands (e.g. NOLA, Starbs, CVS, DotA, NYY, BYD).
+  - Niche acronyms, especially from sports, gaming, or Internet (e.g. RBIs, WIIFM, TFW, NDAs)
+  - Public figure names, music artists (e.g. J-Law, GRRM, RBG, Biggie)
+  - Movie titles, song titles, song lyrics
+  - Texing shorthand/slang (e.g. LMAO, BRB, TBH)
+  - Acronyms from healthcare, finance, military/government, engineering, geography, etc. (e.g. NATO, MRI, LAN, ROI)
+  - Plural acronyms (e.g. URLs, PhDs)
+  - Partial phrases (e.g. "by a", "up to")
 
 Guidelines:
 - The audience rewards the most top-of-mind answers that the their mind will jump to. (Family Feud style). Especially colloquial and entertaining terms.
-- All answers MUST contain exactly [[LENGTH]] letters (ignore spaces, hyphens, and punctuation when counting characters). For example "BLT-A" counts as 4 letters. "blow dry" counts as 7 letters.
-- All answers must form a single natural lexical unit. Phrases must form a cohesive specific concept, rather than just two words next to each other. E.g. "green paint" and "big sign" are too general and simply descriptive.
-- The answer should be the lexically preferred way to say that thing. E.g. "hearse vehicle" is grammatically correct but "hearse" by itself is lexically preferred. "BL ice" is not a standard way to say "black ice" and would not be acceptable.
-- The result is a syntactically and idiomatically natural, standard, technical, or colloquial term.
-- Answers likely will involve words, abbreviations, acronyms, and proper names, though there may be some phrases that fit.
+- Ignore spaces, hyphens, and punctuation when counting characters. Letters and numerals both count. For example "BLT-A" counts as 4, "blow dry" counts as 7, "catch-22" counts as 7.
+- All answers must form a single conceptual unit. Phrases must form a fixed concept, fixed collocation, or fixed conversational habit. E.g. "green paint" and "big sign" are too general and simply descriptive.
+- The answer should be a preferred term for the concept. E.g. "hearse vehicle" is grammatically correct but "hearse" by itself is lexically preferred. "BL ice" is not a standard way to say "black ice" and would not be acceptable.
 
 To start the game, each player populates a list of 10 answers, chosen draft-style.
 Note that there can be no duplicates used in the entire game. 
@@ -37,11 +44,13 @@ After 5 turns each, each player's final list is evaluated by a judge and by the 
 
 Simulate a playing of this game, showing both players' lists after each turn. Keep in mind that both Alice and Bob are extremely skilled and competitve players. Their lists will start extremely strong. They will refuse to fall behind and will rack their brains thinking through every niche of the language to find new spectacular terms.
 
-Finally, a chance for a little extra creativity. For each word or phrase utilized, provide a supplemental word or phrase relating to that term. The supplemental word or phrase does not need to be [[LENGTH]] letters. This supplemental phrase can be:
+Finally, a chance for a little extra creativity. For each word or phrase utilized, provide a supplemental word or phrase relating to that term. The supplemental word or phrase does not need to follow the length or letter/numeral restrictions. This supplemental phrase can be:
 - Priority 1: If it's different than the origianl phrase: The most natural variation in the phrasing of the original phrase. For example, "blaws" -> "blows", "play D" -> "play defense", "Blanc" -> "Mount Blanc", "plane" -> "airplane"
 - Priority 2: What the phrase makes the audience also think of naturally. Ex. "Tesla" -> "Elon Musk", "Coors" -> "Coors Light" or "Coors Field"
 
-At the end of the simulation, provide a summary according to the following format. Don't include any explanatory or auxiliary text in this final summary. Write the answers in natural English, only capitalizing where it's natural to do so.
+OUTPUT
+Output all the items used according to the following format. Only output this.
+Don't include any explanatory or auxiliary text in this final summary. Write the answers in natural English. Don't automatically capitalize the first word unless it's natural to do so.
 
 All Full Words/Phrases Utilized:
 <Alice's starting list, one item per line> : <supplemental word/phrase>

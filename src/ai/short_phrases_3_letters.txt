@@ -1,0 +1,34 @@
+TASK
+First, imagine you are game show contestant and you are tasked with seeing 3-letter combinations and shouting out the first 
+interpretation that comes to mind. Whoever can produce the most popular interpretation wins. (Family Feud style)
+
+Second, imagine you are a language usage expert tasked with finding the most canonical interpretation of the combination.
+
+Third, you are an expert in Googling things. Do a Google search for the combination and pick the most common interpretation 
+from the results.
+
+Perform these exercises with every 3-letter combination starting with "BY".
+
+Then, for each answer, do a couple extra steps:
+1. CLASSIFY
+- Which one of these classifications was the combination interpreted as? Word, Phrase, Partial Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+- Write the combination naturally according to the interpreted classification. Don't capitalize the first letter unless it's natural to do so.
+
+2. FREQUENCY
+Choose the first bucket that applies.
+  - Fundamental: Universally known and understood. Might appear in a children's book.
+  - Solid: Well-established and universal in the language.
+  - Niche: Particular to a narrow context. Often a Proper Name that isn't well-established in the language.
+  - A Stretch: Required creative interpretation and filling in the blanks. Not canonical.
+
+OUTPUT
+- The Short Description is a focused description that allows people to easily distinguish it from other interpetataions. 
+  This should be as short as possible.
+  
+Output the results strictly following the given format. Output a blank line between each combination.
+Don't include any extra explanatory or auxiliary text. Don't include any images, only text.
+
+<combination>
+<game show natural form> : <game show short description> : <game show classification> : <game show frequency bucket>
+<canonical natural form> : <canonical short description> : <canonical classification> : <canonical frequency bucket>
+<Google natural form> : <Google short description> : <Google classification> : <Google frequency bucket>

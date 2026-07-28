@@ -18,7 +18,7 @@ import {
   EntryWithoutDisplayText,
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
-import { isGeminiTimeoutError, stripAccents } from './lib/utils';
+import { isGeminiTimeoutError } from './lib/utils';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { parseEntriesWithStrictDomainNames } from './ai/phraseScoring';
 
@@ -39,7 +39,7 @@ async function processBatch(entries: EntryWithoutDisplayText[]): Promise<void> {
     resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
-      displayText: stripAccents(parsed.displayText),
+      displayText: parsed.displayText,
     });
 
     console.log(

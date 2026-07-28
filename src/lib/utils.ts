@@ -181,11 +181,15 @@ export function generateId(): string {
     return id;
 }
 
+/**
+ * Normalize text to an entry key: uppercase ASCII letters and numerals only.
+ * Accents/diacritics are stripped (e.g. "jalapeño" → "JALAPENO"); spaces and
+ * punctuation are removed. Numerals are preserved (e.g. "catch-22" → "CATCH22").
+ */
 export function entryToAllCaps(entry: string): string {
-    const uppercasePhrase = entry.toUpperCase();
-    const lettersOnlyPhrase = uppercasePhrase.replace(/[^a-zA-Z\u00C0-\u017F]/g, "");
-    const allcapsNoSpacesPhrase = lettersOnlyPhrase.replace(/\s/g, "");
-    return allcapsNoSpacesPhrase;
+    return stripAccents(entry)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
 };
 
 export function zipArraysFlat<T, U>(arr1: T[], arr2: U[]): (T | U)[] {
@@ -206,15 +210,36 @@ export function arrayToMap<T>(array: T[], keyFn: (item: T) => string): Map<strin
     }, new Map<string, T>());
 }
 
+/** Latin letters that don't fully decompose via NFD → ASCII base (aligned with DB normalize_display_text_to_entry_key). */
+const ACCENT_FROM =
+  'ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝŸàáâãäåæçèéêëìíîïðñòóôõöøùúûüýÿāăąćĉċčďđēĕėęěĝğġģĥħĩīĭįıĵķĺļľŀłńņňŋōŏőœŕřśŝşšţťŧũūŭůűųŵŷỹẽĨŨỸ';
+const ACCENT_TO =
+  'AAAAAAACEEEEIIIIDNOOOOOOUUUUYYaaaaaaaceeeeiiiidnoooooouuuuyyaaaccccddeeeeegggghhiiiiijklllllnnnnoooorrsssstttuuuuuuwyyeIUY';
+
+const ACCENT_MAP = new Map<string, string>(
+  [...ACCENT_FROM].map((ch, i) => [ch, ACCENT_TO[i]]),
+);
+
+/**
+ * Strip accents/diacritics for entry-key comparison.
+ * Display text may keep accents (jalapeño); normalized entries do not (JALAPENO).
+ */
 export function stripAccents(text: string): string {
-    return text.normalize('NFD').replace(/\p{M}/gu, '');
+    const nfdStripped = text.normalize('NFD').replace(/\p{M}/gu, '');
+    let result = '';
+    for (const ch of nfdStripped) {
+        result += ACCENT_MAP.get(ch) ?? ch;
+    }
+    return result;
 }
 
+/**
+ * Convert display text to a normalized entry key.
+ * Display text may include accents (jalapeño); the entry key does not (JALAPENO).
+ * Numerals are preserved.
+ */
 export function displayTextToEntry(text: string): string {
-    // Convert display text to entry format
-    // This regular expression now preserves a wide range of alphanumeric characters,
-    // accented and tilded letters from various languages, and apostrophes.
-    return text.replace(/[^a-zA-Z0-9áéíóúüñãõẽĩũỹÁÉÍÓÚÜÑÃÕẼĨŨỸ']/g, '').toUpperCase();
+    return entryToAllCaps(text);
 }
 
 export function isGeminiTimeoutError(error: unknown): boolean {
