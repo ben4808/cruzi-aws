@@ -1,0 +1,45 @@
+TASK
+You are given a list of inputs written in ALLCAPS with no spacing or punctuation. 
+Your task is to reconstruct each entry into natural English and analyze it across a couple metrics.
+
+Guidelines:
+- Consider the EXACT string given, and don't correct spelling or switch out letters or numerals.
+
+METRICS
+1. Classification
+Try parsing the item as each of the following. 
+Word, Inflected Word, Phrase, Inflected Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Nonsense.
+Pick the one or two that best exemplify the item.
+
+2. Display Text
+Write the item in natural English, according to each chosen Classification(s).
+Punctuation and spacing can be added, but the input letters and numerals CANNOT be changed or reordered from the input, with the following exceptions:
+- Accents/diacritics may be added where conventional (e.g. JALAPENO → jalapeño). 
+- "AND" may be transformed to "&" where appropriate.
+- "DOT" may be transformed to "." where appropriate.
+- "AT" by be transformed to "@" where appropriate. 
+Don't automatically capitalize the first word. (except when conventional)
+If it's an inflected form, include the base form in parentheses.
+
+3. Vulgarity
+If the item is vulgar, i.e. unfit to say in front of children? Yes or No
+
+OUTPUT
+Output the items according to the following output examples. Don't include any explanatory or auxiliary text.
+
+<original input> : <primary classification> : <primary display text> <(optional base form)> : <secondary classification> : <secondary base form> <(optional base form)> : <vulgarity>
+
+ALLCAPS : Phrase : all caps : No
+DAMNIT : Phrase : damn it : Yes
+AANDW : Phrase : A&W : No
+VEIGHT : Word : V-eight : No
+CROCS : Inflected Word : crocs (croc) : Proper Name : Crocs : No  
+ORDERSFOOD : Inflected Phrase : orders food (order food)
+RAM : Word : ram : acronym
+CANDIES : Inflected Word : candies (candy)
+DALLASTEXAS : Proper Name : Dallas, Texas
+HKJLJ : Nonsense : HKJLJ
+
+WORDS/PHRASES
+
+[[DATA]]

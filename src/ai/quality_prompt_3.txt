@@ -1,0 +1,61 @@
+TASK
+You are given a list of words and phrases.
+Your task is to classify each item into buckets according to its linguistic unity.
+
+TASK
+Evaluate and score the linguistic quality, cultural resonance, and phonetic appeal of [[LANG]] words and phrases on a scale from 0.0 to 5.0.
+
+How to score in practice:
+The baseline score is a 3 and the score deviates from there based on the following factors. Positive and negative factors can cancel each other out.
+
+GUIDELINES
+Positive Drivers (add ~0.5 points each):
+• Sparks Joy: Makes people happy upon seeing it.
+• High Evocativeness: Instantly conjures rich imagery, sensory details, humor, or deep nostalgia (e.g., campfire, plot twist).
+• Conversation Sparker: Highly likely to provoke opinions, stories, or cultural discussions.
+• Phonetic/Aesthetic Appeal: Fun to pronounce, musically satisfying, or possesses a unique structural look (e.g., shenanigans, pizzazz, mamby-pamby).
+• Intellectual Stimulation: Fascinating enough to inspire someone to look up its etymology or history.
+
+Negative Drivers (subtract ~0.5 points each)
+• Vulgarity: Contains profanity, crude slang, or highly offensive terms. Negative connotations don't lower the score, but vulgarity does.
+• Awkward Derivation: A derived word variant that is significantly less natural or common than its root (e.g., using slier instead of more sly).
+• Shortcuts: Truncations, acronyms, abbreviations, or contractions that are awkward or unnatural compared to alternative forms (e.g., "ctr." instead of "center").
+• Clunky Phrasing: The phrasing is noticeably worst than a better alternative. (e.g. "water sip" instead of "sip of water")
+• Fragmented/Partial Phrasing: An incomplete segment of a much more common full phrase that is not a common phrasal or modal form. (a lark, run of)
+• Unofficial Phrasing: A proper noun or technical term that is not phrased according to its official title (e.g. "Paris Catacombs" instead of "Catacombs of Paris")
+
+GUIDELINES
+- Consider the EXACT string given and not a similar one.
+- Verify before demoting to Non-unit or Nonsense. 
+   Perform a mandatory search to check whether the exact string is indeed used as a Concept, Collocation or Formula, perhaps in a sense that wasn't apparent at first.
+   Look for encyclopedia headwords, Reddit threads, forums, articles, etc.
+   Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
+- Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept)
+- Non-canonical forms of an otherwise unified term → Non-unit (not Concept, Collocation, or Formula), but still verify to double check.
+   Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
+- Plural surnames should be rated as Concept.
+- If multiple senses exist, pick the most conventionalized lexicalized one.
+- Crossword-style compounds should not be demoted just for non-standard casing or lack of spaces/hyphens, but they are still subject to all other rules.
+
+IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
+
+BUCKETS
+Step 5: Quality Bucket
+Choose in the first bucket that applies.
+- Warm: Pleasant. Evokes positive feelings, good memories, vivid images, and/or enjoyable activities.
+- Fun: Fun construction, fun to say, humorous, or meme-worthy.
+- Interesting: Inspires curiosity. Worth looking up to learn more about it.
+- Non-Dominant: A more common everyday equivalent exists that is more dominant in casual conversation.
+- Clunky: Sounds awkward, redundant, or unnatural.
+- Barely Coherent: Syntactically mangled, sounds alien to a native speaker.
+- Normal: Nothing special. Standard, functional language with no notable charm or flaws.
+- Nonsense: Everything else.
+
+OUTPUT
+Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name>
+
+WORDS/PHRASES
+
+[[DATA]]
