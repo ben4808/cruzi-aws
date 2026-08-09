@@ -9,7 +9,7 @@ METRICS
 1. Classification
 Try parsing the item as each of the following. 
 Word, Inflected Word, Phrase, Inflected Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Nonsense.
-Pick the one or two that best exemplify the item.
+Record each classification that applies (there may be multiple). 
 
 2. Display Text
 Write the item in natural English, according to each chosen Classification(s).
@@ -27,18 +27,18 @@ If the item is vulgar, i.e. unfit to say in front of children? Yes or No
 OUTPUT
 Output the items according to the following output examples. Don't include any explanatory or auxiliary text.
 
-<original input> : <primary classification> : <primary display text> <(optional base form)> : <secondary classification> : <secondary base form> <(optional base form)> : <vulgarity>
+<original input> : <vulgarity> : <primary classification> : <primary display text> <(optional base form)> : <secondary classification> : <secondary base form> <(optional base form)> …. and so on
 
-ALLCAPS : Phrase : all caps : No
-DAMNIT : Phrase : damn it : Yes
-AANDW : Phrase : A&W : No
-VEIGHT : Word : V-eight : No
-CROCS : Inflected Word : crocs (croc) : Proper Name : Crocs : No  
-ORDERSFOOD : Inflected Phrase : orders food (order food)
-RAM : Word : ram : acronym
-CANDIES : Inflected Word : candies (candy)
-DALLASTEXAS : Proper Name : Dallas, Texas
-HKJLJ : Nonsense : HKJLJ
+ALLCAPS : No : Phrase : all caps
+DAMNIT : Yes : Phrase : damn it
+AANDW : No : Phrase : A&W
+VEIGHT : No : Word : V-eight
+CROCS : No : Inflected Word : crocs (croc) : Proper Name : Crocs
+ORDERSFOOD : No : Inflected Phrase : orders food (order food)
+RAM : No : Word : ram : Acronym/Abbreviation : RAM : Proper Name : Ram
+CANDIES : No : Inflected Word : candies (candy)
+DALLASTEXAS : No : Proper Name : Dallas, Texas
+HKJLJ : No : Nonsense : HKJLJ
 
 WORDS/PHRASES
 
