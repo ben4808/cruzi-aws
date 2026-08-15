@@ -10,12 +10,13 @@ import { IAiProvider } from './IAiProvider';
 dotenv.config();
 
 /** Supported Cursor plan models (non-fast variants only). */
-export type CursorSourceAi = 'composer-2.5' | 'grok-4.5';
+export type CursorSourceAi = 'composer-2.5' | 'grok-4.5' | 'grok-4.6' | 'gemini-3.7-flash';
 
 /**
  * Explicit SDK selections so we never fall through to Fast defaults.
  * - Composer 2.5: standard (fast=false)
- * - Grok 4.5: Medium effort, non-fast
+ * - Grok 4.5 / 4.6: Medium effort, non-fast
+ * - Gemini 3.7 Flash (high): High effort
  */
 const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
   'composer-2.5': {
@@ -28,6 +29,17 @@ const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
       { id: 'effort', value: 'medium' },
       { id: 'fast', value: 'false' },
     ],
+  },
+  'grok-4.6': {
+    id: 'grok-4.6',
+    params: [
+      { id: 'effort', value: 'medium' },
+      { id: 'fast', value: 'false' },
+    ],
+  },
+  'gemini-3.7-flash': {
+    id: 'gemini-3.7-flash',
+    params: [{ id: 'effort', value: 'high' }],
   },
 };
 
@@ -90,7 +102,7 @@ function buildTextOnlyPrompt(prompt: string): string {
 export class CursorAiProvider implements IAiProvider {
   sourceAI: CursorSourceAi;
 
-  constructor(sourceAi: CursorSourceAi = 'grok-4.5') {
+  constructor(sourceAi: CursorSourceAi = 'grok-4.6') {
     this.sourceAI = sourceAi;
   }
 

@@ -33,9 +33,9 @@ const aiProvider = new CursorAiProvider();
 //   extendedFlash: true,
 // });
 
-shortPhraseGenerator(aiProvider, 500, 10)
-  .then(() => console.log("Short phrase generator completed successfully."))
-  .catch(error => console.error("Error in short phrase generator: ", error));
+// shortPhraseGenerator(aiProvider, 500, 10)
+//   .then(() => console.log("Short phrase generator completed successfully."))
+//   .catch(error => console.error("Error in short phrase generator: ", error));
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -65,7 +65,7 @@ shortPhraseGenerator(aiProvider, 500, 10)
 //   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
 //   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
 
-// familiarityGenerator()
+// familiarityGenerator(aiProvider, 50, 10)
 //   .then(() => console.log("Familiarity generator completed successfully."))
 //   .catch(error => console.error("Error in familiarity generator: ", error));
 
@@ -97,13 +97,13 @@ shortPhraseGenerator(aiProvider, 500, 10)
 //   .then(() => console.log("Example sentence improver completed successfully."))
 //   .catch(error => console.error("Error in example sentence improver: ", error));
 
-// unityGenerator()
+// unityGenerator(aiProvider, 50, 10)
 //   .then(() => console.log("Unity generator completed successfully."))
 //   .catch(error => console.error("Error in unity generator: ", error));
 
-// entryParser()
-//   .then(() => console.log("Entry parser completed successfully."))
-//   .catch(error => console.error("Error in entry parser: ", error));
+entryParser(aiProvider, 1000, 10)
+  .then(() => console.log("Entry parser completed successfully."))
+  .catch(error => console.error("Error in entry parser: ", error));
 
 // entryImprover(aiProvider, 1000, 10)
 //   .then(() => console.log("Entry improver completed successfully."))

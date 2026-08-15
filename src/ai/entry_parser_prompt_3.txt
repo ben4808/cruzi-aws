@@ -1,43 +1,64 @@
 TASK
 You are given a list of inputs written in ALLCAPS with no spacing or punctuation. 
-Your task is to reconstruct each entry into natural English and analyze it across a couple metrics.
+Your task is to reconstruct each entry into natural English and analyze it across a few tasks.
+
+TASKS
+1. Classification
+Try parsing the item as each of the following (there may be multiple that apply).
 
 Guidelines:
-- Consider the EXACT string given, and don't correct spelling or switch out letters or numerals.
+- Do not consider proper names, abbreviations, or acronyms as Word, Inflected Word, Phrase, or 
+  Inflected Phrase for this classification, whether or not they are inflected.
+  Of course, some items can be both words/phrases and proper names.
 
-METRICS
-1. Classification
-Try parsing the item as each of the following. 
-Word, Inflected Word, Phrase, Inflected Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, Nonsense.
-Record each classification that applies (there may be multiple). 
+Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
+Inflected Word: A single word that is an inflection of a base lemma -- verb conjugations, noun plurals, 
+  or adjective comparatives/superlatives. Not derivational forms (agent nouns, possessives, deverbal nouns, etc.). 
+Phrase: Multi-word expression in its base/standard form. Hyphenated forms count as phrases, not words.
+Inflected Phrase: Multi-word expression that contains an inflection (as defined under Inflected Word). 
+  Only include a base phrase when that base still refers to the same thing. 
+    e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
+Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
+Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
+
+Pick one primary classification, which will be the most natural interpretation of the input string.
+The rest, if any, will be secondary classifications.
 
 2. Display Text
-Write the item in natural English, according to each chosen Classification(s).
-Punctuation and spacing can be added, but the input letters and numerals CANNOT be changed or reordered from the input, with the following exceptions:
+Write the item in natural English for each of the chosen Classification(s).
+Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, and punctuation may change,
+  with the following exceptions:
 - Accents/diacritics may be added where conventional (e.g. JALAPENO → jalapeño). 
 - "AND" may be transformed to "&" where appropriate.
 - "DOT" may be transformed to "." where appropriate.
-- "AT" by be transformed to "@" where appropriate. 
-Don't automatically capitalize the first word. (except when conventional)
-If it's an inflected form, include the base form in parentheses.
+- "AT" may be transformed to "@" where appropriate. 
+Don't automatically capitalize the first word. (except when conventional, e.g. a proper name)
 
 3. Vulgarity
-If the item is vulgar, i.e. unfit to say in front of children? Yes or No
+Is the item offensive, crude, highly inappropriate, or unfit to use in front of children?  Yes or No
 
 OUTPUT
 Output the items according to the following output examples. Don't include any explanatory or auxiliary text.
 
-<original input> : <vulgarity> : <primary classification> : <primary display text> <(optional base form)> : <secondary classification> : <secondary base form> <(optional base form)> …. and so on
+<input> : <Yes or No> : <primary class> : <primary display>[: <secondary class> : <secondary display>]...
 
-ALLCAPS : No : Phrase : all caps
+display is the natural form for that class. If that class is inflected, write display (base) in the same field (crocs (croc), orders food (order food)).
+Repeat : <class> : <display> only when another class applies. Stop when there are no more.
+
+EXAMPLES
+SIGN : No : Word : sign
 DAMNIT : Yes : Phrase : damn it
-AANDW : No : Phrase : A&W
-VEIGHT : No : Word : V-eight
+AANDW : No : Proper Name : A&W
+VEIGHT : No : Phrase : V-eight
 CROCS : No : Inflected Word : crocs (croc) : Proper Name : Crocs
 ORDERSFOOD : No : Inflected Phrase : orders food (order food)
 RAM : No : Word : ram : Acronym/Abbreviation : RAM : Proper Name : Ram
 CANDIES : No : Inflected Word : candies (candy)
 DALLASTEXAS : No : Proper Name : Dallas, Texas
+TRI : No : Prefix/Suffix : tri-
+NASA : No : Acronym/Abbreviation : NASA
 HKJLJ : No : Nonsense : HKJLJ
 
 WORDS/PHRASES

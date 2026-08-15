@@ -1,58 +1,48 @@
 TASK
-You are given a list of words and phrases.
-Your task is to classify each item into buckets according to its linguistic unity.
+You are given a list of words and phrases. 
+Each item is labeled with a unity bucket and a familiarity bucket. Don't read into these buckets, 
+  they are just referred to in some criteria below.
 
-TASK
-Evaluate and score the linguistic quality, cultural resonance, and phonetic appeal of [[LANG]] words and phrases on a scale from 0.0 to 5.0.
+Input format <item> : <unity bucket> : <familiarity bucket>
 
-How to score in practice:
-The baseline score is a 3 and the score deviates from there based on the following factors. Positive and negative factors can cancel each other out.
+Your task is to classify each item into one of the buckets specified below.
 
-GUIDELINES
-Positive Drivers (add ~0.5 points each):
-• Sparks Joy: Makes people happy upon seeing it.
-• High Evocativeness: Instantly conjures rich imagery, sensory details, humor, or deep nostalgia (e.g., campfire, plot twist).
-• Conversation Sparker: Highly likely to provoke opinions, stories, or cultural discussions.
-• Phonetic/Aesthetic Appeal: Fun to pronounce, musically satisfying, or possesses a unique structural look (e.g., shenanigans, pizzazz, mamby-pamby).
-• Intellectual Stimulation: Fascinating enough to inspire someone to look up its etymology or history.
+PASS 1
+First, consider if the item belongs to any of these buckets, evaluating from top to bottom. 
+If it does, assign that bucket and immediately move on to the next item.
 
-Negative Drivers (subtract ~0.5 points each)
-• Vulgarity: Contains profanity, crude slang, or highly offensive terms. Negative connotations don't lower the score, but vulgarity does.
-• Awkward Derivation: A derived word variant that is significantly less natural or common than its root (e.g., using slier instead of more sly).
-• Shortcuts: Truncations, acronyms, abbreviations, or contractions that are awkward or unnatural compared to alternative forms (e.g., "ctr." instead of "center").
-• Clunky Phrasing: The phrasing is noticeably worst than a better alternative. (e.g. "water sip" instead of "sip of water")
-• Fragmented/Partial Phrasing: An incomplete segment of a much more common full phrase that is not a common phrasal or modal form. (a lark, run of)
-• Unofficial Phrasing: A proper noun or technical term that is not phrased according to its official title (e.g. "Paris Catacombs" instead of "Catacombs of Paris")
+Non-unit: Has a unity bucket of Non-unit or Nonsense.
+Unfamiliar: Has a familiarity bucket of Obscure, Barely Exists, or Nonsense.
+Uncommon Inflection: An inflection (plural, verb form, tense) that is rarely used in modern natural speech, 
+  even if grammatically valid or present in specialized dictionaries.
+Partial: A fragment of a larger conventional phrase. It needs additional words to sound natural.
+  Does NOT include single words.
+  Does NOT include standard phrasal or prepositional verbs (verb + particle or preposition), even when they take an object.
+Clunky: The phrasing is noticeably worse than a better alternative.
+  Includes items that are shortened or abbreviated in a way that seems contrived or non-standard.
 
-GUIDELINES
-- Consider the EXACT string given and not a similar one.
-- Verify before demoting to Non-unit or Nonsense. 
-   Perform a mandatory search to check whether the exact string is indeed used as a Concept, Collocation or Formula, perhaps in a sense that wasn't apparent at first.
-   Look for encyclopedia headwords, Reddit threads, forums, articles, etc.
-   Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
-- Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept)
-- Non-canonical forms of an otherwise unified term → Non-unit (not Concept, Collocation, or Formula), but still verify to double check.
-   Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
-- Plural surnames should be rated as Concept.
-- If multiple senses exist, pick the most conventionalized lexicalized one.
-- Crossword-style compounds should not be demoted just for non-standard casing or lack of spaces/hyphens, but they are still subject to all other rules.
+PASS 2
+Choose the first bucket that applies.
 
-IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
+Idiomatic: The meaning cannot be fully predicted from its literal constituent words.
+  Does NOT include single words.
+Interesting: Has substantial, widely known lore — famous stories, history, or cultural footprint that would
+  interest the average person. Good fodder for a movie, book, or trivia question because of that lore.
+Appealing: Conveys high quality or desirability. 
+  Is a product, feature, or trait that is inherently attractive or 
+  Makes a product, feature, or trait sound inherently attractive
+Emotional: Evokes a human experience or situation that carries emotional weight — exciting or story-worthy
+  life events, deep nostalgia, provocation/debate, or something people tell personal stories about.
+  Includes provocative political topics.
+Fun: Fun construction, fun to say, humorous, creative, or meme-worthy.
 
-BUCKETS
-Step 5: Quality Bucket
-Choose in the first bucket that applies.
-- Warm: Pleasant. Evokes positive feelings, good memories, vivid images, and/or enjoyable activities.
-- Fun: Fun construction, fun to say, humorous, or meme-worthy.
-- Interesting: Inspires curiosity. Worth looking up to learn more about it.
-- Non-Dominant: A more common everyday equivalent exists that is more dominant in casual conversation.
-- Clunky: Sounds awkward, redundant, or unnatural.
-- Barely Coherent: Syntactically mangled, sounds alien to a native speaker.
-- Normal: Nothing special. Standard, functional language with no notable charm or flaws.
-- Nonsense: Everything else.
+DEFAULT
+An item that doesn't fit into any bucket should be classified as "Normal".
 
 OUTPUT
-Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.
+Output according to the following format, one item per line. 
+Don't re-output the unity or familiarity buckets.
+Don't include any explanatory or auxiliary text.
 
 <input item> : <bucket name>
 

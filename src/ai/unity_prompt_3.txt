@@ -8,12 +8,12 @@ GUIDELINES
    Perform a mandatory search to check whether the exact string is indeed used as a Concept, Collocation or Formula, perhaps in a sense that wasn't apparent at first.
    Look for encyclopedia headwords, Reddit threads, forums, articles, etc.
    Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
+   Still count it as Non-unit if there are only a couple tenuous references, e.g. used in one crossword puzzle.
 - Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept)
 - Non-canonical forms of an otherwise unified term → Non-unit (not Concept, Collocation, or Formula), but still verify to double check.
    Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
 - Plural surnames should be rated as Concept.
 - If multiple senses exist, pick the most conventionalized lexicalized one.
-- Crossword-style compounds should not be demoted just for non-standard casing or lack of spaces/hyphens, but they are still subject to all other rules.
 
 IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
 

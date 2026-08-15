@@ -1,7 +1,7 @@
 TASK
-You are given a list of words and phrases, along with their Unity Bucket, which will be one of:
+You are given a list of words and phrases, along with their unity bucket, which will be one of:
   Concept, Collocation, Formula, Non-unit, Nonsense
-The Unity Bucket is only for routing -- don't read into it.
+Don't read into the unity bucket -- it's just referred to in some criteria below.
 
 Your task is to classify each item into buckets according to its familiarity.
 
@@ -11,7 +11,6 @@ GUIDELINES
 - For names, score based on the most famous person with that name.
 - Don't include any bare abbreviations or acronyms in Beginner Core or Ubiquitous.
 - Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active.
-- Crossword-style compounds should not be demoted just for non-standard casing or lack of spaces/hyphens, but they are still subject to all other rules.
 - Verify before demoting to Barely Exists or Nonsense. 
    Perform a mandatory search to check whether the exact string is indeed rare in the language.
    Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.

@@ -82,9 +82,9 @@ const UNITY_BUCKETS = new Set([
 const FAMILIARITY_BUCKETS = new Set([
   'Easy Collocation',
   'Beginner Core',
-  'Fundamental',
+  'Ubiquitous',
   'Active',
-  'Well-Known',
+  'General Knowledge',
   'Inferred',
   'Niche',
   'Obscure',
