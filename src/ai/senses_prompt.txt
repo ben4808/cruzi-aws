@@ -1,56 +1,82 @@
-TASK 
 Analyze the distinct senses of the following word or phrase: [[PHRASE]]
-Language of word of phrase: [[SOURCE_LANGUAGE]]
+Language of the item: [[SOURCE_LANGUAGE]]
 Language of translations: [[TRANSLATION_LANGUAGE]]
 
 EXISTING SENSES
 [[REFERENCE SENSES]]
 
-INSTRUCTIONS
-1. Identify Senses: Find all distinct senses of the word/phrase in the Source Language.
-  - Treat different parts of speech (e.g., Noun vs. Verb) as separate senses.
-  - Try interpreting as all of these classifications: Word, Phrase, Proper Name, Acronym, Abbreviation, Prefix, Suffix.
-  - Avoid compound senses (i.e. this OR this). Prefer creating separate senses.
-  - Apply the Substitution Test: If a core synonym of the primary sense (e.g., "assist" for *help*) cannot naturally replace the word in a specific context (e.g., "help yourself to food" or "cannot help but laugh"), classify it as a distinct sense.
-  - Do not include independent derived nouns, adjectives, or gerunds that have independent lexical entries (e.g., treat "helping" as a separate word, not a sense of "help").
-  - Map your generated senses to the provided "Existing Senses" list where applicable. Look for senses that might not be covered by the existing senses.
+LANGUAGE
+Write all output in the language of the item, with the exception of the Natural and Colloquial Translations.
 
-2. Classify Frequency: Assign exactly one frequency tier to each sense:
-  - Primary: The single most dominant, immediate usage. If two are equally dominant, pick the most historically rooted or widely used.
-  - Common: Standard and recognizable usage.
-  - Uncommon: Rare, archaic, or highly technical usage.
+TASKS
+1. If the item is uninterpretable gibberish, reply ONLY with the word "Nonsense".
 
-3. Validation: If the word or phrase is non-sensical, completely unintelligible, or misspelled (and the misspelling doesn't mean anything), reply ONLY with the word "Nonsense".
+2. Generate senses from the item alone. Ignore Existing Senses until step 3. Cover every distinct attested reading.
+  - The item is presented all caps. Also consider it lowercase and with natural capitalization. 
+  - Different part of speech → different sense.
+  - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, but only output a sense when that reading is actually used.
+  - Each sense has its own display text: the usual way that reading is written. Do not expand an acronym into its full phrase as display text.
+  - One meaning per sense. If you would write "A or B", split into two senses.
 
-4. Translations & Alternatives: For each sense, provide:
-  - 1-3 natural translations in the Translation Language.
-  - 1-3 colloquial translations in the Translation Language.
-  - 1-3 alternative ways to say it in the Source Language. If there are none, output “(None)”.
+3. Then match. For each generated sense, look at Existing Senses.
+  - Same meaning → in "Corresponding existing sense", paste that existing short description character-for-character. Leave your own short description as you wrote it; do not rewrite it to match.
+  - No match → None
+
+4. Frequency: exactly one tier per sense, and exactly one Primary in the whole output.
+  - Primary: the single most dominant, immediate usage. If two are tied, pick the most historically rooted.
+  - Common: standard and recognizable.
+  - Uncommon: rare, archaic, or highly technical.
+
+5. Base form: if the item is an inflected form of that sense, output its citation/base form. e.g. "Base form: tree"
+  - Item is already in base form, or does not inflect (typical for names, acronyms, affixes): (None)
+
+6. Translations and alternatives: 1–3 each. Empty → (None)
+  - Natural: default equivalents in the Translation Language.
+  - Colloquial: informal equivalents in the Translation Language.
+  - Alternatives: other ways to say this same sense in the language of the item.
 
 OUTPUT
-- The Short Description is a short, focused description that allows people to easily distinguish it from other senses. This should be as short as possible.
-  
-Output the results strictly following the given format. Examples are for the word "tree". 
-Don't include any extra explanatory or auxiliary text. Don't include any images, only text.
-Always output the part of speech and the classification in English.
-Pay special attention to the newline structure and include 2 newlines between each sense.
+Format below, nothing else. One blank line between senses.
+Short description: as short as possible, only to tell this sense apart from the others.
 
-([Part of Speech], [Classification], [Frequency]) [Short Description] : [Normal Description]
+([Part of Speech], [Classification], [Frequency]) [Display Text]
+[Short Description] : [Definition]
+Base form: [Base form, or (None)]
 Natural: [Translation 1; Translation 2]
 Colloquial: [Translation 1; Translation 2]
 Alternatives: [Alternative 1; Alternative 2]
-Corresponding existing sense: [Exact match from list, or "None" if no match exists]
+Corresponding existing sense: [Exact existing short description, or None]
 
-EXAMPLE
+EXAMPLE (item: "ram")
 
-(Noun, Word, Primary) Large plant : A large perennial plant with a single main trunk or stem from which branches grow, bearing leaves, flowers, or fruit.
-Natural: árbol
-Colloquial: palo
+(Noun, Word, Primary) ram
+Male sheep : A male sheep.
+Base form: (None)
+Natural: carnero; morueco
+Colloquial: macho
 Alternatives: (None)
+Corresponding existing sense: Male sheep
+
+(Verb, Word, Common) ram
+Strike with force : To crash into or drive something with great force.
+Base form: (None)
+Natural: embestir; arremeter
+Colloquial: darse contra
+Alternatives: slam; crash into
 Corresponding existing sense: None
 
-(Noun, Word, Common) Diagrammatic representation : In computer science, a tree is a data structure in which nodes are arranged in a hierarchy. In mathematics, it's a type of graph. This sense also applies to a family tree, which shows the relationships among family members.
-Natural: árbol; diagrama arborescente; esquema en árbol
-Colloquial: ramificación; mapa de ramas
-Alternatives: hierarchical chart; tree diagram
-Corresponding existing sense: Diagram with branches
+(Noun, Acronym/Abbreviation, Common) RAM
+Working memory : Random-access memory, the working memory of a computer.
+Base form: (None)
+Natural: RAM; memoria RAM
+Colloquial: (None)
+Alternatives: memory; random-access memory
+Corresponding existing sense: Computer memory
+
+(Noun, Proper Name, Common) Ram
+Truck brand : A brand of pickup trucks.
+Base form: (None)
+Natural: Ram
+Colloquial: (None)
+Alternatives: Ram truck
+Corresponding existing sense: None

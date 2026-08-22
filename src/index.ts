@@ -23,19 +23,19 @@ import { GeminiWebAiProvider } from './ai/geminiWebProvider';
 import { strictDomainNames } from './strictDomainNames';
 import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 import { shortPhraseGenerator } from './shortPhraseGenerator';
+import { sensesGenerator } from './sensesGenerator';
 
-const aiProvider = new CursorAiProvider();
-// const aiProvider = new GeminiWebAiProvider({
-//   useWebshare: false,
-//   headless: false,
-//   enforceMinRequestInterval: false,
-//   login: true,
-//   extendedFlash: true,
-// });
+const aiProvider = new CursorAiProvider(
+  'grok-4.6',
+);
 
-// shortPhraseGenerator(aiProvider, 500, 10)
+// shortPhraseGenerator(aiProvider, 5, 666, 10)
 //   .then(() => console.log("Short phrase generator completed successfully."))
 //   .catch(error => console.error("Error in short phrase generator: ", error));
+
+// sensesGenerator(aiProvider, 50, 10, 'en', 1)
+//   .then(() => console.log("Senses generator completed successfully."))
+//   .catch(error => console.error("Error in senses generator: ", error));
 
 // entryInfoGenerator()
 //  .then(() => console.log("Entry info generator completed successfully."))
@@ -65,7 +65,7 @@ const aiProvider = new CursorAiProvider();
 //   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
 //   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
 
-// familiarityGenerator(aiProvider, 50, 10)
+// familiarityGenerator(aiProvider, 4000, 10)
 //   .then(() => console.log("Familiarity generator completed successfully."))
 //   .catch(error => console.error("Error in familiarity generator: ", error));
 
@@ -81,7 +81,7 @@ const aiProvider = new CursorAiProvider();
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
 
-// phraseGenerator()
+// phraseGenerator(aiProvider, 500, 10)
 //   .then(() => console.log("Phrase generator completed successfully."))
 //   .catch(error => console.error("Error in phrase generator: ", error));
 
@@ -97,13 +97,13 @@ const aiProvider = new CursorAiProvider();
 //   .then(() => console.log("Example sentence improver completed successfully."))
 //   .catch(error => console.error("Error in example sentence improver: ", error));
 
-// unityGenerator(aiProvider, 50, 10)
+// unityGenerator(aiProvider, 4000, 10)
 //   .then(() => console.log("Unity generator completed successfully."))
 //   .catch(error => console.error("Error in unity generator: ", error));
 
-entryParser(aiProvider, 1000, 10)
-  .then(() => console.log("Entry parser completed successfully."))
-  .catch(error => console.error("Error in entry parser: ", error));
+// entryParser(aiProvider, 3448, 10)
+//   .then(() => console.log("Entry parser completed successfully."))
+//   .catch(error => console.error("Error in entry parser: ", error));
 
 // entryImprover(aiProvider, 1000, 10)
 //   .then(() => console.log("Entry improver completed successfully."))

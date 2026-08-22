@@ -75,6 +75,7 @@ const UNITY_BUCKETS = new Set([
   'Concept',
   'Collocation',
   'Formula',
+  'Partial',
   'Non-unit',
   'Nonsense',
 ]);
@@ -370,7 +371,7 @@ export function parseFamiliarityBucketResponse(response: string): ParsedFamiliar
 }
 
 function stripTrailingUnityBucketAnnotation(text: string): string {
-  return text.replace(/\s*\((Concept|Collocation|Formula|Non-unit|Nonsense)\)\s*$/i, '').trim();
+  return text.replace(/\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i, '').trim();
 }
 
 export function matchFamiliarityBucketResultsToPhrases(

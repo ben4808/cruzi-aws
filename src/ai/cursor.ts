@@ -6,6 +6,7 @@ import * as path from 'path';
 import { Entry, FamiliarityResult, QualityResult } from 'cruzi-models';
 import { getFamiliarityResults, getQualityResults } from './common';
 import { IAiProvider } from './IAiProvider';
+import { AI_REQUEST_TIMEOUT_MS, AiRequestTimeoutError, withTimeout } from '../lib/utils';
 
 dotenv.config();
 
@@ -44,12 +45,22 @@ const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
 };
 
 const MAX_CURSOR_ATTEMPTS = 5;
+const CURSOR_UNAVAILABLE_RETRY_DELAYS_MS = [
+  60_000,
+  5 * 60_000,
+  15 * 60_000,
+  60 * 60_000,
+];
 
 function cursorModelSelection(source: CursorSourceAi): ModelSelection {
   return CURSOR_MODEL_SELECTION[source];
 }
 
 function isRetryableCursorError(error: unknown): boolean {
+  if (error instanceof AiRequestTimeoutError) {
+    return false;
+  }
+
   if (error instanceof CursorAgentError && error.isRetryable) {
     return true;
   }
@@ -122,15 +133,18 @@ export class CursorAiProvider implements IAiProvider {
 
     for (let attempt = 1; attempt <= MAX_CURSOR_ATTEMPTS; attempt++) {
       try {
-        const result = await Agent.prompt(buildTextOnlyPrompt(prompt), {
-          apiKey,
-          model,
-          local: {
-            cwd,
-            // Inline config only — do not load project/user Cursor settings.
-            settingSources: [],
-          },
-        });
+        const result = await withTimeout(
+          Agent.prompt(buildTextOnlyPrompt(prompt), {
+            apiKey,
+            model,
+            local: {
+              cwd,
+              // Inline config only — do not load project/user Cursor settings.
+              settingSources: [],
+            },
+          }),
+          AI_REQUEST_TIMEOUT_MS,
+        );
 
         if (result.status === 'error') {
           throw new Error(result.error?.message ?? `Cursor run failed (id=${result.id})`);
@@ -149,10 +163,14 @@ export class CursorAiProvider implements IAiProvider {
       } catch (error) {
         lastError = error;
 
+        if (error instanceof AiRequestTimeoutError) {
+          throw error;
+        }
+
         if (attempt < MAX_CURSOR_ATTEMPTS && isRetryableCursorError(error)) {
-          const delayMs = Math.min(30_000, 2_000 * 2 ** (attempt - 1));
+          const delayMs = CURSOR_UNAVAILABLE_RETRY_DELAYS_MS[attempt - 1];
           console.warn(
-            `Cursor API unavailable for ${model.id} (attempt ${attempt}/${MAX_CURSOR_ATTEMPTS}), retrying in ${delayMs}ms...`,
+            `Cursor API unavailable for ${model.id} (attempt ${attempt}/${MAX_CURSOR_ATTEMPTS}), retrying in ${delayMs / 1000}s...`,
           );
           await sleep(delayMs);
           continue;

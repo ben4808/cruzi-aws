@@ -1,0 +1,51 @@
+TASK
+Fill in the blank for:
+
+"[[QUERY]]"
+
+Every answer MUST be a complete natural-English phrase with "[[BASE]]" at the [[START/END]]. Include the base word in the answer. Capitalize only where English normally would (names, titles).
+
+You MUST output exactly 30 primary answers, no fewer. Do not stop early and do not output commentary or headers. If an initial brainstorming angle is exhausted, move to other angles. Only if you have truly run out of attested units may you fill leftover slots with the strongest remaining real collocations. Never output a blank, a duplicate, or a banned string.
+
+BANNED (already harvested; do not emit these exact strings or trivial spelling/inflection duplicates):
+
+(none)
+
+The ban list can be long and still miss common answers. Treat it as a map of what is taken, not proof that the well is dry.
+
+QUALITY BAR
+Each answer must be a stored lexical unit, not two words parked next to each other.
+- Pass: idioms, phrasal verbs with their particles, locked collocations, light-verb frames, conversational formulas, conventional compounds, and fixed names (spray paint, watch your step, about to, porta-potty, Tiger Woods).
+- Fail: open descriptions (green paint, big sign), padded or truncated versions of a tighter term ("hearse vehicle" when "hearse" is the unit), fragments, and strings nobody actually says.
+Prefer the dominant, lexically preferred form when several variants exist (porta-potty ≫ portable toilet). Equal natural variants may both be used if they are genuinely both said (hybrid / hybrid vehicle).
+Target a well-rounded US adult. Prefer phrases a native speaker would recognize or produce. Do not spend slots on archaic, hyper-technical, or barely-attested coinages while better options remain. Obscure technical terms are last-resort fillers only.
+
+HOW TO THINK
+Use every distinct sense and part of speech of the base word. Consider daily life (home, errands, speech habits), function, physical context, metaphorical uses, and famous names.
+If several specific items of one category appear on the ban list (e.g., pool noodle, pool float), check whether a broader parent unit is still available (e.g., pool toy).
+
+THREE STAGES OF DIVERSITY (10 PRIMARIES EACH)
+Generate 30 unique primary phrases across three stages of exploration:
+
+Stage 1 — Top of mind (1–10):
+The most immediate, high-frequency phrases that naturally come to mind first. Everyday compounds, common collocations, stock idioms, and familiar conversational expressions. Also capture any obvious everyday units the ban list missed.
+
+Stage 2 — Broadening scope (11–20):
+Branch out beyond the concepts and word senses covered in Stage 1 and the ban list. Explore different meanings of the base word, other parts of speech, and different everyday domains or contexts.
+
+Stage 3 — Specialized, figurative & cultural (21–30):
+Explore less obvious angles while maintaining the quality bar. Look into figurative expressions, cultural references, specific contexts (workplace, hobbies, sports, news, slang), and fixed proper names where the base fits the required position.
+
+SUPPLEMENTALS
+For each of the 30 primaries, provide one supplemental phrase separated by a colon (` : `). The supplemental does not need to fit the original fill-in-the-blank template. It can be:
+- Another natural variant of the unit (e.g., Pacific Garbage Patch → Great Pacific Garbage Patch; about to go down → it's about to go down).
+- Any related phrase that comes to mind through free association.
+- A real phrase that shares a similar structure with one word changed.
+
+OUTPUT
+You may think silently. Then output ONLY the summary below: no section headings, no stage labels, no numbering, and no commentary. Exactly one line per primary answer.
+
+All Full Words/Phrases Utilized:
+<primary phrase 1> : <supplemental>
+<primary phrase 2> : <supplemental>
+... (exactly 30 lines total)

@@ -1,6 +1,6 @@
 TASK
 You are given a list of words and phrases, along with their unity bucket, which will be one of:
-  Concept, Collocation, Formula, Non-unit, Nonsense
+  Concept, Collocation, Formula, Partial, Non-unit, Nonsense
 Don't read into the unity bucket -- it's just referred to in some criteria below.
 
 Your task is to classify each item into buckets according to its familiarity.
@@ -11,6 +11,7 @@ GUIDELINES
 - For names, score based on the most famous person with that name.
 - Don't include any bare abbreviations or acronyms in Beginner Core or Ubiquitous.
 - Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active.
+- Compositional numbers (e.g. "fifty-eight") and Roman numerals should be rated Inferred.
 - Verify before demoting to Barely Exists or Nonsense. 
    Perform a mandatory search to check whether the exact string is indeed rare in the language.
    Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
@@ -20,7 +21,7 @@ GUIDELINES
 IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
 
 BUCKETS
-1. Easy Collocation: In Collocation, Formula, or Non-unit unity bucket and transparently understood from constituent words.
+1. Easy Collocation: In Collocation, Formula, Partial, or Non-unit unity bucket and transparently understood from constituent words.
 2. Beginner Core: Typical of literally the first week of a beginner language course. Very few words achieve this category.
 3. Ubiquitous: Highly polysemous high-frequency core content words/phrases. You'd struggle to live a day without it.
     - Includes common slang.

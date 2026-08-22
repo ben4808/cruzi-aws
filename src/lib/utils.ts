@@ -242,7 +242,40 @@ export function displayTextToEntry(text: string): string {
     return entryToAllCaps(text);
 }
 
+export const AI_REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+
+export class AiRequestTimeoutError extends Error {
+    constructor(timeoutMs: number = AI_REQUEST_TIMEOUT_MS) {
+        super(`AI request timed out after ${timeoutMs / 1000}s`);
+        this.name = 'AiRequestTimeoutError';
+    }
+}
+
+export async function withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number = AI_REQUEST_TIMEOUT_MS,
+): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<never>((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    reject(new AiRequestTimeoutError(timeoutMs));
+                }, timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
 export function isGeminiTimeoutError(error: unknown): boolean {
+    if (error instanceof AiRequestTimeoutError) {
+        return true;
+    }
     const message = error instanceof Error ? error.message : String(error);
     return /timed out/i.test(message);
 }

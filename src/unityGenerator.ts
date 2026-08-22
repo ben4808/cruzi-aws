@@ -8,13 +8,14 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update the unity_bucket and unity_score fields in the entry table with the results.
       The unity_score is a direct mapping of the unity_bucket to a number:
-      Concept = 5, Collocation = 4, Formula = 3, Non-unit = 2, Nonsense = 1
-   c. If any secondary classes get rated as Non-unit or Nonsense, delete them from the entry_secondary_class table.
-      If the primary class gets rated as Non-unit or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
+      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Non-unit = 2, Nonsense = 1
+   c. If any secondary classes get rated as Partial, Non-unit, or Nonsense, delete them from the entry_secondary_class table.
+      If the primary class gets rated as Partial, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
       set the the entry row's entry_type and display_text to the secondary class's entry_type and display_text and then delete the row
       from the entry_secondary_class table.
    d. Set reviewed_status to "12" for the entry row.
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
+   If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -42,6 +43,7 @@ const UNITY_SCORES: Record<string, number> = {
   Concept: 5,
   Collocation: 4,
   Formula: 3,
+  Partial: 2,
   'Non-unit': 2,
   Nonsense: 1,
 };
@@ -53,7 +55,7 @@ function isGoodUnityBucket(bucket: string): boolean {
 }
 
 function isBadUnityBucket(bucket: string): boolean {
-  return bucket === 'Non-unit' || bucket === 'Nonsense';
+  return bucket === 'Partial' || bucket === 'Non-unit' || bucket === 'Nonsense';
 }
 
 function collectPromptPhrases(entries: EntryForUnityGenerator[]): string[] {
@@ -236,6 +238,7 @@ export async function unityGenerator(
           `${itemsCompleted}/${maxItems} requests completed so far`,
       );
 
+      let cycleHadTimeout = false;
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -245,8 +248,10 @@ export async function unityGenerator(
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
             if (isGeminiTimeoutError(error)) {
-              console.warn(`AI timeout processing unity ${requestLabel}`);
-              shouldStop = true;
+              cycleHadTimeout = true;
+              console.warn(
+                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+              );
               return 0;
             }
 
@@ -259,7 +264,7 @@ export async function unityGenerator(
 
       itemsCompleted += chunks.length;
 
-      if (!shouldStop && persistedCounts.every((count) => count === 0)) {
+      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
         console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
         break;
       }

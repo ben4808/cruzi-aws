@@ -20,6 +20,8 @@ IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the f
 BUCKETS
 1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain. 
     Includes idioms and conventionalized metaphors.
+    Includes attested phrasal verbs with their respective particles.
+    Does NOT include compositional numbers (e.g. "fifty-nine") or Roman numerals.
     Ask: "Would a native speaker treat this exact string as one stored unit,
       or just a description built on the fly?" Description → not Concept.
 2. Collocation: A reusable phrase whose meaning is exactly its constituent words, but the exact string is the preferred locked wording in its register.
@@ -32,8 +34,9 @@ BUCKETS
     Includes colloquial, slangy, or sarcastic habits.
     Ask: "Is this exact string itself the preferred locked reflex, or just one fill of an open pattern / a padded version of a shorter habit?"
       Open pattern or padding → not Formula.
-4. Non-unit: Grammatical phrase that doesn't fit in the first 3 categories.
-5. Nonsense: Everything else.
+4. Partial: Part of phrase or proper name that would have fit in the first 3 categories if it was complete.
+5. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
+6. Nonsense: Everything else.
 
 OUTPUT
 Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.

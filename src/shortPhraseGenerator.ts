@@ -1,7 +1,7 @@
 /*
 Keep looping through the following steps until maxItems queue items have been processed (default 100), then stop:
 1. Select enough queue items for parallelRequests concurrent executions via get_short_phrase_queue
-   (ordered by added_at).
+   (ordered by added_at), filtered to the given length parameter.
 2. For each selected queue item (up to parallelRequests in parallel):
    a. Select all rows from the entry table that match the prompt from the queue item.
    b. If there are more than 150 existing entries that match the prompt, delete the queue item and add new queue items for each letter
@@ -13,18 +13,19 @@ Keep looping through the following steps until maxItems queue items have been pr
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
    e. Take the list of phrases and run them through a call to unity_prompt_3.txt. Parse the results and filter out the phrases that were
-      classified as Non-unit or Nonsense.
+      classified as Partial, Non-unit, or Nonsense.
    f. Take the filtered list and run them through a call to familiarity_prompt_3.txt. Parse the results and filter out the phrases that were
       classified as Obscure, Barely Exists, or Nonsense.
    g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include the unity bucket and familiarity bucket where possible.
    h. Insert the phrases that made it past step f into the entry table, including their respective unity bucket/score and
-      familiarity bucket/score. Do not overwrite existing non-null entry fields; only insert new rows or populate null fields
+      familiarity bucket/score. Do not overwrite entry fields with non-null values; only insert new rows or populate null fields
       on existing rows. For entries that were not already in the entry table, insert an entry_tag record with the tag
       "short_phrase_generator".
    i. Delete the queue item from the short_phrase_queue table.
    j. Count the number of phrases that were inserted into the entry table AND that actually match the prompt of the original queue item.
       If it is 5 or more, reinsert the original row into the short_phrase_queue table.
 3. maxItems is the total number of queue items to process before quitting (not the number of DB cycles).
+4. length is required: only process short_phrase_queue rows whose length column matches.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Use insertEntriesOrFillNulls for entry persistence.
@@ -57,23 +58,24 @@ const MATCH_SPLIT_THRESHOLD = 150;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const REJECTED_UNITY_BUCKETS = new Set(['Non-unit', 'Nonsense']);
+const REJECTED_UNITY_BUCKETS = new Set(['Partial', 'Non-unit', 'Nonsense']);
 const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Barely Exists', 'Nonsense']);
 
 const UNITY_SCORES: Record<string, number> = {
   Concept: 5,
   Collocation: 4,
   Formula: 3,
+  Partial: 2,
   'Non-unit': 2,
   Nonsense: 1,
 };
 
 const FAMILIARITY_SCORES: Record<string, number> = {
   'Beginner Core': 50,
-  Fundamental: 45,
+  Ubiquitous: 45,
   Active: 40,
   'Easy Collocation': 35,
-  'Well-Known': 30,
+  'General Knowledge': 30,
   Inferred: 25,
   Niche: 20,
   Obscure: 15,
@@ -290,7 +292,7 @@ async function processQueueItem(
     return unity != null && !REJECTED_UNITY_BUCKETS.has(unity.bucket);
   });
   console.log(
-    `Qualified ${unityQualifiedPhrases.length}/${phrases.length} phrases (unity not Non-unit/Nonsense)`,
+    `Qualified ${unityQualifiedPhrases.length}/${phrases.length} phrases (unity not Partial/Non-unit/Nonsense)`,
   );
 
   const familiarityByPhrase = await scorePhrasesForFamiliarityBucket(
@@ -429,6 +431,7 @@ async function processQueueItem(
 
 export async function shortPhraseGenerator(
   provider: IAiProvider,
+  length: number,
   maxItems: number = DEFAULT_MAX_ITEMS,
   parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
 ): Promise<void> {
@@ -437,7 +440,7 @@ export async function shortPhraseGenerator(
 
     console.log(
       `Starting short phrase generation with provider ${provider.sourceAI} ` +
-        `(max ${maxItems} queue items, ${concurrency} parallel)...`,
+        `(length=${length}, max ${maxItems} queue items, ${concurrency} parallel)...`,
     );
 
     const promptTemplate = await loadShortPhraseGeneratorPromptAsync();
@@ -450,9 +453,9 @@ export async function shortPhraseGenerator(
       const remainingItems = maxItems - itemsCompleted;
       const selectLimit = Math.min(concurrency, remainingItems);
 
-      const queueItems = await getShortPhraseQueue(selectLimit);
+      const queueItems = await getShortPhraseQueue(selectLimit, length);
       if (queueItems.length === 0) {
-        console.log('No short phrase queue items remaining');
+        console.log(`No short phrase queue items remaining for length ${length}`);
         break;
       }
 

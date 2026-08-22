@@ -15,6 +15,7 @@ Keep looping through the following steps until maxItems AI requests have been se
       Among the primary class and secondary classes, replace the entry_type and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
+   If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -272,6 +273,7 @@ export async function familiarityGenerator(
           `${itemsCompleted}/${maxItems} requests completed so far`,
       );
 
+      let cycleHadTimeout = false;
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -281,8 +283,10 @@ export async function familiarityGenerator(
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
             if (isGeminiTimeoutError(error)) {
-              console.warn(`AI timeout processing familiarity ${requestLabel}`);
-              shouldStop = true;
+              cycleHadTimeout = true;
+              console.warn(
+                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+              );
               return 0;
             }
 
@@ -295,7 +299,7 @@ export async function familiarityGenerator(
 
       itemsCompleted += chunks.length;
 
-      if (!shouldStop && persistedCounts.every((count) => count === 0)) {
+      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
         console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
         break;
       }

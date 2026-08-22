@@ -3,8 +3,7 @@ Alice and Bob are playing a game to see who can come up with the best fill-in-th
 "[[QUERY]]" ("[[BASE]]" MUST go at the [[START/END]] of every answer)
 
 Before starting the game, each player brainstorms potential answers from each of the following categories:
-- Morphological mutations (Compounds, prefixed/suffixed forms, and derived variations) (e.g. hearing, pretext, endless, turns around). Consider each derived form as a distinct answer for this game.
-- Phrasal verb forms and modal phrases complete with their mandatory prepositions (e.g. look for, walk in on, in time, about to)
+- Phrasal verb forms, modal phrases, and light-verb constructions complete with their respective particles (e.g. look for, walk in on, in time, about to, take a walk)
 - Multi-word phrases (e.g. used car, watch your step, high five, out of order, up to par, watch the dog)
 - Idioms (e.g. water under the bridge, sleep like a log)
 - Proper Names (e.g. Tiger Woods, John Green, Montana, Betsy)
