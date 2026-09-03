@@ -5,15 +5,15 @@ Your task is to classify each item into buckets according to its linguistic unit
 GUIDELINES
 - Consider the EXACT string given and not a similar one.
 - Verify before demoting to Non-unit or Nonsense. 
-   Perform a mandatory search to check whether the exact string is indeed used as a Concept, Collocation or Formula, perhaps in a sense that wasn't apparent at first.
+   Perform a mandatory search to check whether the exact string is indeed used regularly as a Concept, Collocation or Formula, perhaps in a sense that wasn't apparent at first.
    Look for encyclopedia headwords, Reddit threads, forums, articles, etc.
    Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
-   Still count it as Non-unit if there are only a couple tenuous references, e.g. used in one crossword puzzle.
-- Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept)
-- Non-canonical forms of an otherwise unified term → Non-unit (not Concept, Collocation, or Formula), but still verify to double check.
+- Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept).
+   This includes Roman numerals.
+- Non-canonical forms of an otherwise unified term → NOT Concept, Collocation, or Formula.
    Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
 - Plural surnames should be rated as Concept.
-- If multiple senses exist, pick the most conventionalized lexicalized one.
+- If multiple senses exist, pick the most conventionally lexicalized one.
 
 IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
 
@@ -21,7 +21,7 @@ BUCKETS
 1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain. 
     Includes idioms and conventionalized metaphors.
     Includes attested phrasal verbs with their respective particles.
-    Does NOT include compositional numbers (e.g. "fifty-nine") or Roman numerals.
+    Includes all standard inflections.
     Ask: "Would a native speaker treat this exact string as one stored unit,
       or just a description built on the fly?" Description → not Concept.
 2. Collocation: A reusable phrase whose meaning is exactly its constituent words, but the exact string is the preferred locked wording in its register.
@@ -35,8 +35,12 @@ BUCKETS
     Ask: "Is this exact string itself the preferred locked reflex, or just one fill of an open pattern / a padded version of a shorter habit?"
       Open pattern or padding → not Formula.
 4. Partial: Part of phrase or proper name that would have fit in the first 3 categories if it was complete.
-5. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
-6. Nonsense: Everything else.
+    Includes prefixes and suffixes.
+    Does not include standard shortenings of a word.
+5. Variant: Variant spelling that is valid but non-dominant.
+6. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
+    Does not include single words.
+7. Nonsense: Everything else.
 
 OUTPUT
 Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.

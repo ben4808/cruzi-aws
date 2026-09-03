@@ -38,6 +38,7 @@ import {
 } from 'cruzi-db';
 import { Entry } from 'cruzi-models';
 import { IAiProvider } from './ai/IAiProvider';
+import { matchParsedResultsByIdentity } from './lib/resultMatching';
 import { batchArray, entryToAllCaps } from './lib/utils';
 
 const UNITY_SCORES: Record<string, number> = {
@@ -196,31 +197,12 @@ function matchParsedResultsToEntries(
   entries: EntryForEntryImprover[],
   parsedResults: ParsedEntryImproverResult[],
 ): Array<{ entry: EntryForEntryImprover; parsed: ParsedEntryImproverResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: EntryForEntryImprover; parsed: ParsedEntryImproverResult } | null> =
-    [];
-
-  for (const entryItem of entries) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryItem.entry,
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.displayText) === entryItem.entry,
-      );
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry: entryItem, parsed });
-  }
-
-  return matches;
+  return matchParsedResultsByIdentity(
+    entries,
+    parsedResults,
+    (entryItem) => [entryItem.entry],
+    (parsed) => [parsed.entry, parsed.displayText],
+  ).map((match) => (match ? { entry: match.input, parsed: match.parsed } : null));
 }
 
 function buildEntriesToPersist(

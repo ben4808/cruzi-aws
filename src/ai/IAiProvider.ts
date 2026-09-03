@@ -6,5 +6,5 @@ export interface IAiProvider {
     getFamiliarityResultsAsync(entries: Entry[], lang: string, mockData: boolean): Promise<FamiliarityResult[]>;
     getQualityResultsAsync(entries: Entry[], lang: string, mockData: boolean): Promise<QualityResult[]>;
 
-    generateResultsAsync(prompt: string): Promise<string>;
+    generateResultsAsync(prompt: string, timeoutMs?: number): Promise<string>;
 }

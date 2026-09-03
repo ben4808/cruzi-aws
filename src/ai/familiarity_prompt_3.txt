@@ -1,44 +1,57 @@
 TASK
-You are given a list of words and phrases, along with their unity bucket, which will be one of:
-  Concept, Collocation, Formula, Partial, Non-unit, Nonsense
-Don't read into the unity bucket -- it's just referred to in some criteria below.
+You are given a list of words and phrases.
+
+Each item is given as: <item> (<classification>) (<unity bucket>)
+The classification will be one of:
+  Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix
+
+The unity bucket will be one of:
+  Concept, Collocation, Formula, Partial, Variant, Non-unit, Nonsense
 
 Your task is to classify each item into buckets according to its familiarity.
 
 GUIDELINES
-- Consider the EXACT string given and not a similar one.
+- Interpret the item strictly according to its given classification
+   - Word or Phrase classification cannot be interpreted as a proper name.
+   - Proper Name classification must be interpreted as a proper name.
 - Target audience: A well-rounded, educated adult native speaker from the US.
-- For names, score based on the most famous person with that name.
+- For names, score based on the most famous person, place, thing, or idea with that name.
 - Don't include any bare abbreviations or acronyms in Beginner Core or Ubiquitous.
-- Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active.
-- Compositional numbers (e.g. "fifty-eight") and Roman numerals should be rated Inferred.
+- Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active, or Colloquial.
+- Don't include any items with unity bucket Partial in Beginner Core, Ubiquitous, or Active, or Colloquial.
+- Don't include any single given names or surnames in Beginner Core, Ubiquitous, or Active, or Colloquial.
+- Compositional numbers (e.g. "fifty-eight") and Roman numerals with unity bucket Non-unit should be rated Inferred.
 - Verify before demoting to Barely Exists or Nonsense. 
-   Perform a mandatory search to check whether the exact string is indeed rare in the language.
-   Try interpreting it as a proper name, especially as a place name, song/movie/book title, etc.
-- Before rating something as General Knowledge, ask: "Is recognition of this tied to a specific subculture, decade, hobby, or trade?
-  Is it a technical term? Is it pop culture?" If yes, you MUST classify it as Inferred or further down the list.
+   Perform a mandatory search to check whether the exact string is indeed rare or non-existent in the language.
 
-IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
+IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
 
 BUCKETS
+0. Variant: Unity bucket is Variant -> familiarity bucket is automatically Variant.
 1. Easy Collocation: In Collocation, Formula, Partial, or Non-unit unity bucket and transparently understood from constituent words.
 2. Beginner Core: Typical of literally the first week of a beginner language course. Very few words achieve this category.
-3. Ubiquitous: Highly polysemous high-frequency core content words/phrases. You'd struggle to live a day without it.
-    - Includes common slang.
-    - Also includes high-frequency function words.
+3. Ubiquitous: Highly polysemous high-frequency core content words/phrases.
     - Probably used in idiomatic phrases.
-4. Active: Part of a universal active vocabulary. Common terms of everyday conversation. Commonly produced in the exact given form.
-    - Does not include acronyms or abbreviations unless they are actually produced vocally as such.
-5. General Knowledge: Well-known, but doesn't belong to any specific niche. ~90% of adults have personal experience with it.
-6. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
+    - Also includes high-frequency function words.
+4. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
+    Must be the most canonical spelling and phrasing. 
+    - Does NOT include acronyms or abbreviations unless they are actually produced verbally as such.
+    - Literary/SAT vocabulary that people recognize but don’t say is not Active.
+5. Colloquial: Slang or jargon produced in coversation by specific cohorts of people in colloquial contexts.
+6. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
+    fixture of the global culture.
+    - Referenced in allusions, metaphors, and/or memes.
+    - Makes for easy trivia. Harder trivia belongs in Niche.
+7. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
     - Includes uncommon word inflections that nonetheless are easily understood.
-7. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
-    - Might make a good trivia answer.
-8. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
+8. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
+    - Might make a good difficult trivia answer.
+9. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
     - Only people specialized in the area are likely to know it.
     - Might be a non-standard spelling or phrase formulation.
-9. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
-10. Nonsense: Everything else.
+    - Might only exist in another language.
+10. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
+11. Nonsense: Everything else.
 
 OUTPUT
 Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.

@@ -1,9 +1,11 @@
 import fs from 'fs';
 import { LanguageNames } from 'cruzi-models';
-import { entryToAllCaps, stripAccents } from '../lib/utils';
+import { entryToAllCaps } from '../lib/utils';
+import { parseEntryParser3Response } from './entryParserFormat';
 import { GeminiWebAiProvider } from './geminiWebProvider';
 import { IAiProvider } from './IAiProvider';
 import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
+import { matchPhrasesToParsed } from '../lib/resultMatching';
 
 export interface ParsedIdiomacityResult {
   parsedForm: string;
@@ -21,6 +23,7 @@ export interface ParsedEntryParserResult {
   entryType: string;
   displayText: string;
   baseForm?: string;
+  isVulgar?: boolean;
 }
 
 export interface ParsedStrictDomainNamesResult {
@@ -76,6 +79,7 @@ const UNITY_BUCKETS = new Set([
   'Collocation',
   'Formula',
   'Partial',
+  'Variant',
   'Non-unit',
   'Nonsense',
 ]);
@@ -85,9 +89,12 @@ const FAMILIARITY_BUCKETS = new Set([
   'Beginner Core',
   'Ubiquitous',
   'Active',
+  'Colloquial',
   'General Knowledge',
   'Inferred',
   'Niche',
+  'Variant',
+  'Partial Phrase',
   'Obscure',
   'Barely Exists',
   'Nonsense',
@@ -154,6 +161,16 @@ export async function loadEntryParserPromptAsync(): Promise<string> {
     return await fs.promises.readFile(promptPath, 'utf-8');
   } catch (err) {
     console.error('Error reading entry parser prompt file:', err);
+    throw err;
+  }
+}
+
+export async function loadEntryParserPrompt3Async(): Promise<string> {
+  try {
+    const promptPath = './src/ai/entry_parser_prompt_3.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading entry parser prompt 3 file:', err);
     throw err;
   }
 }
@@ -271,34 +288,7 @@ export function matchUnityBucketResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedUnityBucketResult[],
 ): Array<{ phrase: string; parsed: ParsedUnityBucketResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedUnityBucketResult } | null> = [];
-
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => normalizeForPhraseMatch(parsed.parsedForm) === normalizeForPhraseMatch(phrase),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.parsedForm) === entryToAllCaps(phrase),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.parsedForm]);
 }
 
 export async function scorePhrasesForUnityBucket(
@@ -327,6 +317,14 @@ export async function scorePhrasesForUnityBucket(
 
   const parsedResults = parseUnityBucketResponse(aiResponse);
   const matches = matchUnityBucketResultsToPhrases(phrases, parsedResults);
+  const matchedCount = matches.filter((match) => match !== null).length;
+  if (parsedResults.length !== phrases.length || matchedCount !== phrases.length) {
+    const unmatched = phrases.filter((_, index) => matches[index] === null);
+    console.warn(
+      `Unity ratings: parsed ${parsedResults.length}, matched ${matchedCount} of ${phrases.length}` +
+        (unmatched.length > 0 ? `; unmatched: ${unmatched.slice(0, 8).join(', ')}` : ''),
+    );
+  }
 
   for (const match of matches) {
     if (!match) {
@@ -370,50 +368,174 @@ export function parseFamiliarityBucketResponse(response: string): ParsedFamiliar
   return results;
 }
 
-function stripTrailingUnityBucketAnnotation(text: string): string {
-  return text.replace(/\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i, '').trim();
+function stripTrailingFamiliarityPromptAnnotations(text: string): string {
+  let result = text.trim();
+  let previous = '';
+  while (result !== previous) {
+    previous = result;
+    result = result
+      .replace(/\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i, '')
+      .replace(/\s*\((Word|Phrase|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
+      .trim();
+  }
+  return result;
 }
 
 export function matchFamiliarityBucketResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedFamiliarityBucketResult[],
 ): Array<{ phrase: string; parsed: ParsedFamiliarityBucketResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedFamiliarityBucketResult } | null> = [];
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [
+    stripTrailingFamiliarityPromptAnnotations(parsed.parsedForm),
+  ]);
+}
 
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) =>
-        normalizeForPhraseMatch(stripTrailingUnityBucketAnnotation(parsed.parsedForm)) ===
-        normalizeForPhraseMatch(phrase),
-    );
+const QUALITY_BUCKETS = new Set([
+  'Non-unit',
+  'Unfamiliar',
+  'Uncommon Inflection',
+  'Partial',
+  'Clunky',
+  'Idiomatic',
+  'Interesting',
+  'Appealing',
+  'Emotional',
+  'Trendy',
+  'Normal',
+]);
 
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) =>
-          entryToAllCaps(stripTrailingUnityBucketAnnotation(parsed.parsedForm)) ===
-          entryToAllCaps(phrase),
-      );
-    }
+const QUALITY_BUCKET_ALIASES: Record<string, string> = {
+  Fun: 'Trendy',
+};
 
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
+function canonicalQualityBucket(bucket: string): string | undefined {
+  if (QUALITY_BUCKETS.has(bucket)) {
+    return bucket;
+  }
+  return QUALITY_BUCKET_ALIASES[bucket];
+}
 
-    if (matchIndex === -1) {
-      matches.push(null);
+function stripTrailingQualityPromptAnnotations(text: string): string {
+  let result = text.trim();
+  let previous = '';
+  while (result !== previous) {
+    previous = result;
+    result = result
+      .replace(
+        /\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i,
+        '',
+      )
+      .replace(
+        /\s*\((Easy Collocation|Beginner Core|Ubiquitous|Active|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
+        '',
+      )
+      .trim();
+  }
+  return result;
+}
+
+export interface ParsedQualityBucketResult {
+  parsedForm: string;
+  bucket: string;
+}
+
+export async function loadQualityBucketPrompt3Async(): Promise<string> {
+  try {
+    const promptPath = './src/ai/quality_prompt_3.txt';
+    return await fs.promises.readFile(promptPath, 'utf-8');
+  } catch (err) {
+    console.error('Error reading quality bucket prompt 3 file:', err);
+    throw err;
+  }
+}
+
+export function parseQualityBucketResponse(response: string): ParsedQualityBucketResult[] {
+  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+
+  const results: ParsedQualityBucketResult[] = [];
+  for (const line of lines) {
+    const cleaned = line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
+    const parts = cleaned.split(/\s*:\s*/).map((part) => part.trim()).filter((part) => part !== '');
+    if (parts.length < 2) {
       continue;
     }
 
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
+    let bucket: string | undefined;
+    let bucketIndex = -1;
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const canonical = canonicalQualityBucket(parts[i]);
+      if (canonical) {
+        bucket = canonical;
+        bucketIndex = i;
+        break;
+      }
+    }
+    if (!bucket || bucketIndex < 1) {
+      continue;
+    }
+
+    const parsedForm = stripTrailingQualityPromptAnnotations(parts[0]);
+    if (!parsedForm) {
+      continue;
+    }
+
+    results.push({ parsedForm, bucket });
   }
 
-  return matches;
+  return results;
+}
+
+export function matchQualityBucketResultsToPhrases(
+  phrases: string[],
+  parsedResults: ParsedQualityBucketResult[],
+): Array<{ phrase: string; parsed: ParsedQualityBucketResult } | null> {
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [
+    stripTrailingQualityPromptAnnotations(parsed.parsedForm),
+  ]);
+}
+
+export async function scorePhrasesForQualityBucket(
+  phrases: Array<{ phrase: string; unityBucket: string; familiarityBucket: string }>,
+  provider: IAiProvider,
+): Promise<Map<string, ParsedQualityBucketResult>> {
+  const resultsByPhrase = new Map<string, ParsedQualityBucketResult>();
+  if (phrases.length === 0) {
+    return resultsByPhrase;
+  }
+
+  const promptTemplate = await loadQualityBucketPrompt3Async();
+  const promptData = phrases
+    .map((item) => `${item.phrase} (${item.unityBucket}) (${item.familiarityBucket})`)
+    .join('\n');
+  const prompt = promptTemplate.replace('[[DATA]]', promptData);
+
+  console.log(`Sending quality bucket prompt for ${phrases.length} phrases`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received quality bucket response (${aiResponse.length} characters)`);
+
+  const parsedResults = parseQualityBucketResponse(aiResponse);
+  const phraseTexts = phrases.map((item) => item.phrase);
+  const matches = matchQualityBucketResultsToPhrases(phraseTexts, parsedResults);
+  const matchedCount = matches.filter((match) => match !== null).length;
+
+  if (parsedResults.length !== phrases.length || matchedCount !== phrases.length) {
+    console.warn(
+      `Quality ratings: parsed ${parsedResults.length}, matched ${matchedCount} of ${phrases.length} phrases`,
+    );
+  }
+
+  for (const match of matches) {
+    if (!match) {
+      continue;
+    }
+    resultsByPhrase.set(match.phrase, match.parsed);
+  }
+
+  return resultsByPhrase;
 }
 
 export async function scorePhrasesForFamiliarityBucket(
-  phrases: Array<{ phrase: string; unityBucket: string }>,
+  phrases: Array<{ phrase: string; entryType: string; unityBucket: string }>,
   provider: IAiProvider,
 ): Promise<Map<string, ParsedFamiliarityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedFamiliarityBucketResult>();
@@ -423,7 +545,7 @@ export async function scorePhrasesForFamiliarityBucket(
 
   const promptTemplate = await loadFamiliarityBucketPrompt3Async();
   const promptData = phrases
-    .map((item) => `${item.phrase} (${item.unityBucket})`)
+    .map((item) => `${item.phrase} (${item.entryType}) (${item.unityBucket})`)
     .join('\n');
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
@@ -434,6 +556,14 @@ export async function scorePhrasesForFamiliarityBucket(
   const parsedResults = parseFamiliarityBucketResponse(aiResponse);
   const phraseTexts = phrases.map((item) => item.phrase);
   const matches = matchFamiliarityBucketResultsToPhrases(phraseTexts, parsedResults);
+  const matchedCount = matches.filter((match) => match !== null).length;
+  if (parsedResults.length !== phrases.length || matchedCount !== phrases.length) {
+    const unmatched = phraseTexts.filter((_, index) => matches[index] === null);
+    console.warn(
+      `Familiarity ratings: parsed ${parsedResults.length}, matched ${matchedCount} of ${phrases.length}` +
+        (unmatched.length > 0 ? `; unmatched: ${unmatched.slice(0, 8).join(', ')}` : ''),
+    );
+  }
 
   for (const match of matches) {
     if (!match) {
@@ -489,40 +619,10 @@ export function matchEntryParserResultsToEntries(
   entries: string[],
   parsedResults: ParsedEntryParserResult[],
 ): Array<{ entry: string; parsed: ParsedEntryParserResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: string; parsed: ParsedEntryParserResult } | null> = [];
-
-  for (const entry of entries) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryToAllCaps(entry),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.entry) === normalizeForPhraseMatch(entry),
-      );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.displayText) === normalizeForPhraseMatch(entry),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(entries, parsedResults, (parsed) => [
+    parsed.entry,
+    parsed.displayText,
+  ]).map((match) => (match ? { entry: match.phrase, parsed: match.parsed } : null));
 }
 
 export async function parseEntriesWithEntryParser(
@@ -544,6 +644,53 @@ export async function parseEntriesWithEntryParser(
 
   const parsedResults = parseEntryParserResponse(aiResponse);
   const matches = matchEntryParserResultsToEntries(entries, parsedResults);
+
+  for (const match of matches) {
+    if (!match) {
+      continue;
+    }
+    resultsByEntry.set(match.entry, match.parsed);
+  }
+
+  return resultsByEntry;
+}
+
+export function parseEntryParser3PrimaryResponse(response: string): ParsedEntryParserResult[] {
+  return parseEntryParser3Response(response).map((parsed) => ({
+    entry: parsed.entry,
+    entryType: parsed.primary.entryType,
+    displayText: parsed.primary.displayText,
+    baseForm: parsed.primary.baseForm,
+    isVulgar: parsed.isVulgar,
+  }));
+}
+
+export async function parseEntriesWithEntryParser3(
+  entries: string[],
+  provider: IAiProvider,
+): Promise<Map<string, ParsedEntryParserResult>> {
+  const resultsByEntry = new Map<string, ParsedEntryParserResult>();
+  if (entries.length === 0) {
+    return resultsByEntry;
+  }
+
+  const promptTemplate = await loadEntryParserPrompt3Async();
+  const prompt = promptTemplate.replace('[[DATA]]', entries.join('\n'));
+
+  console.log(`Sending entry parser prompt 3 for ${entries.length} entries`);
+  const aiResponse = await provider.generateResultsAsync(prompt);
+  console.log(`Received entry parser prompt 3 response (${aiResponse.length} characters)`);
+
+  const parsedResults = parseEntryParser3PrimaryResponse(aiResponse);
+  const matches = matchEntryParserResultsToEntries(entries, parsedResults);
+  const matchedCount = matches.filter((match) => match !== null).length;
+  if (parsedResults.length !== entries.length || matchedCount !== entries.length) {
+    const unmatched = entries.filter((_, index) => matches[index] === null);
+    console.warn(
+      `Entry parser 3: parsed ${parsedResults.length}, matched ${matchedCount} of ${entries.length}` +
+        (unmatched.length > 0 ? `; unmatched: ${unmatched.slice(0, 8).join(', ')}` : ''),
+    );
+  }
 
   for (const match of matches) {
     if (!match) {
@@ -587,40 +734,11 @@ export function matchStrictDomainNamesResultsToEntries(
   entries: string[],
   parsedResults: ParsedStrictDomainNamesResult[],
 ): Array<{ entry: string; parsed: ParsedStrictDomainNamesResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: string; parsed: ParsedStrictDomainNamesResult } | null> = [];
-
-  for (const entry of entries) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryToAllCaps(entry),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.entry) === normalizeForPhraseMatch(entry),
-      );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.displayText) === normalizeForPhraseMatch(entry),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(entries, parsedResults, (parsed) => [
+    parsed.entry,
+    parsed.displayText,
+    parsed.step2NaturalForm,
+  ]).map((match) => (match ? { entry: match.phrase, parsed: match.parsed } : null));
 }
 
 export async function parseEntriesWithStrictDomainNames(
@@ -653,82 +771,21 @@ export async function parseEntriesWithStrictDomainNames(
   return resultsByEntry;
 }
 
-function normalizeForPhraseMatch(text: string): string {
-  return stripAccents(text).toLowerCase();
-}
-
 export function matchIdiomacityResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedIdiomacityResult[],
 ): Array<{ phrase: string; parsed: ParsedIdiomacityResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedIdiomacityResult } | null> = [];
-
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => normalizeForPhraseMatch(parsed.parsedForm) === normalizeForPhraseMatch(phrase),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.parsedForm) === entryToAllCaps(phrase),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.parsedForm]);
 }
 
 export function matchFamiliarityResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedFamiliarityResult[],
 ): Array<{ phrase: string; parsed: ParsedFamiliarityResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedFamiliarityResult } | null> = [];
-
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryToAllCaps(phrase),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.displayText) === normalizeForPhraseMatch(phrase),
-      );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => normalizeForPhraseMatch(parsed.entry) === normalizeForPhraseMatch(phrase),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [
+    parsed.entry,
+    parsed.displayText,
+  ]);
 }
 
 export async function scorePhrasesForIdiomacity(
@@ -820,34 +877,7 @@ export function matchAvailabilityResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedAvailabilityResult[],
 ): Array<{ phrase: string; parsed: ParsedAvailabilityResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedAvailabilityResult } | null> = [];
-
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => normalizeForPhraseMatch(parsed.phrase) === normalizeForPhraseMatch(phrase),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.phrase) === entryToAllCaps(phrase),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.phrase]);
 }
 
 export async function scorePhrasesForAvailability(
@@ -909,34 +939,7 @@ export function matchSpokenFamiliarityResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedSpokenFamiliarityResult[],
 ): Array<{ phrase: string; parsed: ParsedSpokenFamiliarityResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ phrase: string; parsed: ParsedSpokenFamiliarityResult } | null> = [];
-
-  for (const phrase of phrases) {
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => normalizeForPhraseMatch(parsed.phrase) === normalizeForPhraseMatch(phrase),
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.phrase) === entryToAllCaps(phrase),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ phrase, parsed });
-  }
-
-  return matches;
+  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.phrase]);
 }
 
 export async function scorePhrasesForSpokenFamiliarity(

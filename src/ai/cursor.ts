@@ -125,7 +125,7 @@ export class CursorAiProvider implements IAiProvider {
     return await getQualityResults(this, entries, lang, mockData);
   }
 
-  async generateResultsAsync(prompt: string): Promise<string> {
+  async generateResultsAsync(prompt: string, timeoutMs: number = AI_REQUEST_TIMEOUT_MS): Promise<string> {
     const apiKey = getCursorApiKey();
     const model = cursorModelSelection(this.sourceAI);
     const cwd = getCursorWorkspaceCwd();
@@ -143,7 +143,7 @@ export class CursorAiProvider implements IAiProvider {
               settingSources: [],
             },
           }),
-          AI_REQUEST_TIMEOUT_MS,
+          timeoutMs,
         );
 
         if (result.status === 'error') {

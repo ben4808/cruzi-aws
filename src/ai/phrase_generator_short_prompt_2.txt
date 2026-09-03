@@ -1,0 +1,80 @@
+TASK
+Fill in the blank for:
+
+"[[QUERY]]" (must be exactly [[LENGTH]] letters/numerals long and [[START/END]] with "[[BASE_LETTERS]]")
+
+Every answer MUST be a complete natural-English word or phrase. Capitalize only where English normally would (names, titles). 
+Do not automatically capitalize the first word.
+
+You MUST output exactly 30 primary answers, no fewer. Do not stop early and do not output commentary or headers. 
+If an initial brainstorming angle is exhausted, move to other angles. Only if you have truly run out of attested units 
+may you fill leftover slots with the strongest remaining real collocations. Never output a blank, a duplicate, or a banned string.
+
+BANNED (already harvested; do not emit these exact strings or trivial spelling/inflection duplicates):
+
+(none)
+
+LETTER COUNT
+Ignore spaces, hyphens, and punctuation when counting characters. Letters and numerals both count. For example "BLT-A" counts as 4, 
+"blow dry" counts as 7, "catch-22" counts as 7.
+
+QUALITY BAR
+Each answer must be a stored lexical unit, not two words parked next to each other.
+- Pass: dictionary/encyclopedia headwords, idioms, phrasal verbs with their particles, locked collocations, light-verb frames, 
+  conversational formulas, conventional compounds, morphological derivations treated as distinct units (hearing, pretext, endless, turns around), 
+  and fixed names (spray paint, watch your step, about to, porta-potty, Tiger Woods).
+- Fail: open descriptions (green paint, big sign), padded or truncated versions of a tighter term ("hearse vehicle" when "hearse" is the unit; 
+  "BL ice" when "black ice" is the unit), fragments (by a, up to), and strings nobody actually says.
+Target a well-rounded US adult. Prefer phrases a native speaker would recognize or produce. 
+Do not spend slots on archaic, hyper-technical, or barely-attested coinages while better options remain.
+
+HOW TO THINK — SENSE-SPLIT THE LETTER RUN
+"[[BASE_LETTERS]]" is crossword fill, not necessarily one lexeme. Before generating, silently inventory at least 6 distinct readings 
+of this letter run (and of the full [[QUERY]] skeleton). Readings include:
+- Separate dictionary senses and parts of speech of whatever word(s) those letters spell
+- Phrase packing, where spaces fall inside the skeleton (cat nap, catch-22)
+- Names, brands, titles, toponyms
+- Acronyms and abbreviations actually used in speech or writing (CAT scan, NATO, TFW, LMAO)
+- Bound morphology (catchy, catalog, pretext)
+- Locked conversational bits that match the letters (can't, catch you)
+- Inflections of a banned item 
+
+ONELOOK (mandatory web search)
+You MUST actually search the web. Do not rely on memory of OneLook.
+1. Turn [[QUERY]] into a OneLook pattern: keep the letters, replace each blank (`_`) with `?`. Example: `cat____` → `cat????`; `____ing` → `????ing`.
+2. Open OneLook and run that pattern, e.g. `https://www.onelook.com/?w=cat????`.
+3. Keep only hits that are exactly [[LENGTH]] letters/numerals (spaces/hyphens/punctuation ignored), [[START/END]] with "[[BASE_LETTERS]]".
+4. Rank by OneLook's own ordering (more dictionaries / more common first).
+
+THREE STAGES OF DIVERSITY (10 PRIMARIES EACH)
+Generate 30 unique primary phrases across three stages of exploration:
+
+Stage 1 — OneLook top hits (1–10):
+Take the highest-ranked OneLook results that survive the filters above. If fewer than 10 survive, continue down OneLook's list. 
+
+Stage 2 — Broadening scope (11–20):
+Branch beyond the senses of the letter run already covered by Stage 1 and the ban list. Use unused readings from the sense-split. 
+Other parts of speech, other meanings of the same letters, and packed phrases that OneLook ranked lower or missed are fair game. 
+If the ban list already has several specific items of one type, a still-available parent unit can be used (pool noodle / pool float → pool toy)
+
+Stage 3 — Specialized, figurative & cultural (21–30):
+Less obvious attested angles while maintaining the quality bar: figurative expressions, cultural references, slang, workplace/hobby/sports/news 
+  frames, movie/song/book titles and lyrics, public figures, interesting acronyms and texting shorthand (NOLA, RBIs, J-Law, BRB, MRI, URLs, PhDs), 
+  and fixed proper names where the letter run fits. 
+
+SUPPLEMENTALS
+For each of the 30 primaries, provide one supplemental phrase separated by a colon (` : `). 
+The supplemental does not need to fit the original fill-in-the-blank template. It can be:
+- Another natural variant of the unit (e.g., play D → play defense; Blanc → Mont Blanc; plane → airplane; 
+  Pacific Garbage Patch → Great Pacific Garbage Patch; about to go down → it's about to go down).
+- Any related phrase that comes to mind through free association (e.g., Tesla → Elon Musk; Coors → Coors Light or Coors Field).
+- A real phrase that shares a similar structure with one word changed.
+
+OUTPUT
+You may think silently. Then output ONLY the summary below: no section headings, no stage labels, no numbering, and no commentary. 
+Exactly one line per primary answer. Write the answers in natural English.
+
+All Full Words/Phrases Utilized:
+<primary phrase 1> : <supplemental>
+<primary phrase 2> : <supplemental>
+... (exactly 30 lines total)

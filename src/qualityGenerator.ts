@@ -1,9 +1,21 @@
 /*
-Keep looping through the following steps:
-1. Select the first 50 entries from the entry table that do not have a quality score and have display_text populated.
-2. For each entry, generate a prompt using the quality_prompt.txt file. Use the display_text field as the input.
-3. Send the prompt to Gemini (using GeminiWebAiProvider) and get the response.
-4. Update the quality_score field in the entry table with the results.
+Keep looping through the following steps until maxItems AI requests have been sent (default 100), then stop:
+1. Select enough entries for parallelRequests concurrent executions via get_entries_for_quality_generator_top_50
+   (each request uses ENTRIES_PER_REQUEST entries). Entries have a reviewed_status of "123" and
+   neither unity_bucket nor entry_type is Nonsense, along with their unity and familiarity buckets,
+   regardless of existing quality_bucket. Optionally further restrict by an entry LIKE pattern (e.g. "VE___").
+2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
+   a. For each chunk, generate a prompt using the quality_prompt_3.txt file. Include the unity bucket and
+      familiarity bucket with each entry in the prompt.
+      Send the prompt to the AIProvider (make this a parameter).
+   b. Update a few fields in the entry table with the results:
+      - quality_bucket
+      - quality_score (Pass 1 buckets = 20, Pass 2 buckets = 40, Normal = 30).
+        Pass 1: Non-unit, Unfamiliar, Uncommon Inflection, Partial, Clunky.
+        Pass 2: Idiomatic, Interesting, Appealing, Emotional, Trendy.
+      - reviewed_status = "1234"
+3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
+   If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -12,169 +24,200 @@ Keep these requirements in the file.
 */
 
 import {
-  getEntriesWithoutQualityTop50,
-  upsertEntries,
-  EntryWithoutQuality,
+  getEntriesForQualityGeneratorTop50,
+  upsertQualityGeneratorResults,
+  EntryForQualityGenerator,
+  QualityGeneratorResult,
 } from 'cruzi-db';
-import { Entry, LanguageNames } from 'cruzi-models';
-import { loadQualityPromptAsync, parseQualityResponse } from './ai/common';
-import { GeminiWebAiProvider } from './ai/geminiWebProvider';
-import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
+import { CursorAiProvider } from './ai/cursor';
+import { IAiProvider } from './ai/IAiProvider';
+import { scorePhrasesForQualityBucket } from './ai/phraseScoring';
+import { batchArray, isGeminiTimeoutError } from './lib/utils';
 
-const geminiProvider = new GeminiWebAiProvider({ enforceMinRequestInterval: true });
+const ENTRIES_PER_REQUEST = 50;
+const DEFAULT_MAX_ITEMS = 100;
+const DEFAULT_PARALLEL_REQUESTS = 1;
 
-function promptTextForEntry(entryItem: EntryWithoutQuality): string {
-  return entryItem.displayText;
-}
+const QUALITY_SCORES: Record<string, number> = {
+  'Non-unit': 20,
+  Unfamiliar: 20,
+  'Uncommon Inflection': 20,
+  Partial: 20,
+  Clunky: 20,
+  Idiomatic: 40,
+  Interesting: 40,
+  Appealing: 40,
+  Emotional: 40,
+  Trendy: 40,
+  Normal: 30,
+};
 
-function groupEntriesByLang(
-  entries: EntryWithoutQuality[],
-): Map<string, EntryWithoutQuality[]> {
-  const byLang = new Map<string, EntryWithoutQuality[]>();
+const cursorProvider = new CursorAiProvider();
+
+function collectPromptPhrases(
+  entries: EntryForQualityGenerator[],
+): Array<{ phrase: string; unityBucket: string; familiarityBucket: string }> {
+  const phrases: Array<{ phrase: string; unityBucket: string; familiarityBucket: string }> = [];
+  const seen = new Set<string>();
+
   for (const entryItem of entries) {
-    const items = byLang.get(entryItem.lang) ?? [];
-    items.push(entryItem);
-    byLang.set(entryItem.lang, items);
+    const trimmed = entryItem.displayText.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    phrases.push({
+      phrase: trimmed,
+      unityBucket: entryItem.unityBucket.trim(),
+      familiarityBucket: entryItem.familiarityBucket.trim(),
+    });
   }
-  return byLang;
+
+  return phrases;
 }
 
-function matchParsedResultsToEntries(
-  entries: EntryWithoutQuality[],
-  parsedResults: ReturnType<typeof parseQualityResponse>,
-): Array<{ entry: EntryWithoutQuality; parsed: (typeof parsedResults)[number] } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: EntryWithoutQuality; parsed: (typeof parsedResults)[number] } | null> = [];
+function buildResultsToPersist(
+  entries: EntryForQualityGenerator[],
+  resultsByPhrase: Map<string, { bucket: string }>,
+): QualityGeneratorResult[] {
+  const resultsToPersist: QualityGeneratorResult[] = [];
 
   for (const entryItem of entries) {
-    const promptText = promptTextForEntry(entryItem);
-
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => parsed.displayText === promptText,
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => entryToAllCaps(parsed.entry) === entryItem.entry,
+    const parsed = resultsByPhrase.get(entryItem.displayText.trim());
+    if (!parsed) {
+      console.warn(
+        `Skipping ${entryItem.entry} (${entryItem.lang}): no quality rating for "${entryItem.displayText}"`,
       );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) => parsed.displayText.toLowerCase() === promptText.toLowerCase(),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
       continue;
     }
 
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry: entryItem, parsed });
-  }
-
-  return matches;
-}
-
-async function processLangGroup(
-  entries: EntryWithoutQuality[],
-  promptTemplate: string,
-): Promise<void> {
-  const lang = entries[0].lang;
-  const langName = LanguageNames[lang] ?? lang;
-  const promptData = entries.map((entry) => promptTextForEntry(entry)).join('\n');
-  const prompt = promptTemplate.replace(/\[\[LANG\]\]/g, langName).replace('[[DATA]]', promptData);
-
-  console.log(`Sending quality prompt for ${entries.length} ${lang} entries`);
-  const aiResponse = await geminiProvider.generateResultsAsync(prompt);
-  console.log(`Received quality response for ${lang} batch (${aiResponse.length} characters)`);
-
-  const parsedResults = parseQualityResponse(aiResponse);
-  console.log(`Parsed ${parsedResults.length} quality results from ${lang} response`);
-
-  if (parsedResults.length === 0) {
-    console.warn(`No quality results parsed for ${lang}; skipping batch update`);
-    return;
-  }
-
-  if (parsedResults.length !== entries.length) {
-    console.warn(
-      `Expected ${entries.length} quality results for ${lang} but parsed ${parsedResults.length}`,
-    );
-  }
-
-  const matches = matchParsedResultsToEntries(entries, parsedResults);
-  const resultsToPersist: Entry[] = [];
-
-  for (const match of matches) {
-    if (!match) {
+    const qualityScore = QUALITY_SCORES[parsed.bucket];
+    if (qualityScore == null) {
+      console.warn(
+        `Skipping ${entryItem.entry} (${entryItem.lang}): unknown quality bucket "${parsed.bucket}"`,
+      );
       continue;
     }
 
-    const { entry: entryItem, parsed } = match;
-    const result: Entry = {
+    resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
-      qualityScore: parsed.qualityScore,
-    };
-
-    resultsToPersist.push(result);
+      qualityBucket: parsed.bucket,
+      qualityScore,
+      reviewedStatus: '1234',
+    });
 
     console.log(
-      `Processed ${entryItem.entry} (${entryItem.lang}): quality=${parsed.qualityScore / 10}`,
+      `Processed ${entryItem.entry} (${entryItem.lang}): quality_bucket=${parsed.bucket}, ` +
+        `quality_score=${qualityScore}, reviewed_status=1234`,
     );
   }
 
-  if (resultsToPersist.length > 0) {
-    await upsertEntries(resultsToPersist);
-    console.log(`Updated quality fields for ${resultsToPersist.length} ${lang} entries`);
-  }
+  return resultsToPersist;
 }
 
 async function processBatch(
-  entries: EntryWithoutQuality[],
-  promptTemplate: string,
-): Promise<void> {
-  const entriesByLang = groupEntriesByLang(entries);
+  entries: EntryForQualityGenerator[],
+  provider: IAiProvider,
+  requestLabel: string,
+): Promise<number> {
+  const phrases = collectPromptPhrases(entries);
+  console.log(
+    `${requestLabel}: sending quality prompt for ${entries.length} entries (${phrases.length} phrases)`,
+  );
 
-  for (const [, langEntries] of entriesByLang.entries()) {
-    await processLangGroup(langEntries, promptTemplate);
+  const resultsByPhrase = await scorePhrasesForQualityBucket(phrases, provider);
+  console.log(`${requestLabel}: received ${resultsByPhrase.size} quality ratings`);
+
+  const resultsToPersist = buildResultsToPersist(entries, resultsByPhrase);
+  if (resultsToPersist.length === 0) {
+    console.warn(`${requestLabel}: no valid quality generator results to persist`);
+    return 0;
   }
+
+  await upsertQualityGeneratorResults(resultsToPersist);
+  console.log(`${requestLabel}: updated quality results for ${resultsToPersist.length} entries`);
+  return resultsToPersist.length;
 }
 
-export async function qualityGenerator(): Promise<void> {
+export async function qualityGenerator(
+  provider: IAiProvider = cursorProvider,
+  maxItems: number = DEFAULT_MAX_ITEMS,
+  parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
+  pattern?: string,
+): Promise<void> {
   try {
-    console.log('Starting quality generation...');
+    const concurrency = Math.max(1, parallelRequests);
+    const entryPattern = pattern?.trim() || undefined;
 
-    const promptTemplate = await loadQualityPromptAsync();
-    let batchNumber = 0;
+    console.log(
+      `Starting quality generation with provider ${provider.sourceAI} ` +
+        `(max ${maxItems} AI requests, ${concurrency} parallel` +
+        `${entryPattern ? `, pattern ${entryPattern}` : ''})...`,
+    );
 
-    while (true) {
-      const entries = await getEntriesWithoutQualityTop50();
+    let itemsCompleted = 0;
+    let cycleNumber = 0;
+    let shouldStop = false;
+
+    while (itemsCompleted < maxItems && !shouldStop) {
+      const remainingItems = maxItems - itemsCompleted;
+      const requestsThisCycle = Math.min(concurrency, remainingItems);
+      const selectLimit = requestsThisCycle * ENTRIES_PER_REQUEST;
+
+      const entries = await getEntriesForQualityGeneratorTop50(selectLimit, entryPattern);
       if (entries.length === 0) {
-        console.log('No entries remaining without quality scores');
+        console.log(
+          `No entries remaining with reviewed_status 123` +
+            `${entryPattern ? ` (pattern ${entryPattern})` : ''}`,
+        );
         break;
       }
 
-      batchNumber++;
-      console.log(`Processing batch ${batchNumber} with ${entries.length} entries`);
+      const chunks = batchArray(entries, ENTRIES_PER_REQUEST);
+      cycleNumber++;
+      console.log(
+        `Cycle ${cycleNumber}: ${chunks.length} parallel AI requests ` +
+          `(${entries.length} entries); ` +
+          `${itemsCompleted}/${maxItems} requests completed so far`,
+      );
 
-      try {
-        await processBatch(entries, promptTemplate);
-      } catch (error) {
-        if (isGeminiTimeoutError(error)) {
-          console.warn(`Gemini timeout processing quality batch ${batchNumber}`);
-          break;
-        }
+      let cycleHadTimeout = false;
+      const persistedCounts = await Promise.all(
+        chunks.map(async (chunk, index) => {
+          const itemNumber = itemsCompleted + index + 1;
+          const requestLabel = `Request ${itemNumber}/${maxItems}`;
 
-        console.error(`Error processing quality batch ${batchNumber}:`, error);
+          try {
+            return await processBatch(chunk, provider, requestLabel);
+          } catch (error) {
+            if (isGeminiTimeoutError(error)) {
+              cycleHadTimeout = true;
+              console.warn(
+                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+              );
+              return 0;
+            }
+
+            console.error(`Error processing quality ${requestLabel}:`, error);
+            shouldStop = true;
+            return 0;
+          }
+        }),
+      );
+
+      itemsCompleted += chunks.length;
+
+      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
+        console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
         break;
       }
+    }
+
+    if (itemsCompleted >= maxItems) {
+      console.log(`Reached max AI request limit of ${maxItems}; stopping`);
+    } else {
+      console.log(`Stopped after ${itemsCompleted} AI requests`);
     }
   } catch (error) {
     console.error('Fatal error in qualityGenerator:', error);

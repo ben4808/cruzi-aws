@@ -7,27 +7,31 @@ TASKS
 Try parsing the item as each of the following (there may be multiple that apply).
 
 Guidelines:
-- Do not consider proper names, abbreviations, or acronyms as Word, Inflected Word, Phrase, or 
-  Inflected Phrase for this classification, whether or not they are inflected.
-  Of course, some items can be both words/phrases and proper names.
+- Do not consider proper names, abbreviations, or acronyms as Word or Phrase for this classification.
+  Of course, some items can be both words/phrases and other classification(s).
+- An item can be an inflection of a base form -- verb conjugations, noun plurals, or adjective 
+  comparatives/superlatives. Derivational forms (agent nouns, possessives, deverbal nouns, etc.) should
+  not be considered inflections. Applies to all classifications except Prefix/Suffix and Nonsense.
+- Do not consider partial contractions, for example "he's good" is a Phrase, "'ve had" is not.
+- Consider foreign words if they are extremely common in their native language or have adopted meaning
+  as a loanword.
+- Before rating an item Nonsense, perform a mandatory search to verify that there isn't actually
+  a way to parse it that might have been overlooked.
 
-Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
-Inflected Word: A single word that is an inflection of a base lemma -- verb conjugations, noun plurals, 
-  or adjective comparatives/superlatives. Not derivational forms (agent nouns, possessives, deverbal nouns, etc.). 
-Phrase: Multi-word expression in its base/standard form. Hyphenated forms count as phrases, not words.
-Inflected Phrase: Multi-word expression that contains an inflection (as defined under Inflected Word). 
-  Only include a base phrase when that base still refers to the same thing. 
-    e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
-Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
-Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
-Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
-Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
+1. Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
+2. Phrase: Multi-word expression. Note that there can be multiple phrase interpretations (e.g. "it's a go" and "it's ago")
+    Only consider it an inflection of a base form when that base still refers to the same thing. 
+      e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
+3. Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
+4. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+5. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+6. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
 
-Pick one primary classification, which will be the most natural interpretation of the input string.
+Pick one primary classification, which will be the lowest numbered interpretation on the list.
 The rest, if any, will be secondary classifications.
 
 2. Display Text
-Write the item in natural English for each of the chosen Classification(s).
+Write the item in natural language for each of the chosen Classification(s).
 Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, and punctuation may change,
   with the following exceptions:
 - Accents/diacritics may be added where conventional (e.g. JALAPENO → jalapeño). 
@@ -44,7 +48,7 @@ Output the items according to the following output examples. Don't include any e
 
 <input> : <Yes or No> : <primary class> : <primary display>[: <secondary class> : <secondary display>]...
 
-display is the natural form for that class. If that class is inflected, write display (base) in the same field (crocs (croc), orders food (order food)).
+"display" is the natural form for that class. If that class is inflected, write display (base) in the same field (crocs (croc), orders food (order food)).
 Repeat : <class> : <display> only when another class applies. Stop when there are no more.
 
 EXAMPLES
@@ -52,13 +56,14 @@ SIGN : No : Word : sign
 DAMNIT : Yes : Phrase : damn it
 AANDW : No : Proper Name : A&W
 VEIGHT : No : Phrase : V-eight
-CROCS : No : Inflected Word : crocs (croc) : Proper Name : Crocs
-ORDERSFOOD : No : Inflected Phrase : orders food (order food)
-RAM : No : Word : ram : Acronym/Abbreviation : RAM : Proper Name : Ram
-CANDIES : No : Inflected Word : candies (candy)
+CROCS : No : Word : crocs (croc) : Proper Name : Crocs
+ORDERSFOOD : No : Phrase : orders food (order food)
+RAM : No : Word : ram : Proper Name : Ram : Acronym/Abbreviation : RAM
+CANDIES : No : Word : candies (candy)
 DALLASTEXAS : No : Proper Name : Dallas, Texas
 TRI : No : Prefix/Suffix : tri-
 NASA : No : Acronym/Abbreviation : NASA
+IDS : No : Acronym/Abbreviation : IDs (ID) 
 HKJLJ : No : Nonsense : HKJLJ
 
 WORDS/PHRASES

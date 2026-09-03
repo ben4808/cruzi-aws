@@ -8,9 +8,13 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update the unity_bucket and unity_score fields in the entry table with the results.
       The unity_score is a direct mapping of the unity_bucket to a number:
-      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Non-unit = 2, Nonsense = 1
-   c. If any secondary classes get rated as Partial, Non-unit, or Nonsense, delete them from the entry_secondary_class table.
-      If the primary class gets rated as Partial, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
+      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Variant = 2, Non-unit = 2, Nonsense = 1.
+      If the (final) unity_bucket is Nonsense, also set familiarity_bucket, familiarity_score,
+      quality_bucket, and quality_score to null.
+   c. If any secondary classes get rated as Non-unit or Nonsense, delete them from the entry_secondary_class table.
+      Do not delete secondary classes rated as Partial or Variant. For secondaries that are rated and kept, set their
+      unity_bucket on the entry_secondary_class row.
+      If the primary class gets rated as Partial, Variant, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
       set the the entry row's entry_type and display_text to the secondary class's entry_type and display_text and then delete the row
       from the entry_secondary_class table.
    d. Set reviewed_status to "12" for the entry row.
@@ -44,6 +48,7 @@ const UNITY_SCORES: Record<string, number> = {
   Collocation: 4,
   Formula: 3,
   Partial: 2,
+  Variant: 2,
   'Non-unit': 2,
   Nonsense: 1,
 };
@@ -55,7 +60,11 @@ function isGoodUnityBucket(bucket: string): boolean {
 }
 
 function isBadUnityBucket(bucket: string): boolean {
-  return bucket === 'Partial' || bucket === 'Non-unit' || bucket === 'Nonsense';
+  return bucket === 'Partial' || bucket === 'Variant' || bucket === 'Non-unit' || bucket === 'Nonsense';
+}
+
+function isDeletableUnityBucket(bucket: string): boolean {
+  return bucket === 'Non-unit' || bucket === 'Nonsense';
 }
 
 function collectPromptPhrases(entries: EntryForUnityGenerator[]): string[] {
@@ -115,15 +124,24 @@ function buildResultsToPersist(
     }
 
     const secondaryClassesToDelete: string[] = [];
+    const secondaryClassesToUpdate: NonNullable<UnityGeneratorResult['secondaryClassesToUpdate']> = [];
     for (const secondary of entryItem.secondaryClasses) {
       const secondaryParsed = resultsByPhrase.get(secondary.secondaryDisplay);
-      if (secondaryParsed && isBadUnityBucket(secondaryParsed.bucket)) {
+      if (!secondaryParsed) {
+        continue;
+      }
+      if (isDeletableUnityBucket(secondaryParsed.bucket)) {
         secondaryClassesToDelete.push(secondary.secondaryClass);
         console.log(
           `  deleting secondary ${entryItem.entry}: class=${secondary.secondaryClass}, ` +
             `form=${secondary.secondaryDisplay}, unity=${secondaryParsed.bucket}`,
         );
+        continue;
       }
+      secondaryClassesToUpdate.push({
+        secondaryClass: secondary.secondaryClass,
+        unityBucket: secondaryParsed.bucket,
+      });
     }
 
     let unityBucket = primaryParsed.bucket;
@@ -141,6 +159,12 @@ function buildResultsToPersist(
         displayText = promoted.secondaryDisplay;
         entryType = promoted.secondaryClass;
         secondaryClassesToDelete.push(promoted.secondaryClass);
+        const promotedIndex = secondaryClassesToUpdate.findIndex(
+          (item) => item.secondaryClass === promoted.secondaryClass,
+        );
+        if (promotedIndex >= 0) {
+          secondaryClassesToUpdate.splice(promotedIndex, 1);
+        }
         console.log(
           `  promoting secondary ${entryItem.entry}: class=${promoted.secondaryClass}, ` +
             `form=${promoted.secondaryDisplay}, unity=${unityBucket} ` +
@@ -166,12 +190,15 @@ function buildResultsToPersist(
       displayText,
       entryType,
       secondaryClassesToDelete,
+      secondaryClassesToUpdate,
     });
 
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): unity_bucket=${unityBucket}, ` +
         `unity_score=${unityScore}, reviewed_status=12, ` +
-        `deleted_secondaries=${secondaryClassesToDelete.length}`,
+        `${unityBucket === 'Nonsense' ? 'cleared familiarity/quality, ' : ''}` +
+        `deleted_secondaries=${secondaryClassesToDelete.length}, ` +
+        `updated_secondaries=${secondaryClassesToUpdate.length}`,
     );
   }
 

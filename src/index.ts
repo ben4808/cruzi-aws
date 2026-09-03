@@ -29,7 +29,25 @@ const aiProvider = new CursorAiProvider(
   'grok-4.6',
 );
 
-// shortPhraseGenerator(aiProvider, 5, 666, 10)
+(async () => {
+  const steps = [
+    { name: "Entry parser", run: () => entryParser(aiProvider, 600, 10) },
+    { name: "Unity generator", run: () => unityGenerator(aiProvider, 600, 10) },
+    { name: "Familiarity generator", run: () => familiarityGenerator(aiProvider, 600, 10) },
+    { name: "Quality generator", run: () => qualityGenerator(aiProvider, 600, 10) },
+  ];
+
+  for (const step of steps) {
+    try {
+      await step.run();
+      console.log(`${step.name} completed successfully.`);
+    } catch (error) {
+      console.error(`Error in ${step.name.toLowerCase()}: `, error);
+    }
+  }
+})();
+
+// shortPhraseGenerator(aiProvider, 5, 500, 10, "VI___")
 //   .then(() => console.log("Short phrase generator completed successfully."))
 //   .catch(error => console.error("Error in short phrase generator: ", error));
 
@@ -65,14 +83,6 @@ const aiProvider = new CursorAiProvider(
 //   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
 //   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
 
-// familiarityGenerator(aiProvider, 4000, 10)
-//   .then(() => console.log("Familiarity generator completed successfully."))
-//   .catch(error => console.error("Error in familiarity generator: ", error));
-
-// qualityGenerator()
-//   .then(() => console.log("Quality generator completed successfully."))
-//   .catch(error => console.error("Error in quality generator: ", error));
-
 // scrabbleLoader()
 //   .then(() => console.log("Scrabble loader completed successfully."))
 //   .catch(error => console.error("Error in scrabble loader: ", error));
@@ -96,14 +106,6 @@ const aiProvider = new CursorAiProvider(
 // exampleSentenceImprover()
 //   .then(() => console.log("Example sentence improver completed successfully."))
 //   .catch(error => console.error("Error in example sentence improver: ", error));
-
-// unityGenerator(aiProvider, 4000, 10)
-//   .then(() => console.log("Unity generator completed successfully."))
-//   .catch(error => console.error("Error in unity generator: ", error));
-
-// entryParser(aiProvider, 3448, 10)
-//   .then(() => console.log("Entry parser completed successfully."))
-//   .catch(error => console.error("Error in entry parser: ", error));
 
 // entryImprover(aiProvider, 1000, 10)
 //   .then(() => console.log("Entry improver completed successfully."))

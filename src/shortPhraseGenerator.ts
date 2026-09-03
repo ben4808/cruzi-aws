@@ -4,28 +4,32 @@ Keep looping through the following steps until maxItems queue items have been pr
    (ordered by added_at), filtered to the given length parameter.
 2. For each selected queue item (up to parallelRequests in parallel):
    a. Select all rows from the entry table that match the prompt from the queue item.
-   b. If there are more than 150 existing entries that match the prompt, delete the queue item and add new queue items for each letter
+   b. If there are more than 200 existing entries that match the prompt, delete the queue item and add new queue items for each letter
       of the alphabet tacked on to the end of the prompt. For example, if the prompt is "AP___", add new queue items for "APA__", "APB__", etc.
       Then finish this item and continue.
       If this would leave only one blank in the prompt, ignore this step.
-   c. Using phrase_generator_short_prompt.txt as a prompt, populate the [[QUERY]], [[LENGTH]], [[START/END]], and [[BASE_LETTERS]] placeholders.
+   c. Using phrase_generator_short_prompt_2.txt as a prompt, populate the [[QUERY]], [[LENGTH]], [[START/END]], and [[BASE_LETTERS]] placeholders.
       Populate the banned list with the display_text from the results from step a.
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
-   e. Take the list of phrases and run them through a call to unity_prompt_3.txt. Parse the results and filter out the phrases that were
-      classified as Partial, Non-unit, or Nonsense.
-   f. Take the filtered list and run them through a call to familiarity_prompt_3.txt. Parse the results and filter out the phrases that were
-      classified as Obscure, Barely Exists, or Nonsense.
-   g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include the unity bucket and familiarity bucket where possible.
-   h. Insert the phrases that made it past step f into the entry table, including their respective unity bucket/score and
-      familiarity bucket/score. Do not overwrite entry fields with non-null values; only insert new rows or populate null fields
-      on existing rows. For entries that were not already in the entry table, insert an entry_tag record with the tag
-      "short_phrase_generator".
+   e. Normalize those phrases to ALLCAPS and run them through entry_parser_prompt_3.txt. Parse entry_type, display_text,
+      base_form, and is_vulgar. Match parser/unity/familiarity results by identity only (never shift leftover rows).
+   f. Run the parsed phrases through unity_prompt_3.txt, then through familiarity_prompt_3.txt.
+   g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include entry_type, display_text,
+      base_form, is_vulgar, unity_bucket, and familiarity_bucket where possible.
+   h. Insert into the entry table the phrases whose entry_type is not Nonsense, unity_bucket is not Variant, Non-unit, or Nonsense,
+      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include entry_type, display_text, base_form, is_vulgar,
+      unity bucket/score, and familiarity bucket/score. Do not overwrite entry fields with non-null values; only insert new rows
+      or populate null fields on existing rows. For entries that were not already in the entry table, insert an entry_tag record
+      with the tag "short_phrase_generator".
    i. Delete the queue item from the short_phrase_queue table.
    j. Count the number of phrases that were inserted into the entry table AND that actually match the prompt of the original queue item.
       If it is 5 or more, reinsert the original row into the short_phrase_queue table.
 3. maxItems is the total number of queue items to process before quitting (not the number of DB cycles).
-4. length is required: only process short_phrase_queue rows whose length column matches.
+4. length is required in queue mode: only process short_phrase_queue rows whose length column matches.
+5. prompt is optional. When provided, skip the DB queue entirely and process that single prompt pattern
+   instead. Length is taken from the pattern itself (prompt.length), so any length is allowed.
+   lang defaults to "en" for this one-off path. Queue delete/requeue/split still apply if the item exists.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed. Use insertEntriesOrFillNulls for entry persistence.
@@ -47,18 +51,21 @@ import {
 import { Entry } from 'cruzi-models';
 import { IAiProvider } from './ai/IAiProvider';
 import {
+  parseEntriesWithEntryParser3,
   scorePhrasesForFamiliarityBucket,
   scorePhrasesForUnityBucket,
 } from './ai/phraseScoring';
 import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
 import { parsePhraseGeneratorResponse } from './phraseGenerator';
 
+const SHORT_PHRASE_AI_TIMEOUT_MS = 10 * 60 * 1000;
 const REQUEUE_THRESHOLD = 5;
-const MATCH_SPLIT_THRESHOLD = 150;
+const MATCH_SPLIT_THRESHOLD = 200;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const REJECTED_UNITY_BUCKETS = new Set(['Partial', 'Non-unit', 'Nonsense']);
+const REJECTED_ENTRY_TYPES = new Set(['Nonsense']);
+const REJECTED_UNITY_BUCKETS = new Set(['Variant', 'Non-unit', 'Nonsense']);
 const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Barely Exists', 'Nonsense']);
 
 const UNITY_SCORES: Record<string, number> = {
@@ -66,6 +73,7 @@ const UNITY_SCORES: Record<string, number> = {
   Collocation: 4,
   Formula: 3,
   Partial: 2,
+  Variant: 2,
   'Non-unit': 2,
   Nonsense: 1,
 };
@@ -76,8 +84,11 @@ const FAMILIARITY_SCORES: Record<string, number> = {
   Active: 40,
   'Easy Collocation': 35,
   'General Knowledge': 30,
+  Colloquial: 30,
   Inferred: 25,
   Niche: 20,
+  Variant: 20,
+  'Partial Phrase': 20,
   Obscure: 15,
   'Barely Exists': 10,
   Nonsense: 0,
@@ -92,7 +103,7 @@ export interface ParsedShortPhrasePrompt {
 
 async function loadShortPhraseGeneratorPromptAsync(): Promise<string> {
   try {
-    return await fs.promises.readFile('./src/ai/phrase_generator_short_prompt.txt', 'utf-8');
+    return await fs.promises.readFile('./src/ai/phrase_generator_short_prompt_2.txt', 'utf-8');
   } catch (err) {
     console.error('Error reading short phrase generator prompt file:', err);
     throw err;
@@ -269,7 +280,7 @@ async function processQueueItem(
   console.log(
     `Sending short phrase generator prompt to ${provider.sourceAI} for "${parsedPrompt.query}"`,
   );
-  const aiResponse = await provider.generateResultsAsync(prompt);
+  const aiResponse = await provider.generateResultsAsync(prompt, SHORT_PHRASE_AI_TIMEOUT_MS);
   console.log(
     `Received short phrase generator response for "${parsedPrompt.query}" (${aiResponse.length} characters)`,
   );
@@ -283,62 +294,124 @@ async function processQueueItem(
     return;
   }
 
-  const unityByPhrase = await scorePhrasesForUnityBucket(phrases, provider, {
+  const uniqueByEntryKey = new Map<string, string>();
+  for (const phrase of phrases) {
+    const entryKey = entryToAllCaps(phrase);
+    if (entryKey && !uniqueByEntryKey.has(entryKey)) {
+      uniqueByEntryKey.set(entryKey, phrase);
+    }
+  }
+  const entryKeys = [...uniqueByEntryKey.keys()];
+  console.log(`Normalized ${entryKeys.length} unique ALLCAPS entries for entry parser`);
+
+  const parsedByEntry = await parseEntriesWithEntryParser3(entryKeys, provider);
+  console.log(`Parsed ${parsedByEntry.size}/${entryKeys.length} entries with entry_parser_prompt_3`);
+
+  const displayByEntry = new Map<string, string>();
+  const entryTypeByEntry = new Map<string, string>();
+  const baseFormByEntry = new Map<string, string>();
+  const isVulgarByEntry = new Map<string, boolean>();
+  for (const entryKey of entryKeys) {
+    const parsed = parsedByEntry.get(entryKey);
+    if (parsed) {
+      entryTypeByEntry.set(entryKey, parsed.entryType);
+      displayByEntry.set(entryKey, parsed.displayText);
+      if (parsed.baseForm) {
+        baseFormByEntry.set(entryKey, parsed.baseForm);
+      }
+      if (parsed.isVulgar != null) {
+        isVulgarByEntry.set(entryKey, parsed.isVulgar);
+      }
+    } else {
+      displayByEntry.set(entryKey, uniqueByEntryKey.get(entryKey)!);
+    }
+  }
+
+  const unityInputs = entryKeys.map((entryKey) => displayByEntry.get(entryKey)!);
+  const unityByDisplay = await scorePhrasesForUnityBucket(unityInputs, provider, {
     promptVersion: 3,
   });
+  const unityByEntry = new Map<string, { parsedForm: string; bucket: string }>();
+  for (const entryKey of entryKeys) {
+    const displayText = displayByEntry.get(entryKey)!;
+    const unity = unityByDisplay.get(displayText);
+    if (unity) {
+      unityByEntry.set(entryKey, unity);
+    }
+  }
 
-  const unityQualifiedPhrases = phrases.filter((phrase) => {
-    const unity = unityByPhrase.get(phrase);
-    return unity != null && !REJECTED_UNITY_BUCKETS.has(unity.bucket);
+  const familiarityInputs = entryKeys.flatMap((entryKey) => {
+    const entryType = entryTypeByEntry.get(entryKey);
+    const unity = unityByEntry.get(entryKey);
+    if (!entryType || !unity) {
+      return [];
+    }
+    return [{
+      phrase: displayByEntry.get(entryKey)!,
+      entryType,
+      unityBucket: unity.bucket,
+    }];
   });
-  console.log(
-    `Qualified ${unityQualifiedPhrases.length}/${phrases.length} phrases (unity not Partial/Non-unit/Nonsense)`,
-  );
-
-  const familiarityByPhrase = await scorePhrasesForFamiliarityBucket(
-    unityQualifiedPhrases.map((phrase) => ({
-      phrase,
-      unityBucket: unityByPhrase.get(phrase)!.bucket,
-    })),
+  const familiarityByDisplay = await scorePhrasesForFamiliarityBucket(
+    familiarityInputs,
     provider,
   );
+  const familiarityByEntry = new Map<string, { parsedForm: string; bucket: string }>();
+  for (const entryKey of entryKeys) {
+    const displayText = displayByEntry.get(entryKey)!;
+    const familiarity = familiarityByDisplay.get(displayText);
+    if (familiarity) {
+      familiarityByEntry.set(entryKey, familiarity);
+    }
+  }
 
-  const shortPhraseResults = phrases.map((phrase) => {
-    const entryKey = entryToAllCaps(phrase);
-    const unity = unityByPhrase.get(phrase);
-    const familiarity = familiarityByPhrase.get(phrase);
-    return {
-      prompt: queuePrompt,
-      entry: entryKey,
-      lang,
-      displayText: phrase,
-      unityBucket: unity?.bucket,
-      familiarityBucket: familiarity?.bucket,
-    };
-  }).filter((result) => result.entry !== '');
+  const shortPhraseResults = entryKeys.map((entryKey) => ({
+    prompt: queuePrompt,
+    entry: entryKey,
+    lang,
+    entryType: entryTypeByEntry.get(entryKey),
+    displayText: displayByEntry.get(entryKey),
+    baseForm: baseFormByEntry.get(entryKey),
+    isVulgar: isVulgarByEntry.get(entryKey),
+    unityBucket: unityByEntry.get(entryKey)?.bucket,
+    familiarityBucket: familiarityByEntry.get(entryKey)?.bucket,
+  }));
 
   await addShortPhraseResults(shortPhraseResults);
   console.log(
     `Saved ${shortPhraseResults.length} phrases to short_phrase_result for "${parsedPrompt.query}"`,
   );
 
-  const qualifyingPhrases = unityQualifiedPhrases.filter((phrase) => {
-    const familiarity = familiarityByPhrase.get(phrase);
-    return familiarity != null && !REJECTED_FAMILIARITY_BUCKETS.has(familiarity.bucket);
+  const qualifyingEntries = entryKeys.filter((entryKey) => {
+    const entryType = entryTypeByEntry.get(entryKey);
+    const unity = unityByEntry.get(entryKey);
+    const familiarity = familiarityByEntry.get(entryKey);
+    return (
+      entryType != null &&
+      !REJECTED_ENTRY_TYPES.has(entryType) &&
+      unity != null &&
+      !REJECTED_UNITY_BUCKETS.has(unity.bucket) &&
+      familiarity != null &&
+      !REJECTED_FAMILIARITY_BUCKETS.has(familiarity.bucket)
+    );
   });
   console.log(
-    `Qualified ${qualifyingPhrases.length}/${unityQualifiedPhrases.length} unity-qualified phrases ` +
-      `(familiarity not Obscure/Barely Exists/Nonsense)`,
+    `Qualified ${qualifyingEntries.length}/${entryKeys.length} phrases ` +
+      `(entry_type not Nonsense; unity not Variant/Non-unit/Nonsense; ` +
+      `familiarity not Obscure/Barely Exists/Nonsense)`,
   );
 
   let newlyInsertedMatching = 0;
 
-  if (qualifyingPhrases.length > 0) {
+  if (qualifyingEntries.length > 0) {
     const candidatesByKey = new Map<
       string,
       {
         entryKey: string;
         displayText: string;
+        entryType: string;
+        baseForm?: string;
+        isVulgar?: boolean;
         unityBucket: string;
         unityScore: number;
         familiarityBucket: string;
@@ -346,19 +419,14 @@ async function processQueueItem(
       }
     >();
 
-    for (const phrase of qualifyingPhrases) {
-      const entryKey = entryToAllCaps(phrase);
-      if (!entryKey) {
-        continue;
-      }
-
-      const unity = unityByPhrase.get(phrase)!;
+    for (const entryKey of qualifyingEntries) {
+      const unity = unityByEntry.get(entryKey)!;
       const unityScore = UNITY_SCORES[unity.bucket];
       if (unityScore == null) {
         continue;
       }
 
-      const familiarity = familiarityByPhrase.get(phrase)!;
+      const familiarity = familiarityByEntry.get(entryKey)!;
       const familiarityScore = FAMILIARITY_SCORES[familiarity.bucket];
       if (familiarityScore == null) {
         continue;
@@ -367,7 +435,10 @@ async function processQueueItem(
       if (!candidatesByKey.has(entryKey)) {
         candidatesByKey.set(entryKey, {
           entryKey,
-          displayText: phrase,
+          displayText: displayByEntry.get(entryKey)!,
+          entryType: entryTypeByEntry.get(entryKey)!,
+          baseForm: baseFormByEntry.get(entryKey),
+          isVulgar: isVulgarByEntry.get(entryKey),
           unityBucket: unity.bucket,
           unityScore,
           familiarityBucket: familiarity.bucket,
@@ -386,6 +457,9 @@ async function processQueueItem(
       entry: item.entryKey,
       lang,
       displayText: item.displayText,
+      entryType: item.entryType,
+      baseForm: item.baseForm,
+      isVulgar: item.isVulgar,
       unityBucket: item.unityBucket,
       unityScore: item.unityScore,
       familiarityBucket: item.familiarityBucket,
@@ -434,16 +508,40 @@ export async function shortPhraseGenerator(
   length: number,
   maxItems: number = DEFAULT_MAX_ITEMS,
   parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
+  prompt?: string,
+  lang: string = 'en',
 ): Promise<void> {
   try {
     const concurrency = Math.max(1, parallelRequests);
+    const promptTemplate = await loadShortPhraseGeneratorPromptAsync();
+
+    if (prompt) {
+      const promptLength = prompt.length;
+      console.log(
+        `Starting short phrase generation with provider ${provider.sourceAI} ` +
+          `for explicit prompt "${prompt}" (length=${promptLength}, lang=${lang})...`,
+      );
+
+      try {
+        await processQueueItem(promptTemplate, prompt, lang, promptLength, provider);
+      } catch (error) {
+        if (isGeminiTimeoutError(error)) {
+          console.warn(`AI timeout processing explicit short phrase prompt "${prompt}"`);
+          return;
+        }
+
+        console.error(`Error processing explicit short phrase prompt "${prompt}":`, error);
+        throw error;
+      }
+
+      console.log(`Finished short phrase generation for explicit prompt "${prompt}"`);
+      return;
+    }
 
     console.log(
       `Starting short phrase generation with provider ${provider.sourceAI} ` +
         `(length=${length}, max ${maxItems} queue items, ${concurrency} parallel)...`,
     );
-
-    const promptTemplate = await loadShortPhraseGeneratorPromptAsync();
 
     let itemsCompleted = 0;
     let cycleNumber = 0;

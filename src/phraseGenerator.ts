@@ -249,6 +249,7 @@ async function processQueueItem(
   const familiarityByPhrase = await scorePhrasesForFamiliarityBucket(
     unityQualifiedPhrases.map((phrase) => ({
       phrase,
+      entryType: 'Phrase',
       unityBucket: unityByPhrase.get(phrase)!.bucket,
     })),
     provider,

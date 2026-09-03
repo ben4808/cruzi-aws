@@ -1,13 +1,17 @@
 /*
 Keep looping through the following steps until maxItems AI requests have been sent (default 100), then stop:
-1. Select enough entries for parallelRequests concurrent executions via get_entries_for_entry_parser_top_50
-   (each request uses ENTRIES_PER_REQUEST entries).
+1. Select enough entries for parallelRequests concurrent executions via get_entries_for_entry_parser
+   (each request uses ENTRIES_PER_REQUEST entries). Select entries whose reviewed_status does not start
+   with "1". Optionally further restrict by an entry LIKE pattern (e.g. "VE___").
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
    a. For each chunk, generate a prompt using the entry_parser_prompt_3.txt file. Use the entry field as the input.
       Send the prompt to the AIProvider (make this a parameter).
-   b. Update the display_text, entry_type, base_form (optionally if there is a base form), and is_vulgar fields in the entry table with the results.
+   b. Update the display_text, entry_type, base_form (from "display (base)" inflections; not separate Inflected Word/Phrase types),
+      and is_vulgar fields in the entry table with the results.
       Also set reviewed_status to "1".
       Overwrite the existing values for the fields.
+      If the primary class is Nonsense, set display_text, familiarity_bucket, familiarity_score,
+        unity_bucket, unity_score, quality_bucket, and quality_score to NULL.
       For secondary classes, update the entry_secondary_class table with the results
         only if the secondary_display is different from the primary display text.
         (secondary_class, secondary_display, and secondary_base_form optionally if there is a base form).
@@ -27,43 +31,26 @@ Keep these requirements in the file.
 
 import fs from 'fs';
 import {
-  getEntriesForEntryParserTop50,
+  getEntriesForEntryParser,
   upsertEntryParserResults,
   EntryForEntryParser,
   EntryParserResult,
   EntryParserSecondaryClass,
 } from 'cruzi-db';
 import { CursorAiProvider } from './ai/cursor';
+import {
+  ParsedEntryParser3Result,
+  parseEntryParser3Response,
+} from './ai/entryParserFormat';
 import { IAiProvider } from './ai/IAiProvider';
+import { matchParsedResultsByIdentity } from './lib/resultMatching';
 import { batchArray, entryToAllCaps, isGeminiTimeoutError, stripAccents } from './lib/utils';
 
 const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
-const ENTRY_PARSER_CATEGORIES = new Set([
-  'Word',
-  'Inflected Word',
-  'Phrase',
-  'Inflected Phrase',
-  'Proper Name',
-  'Acronym/Abbreviation',
-  'Prefix/Suffix',
-  'Nonsense',
-]);
-
-interface ParsedEntryClass {
-  entryType: string;
-  displayText: string;
-  baseForm?: string;
-}
-
-interface ParsedEntryParserResult {
-  entry: string;
-  isVulgar: boolean;
-  primary: ParsedEntryClass;
-  secondary: ParsedEntryClass[];
-}
+export { parseEntryParser3Response };
 
 const cursorProvider = new CursorAiProvider();
 
@@ -74,81 +61,6 @@ async function loadEntryParserPrompt3Async(): Promise<string> {
     console.error('Error reading entry parser prompt 3 file:', err);
     throw err;
   }
-}
-
-function parseDisplayTextAndBaseForm(raw: string): { displayText: string; baseForm?: string } {
-  const baseMatch = raw.match(/^(.+?)\s+\((.+)\)$/);
-  if (baseMatch) {
-    return {
-      displayText: baseMatch[1].trim(),
-      baseForm: baseMatch[2].trim(),
-    };
-  }
-  return { displayText: raw.trim() };
-}
-
-function parseVulgarity(raw: string): boolean | null {
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === 'yes' || normalized === 'y' || normalized === 'true') {
-    return true;
-  }
-  if (normalized === 'no' || normalized === 'n' || normalized === 'false') {
-    return false;
-  }
-  return null;
-}
-
-function parseEntryClass(entryType: string, displayRaw: string): ParsedEntryClass | null {
-  if (!ENTRY_PARSER_CATEGORIES.has(entryType) || !displayRaw) {
-    return null;
-  }
-
-  const { displayText, baseForm } = parseDisplayTextAndBaseForm(displayRaw);
-  if (!displayText) {
-    return null;
-  }
-
-  return { entryType, displayText, baseForm };
-}
-
-export function parseEntryParser3Response(response: string): ParsedEntryParserResult[] {
-  const lines = response
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '');
-
-  const results: ParsedEntryParserResult[] = [];
-
-  for (const line of lines) {
-    const parts = line.split(' : ').map((part) => part.trim());
-    if (parts.length < 4 || parts.length % 2 !== 0) {
-      continue;
-    }
-
-    const entry = parts[0];
-    const isVulgar = parseVulgarity(parts[1]);
-    const primary = parseEntryClass(parts[2], parts[3]);
-    if (!entry || isVulgar === null || !primary) {
-      continue;
-    }
-
-    const secondary: ParsedEntryClass[] = [];
-    for (let i = 4; i < parts.length; i += 2) {
-      const parsedClass = parseEntryClass(parts[i], parts[i + 1]);
-      if (parsedClass) {
-        secondary.push(parsedClass);
-      }
-    }
-
-    results.push({
-      entry,
-      isVulgar,
-      primary,
-      secondary,
-    });
-  }
-
-  return results;
 }
 
 const SUBSTITUTION_REVERSALS: Record<string, string> = {
@@ -194,31 +106,19 @@ function resolveDisplayText(entryKey: string, parsedDisplayText: string): string
 
 function matchParsedResultsToEntries(
   entries: EntryForEntryParser[],
-  parsedResults: ParsedEntryParserResult[],
-): Array<{ entry: EntryForEntryParser; parsed: ParsedEntryParserResult } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ entry: EntryForEntryParser; parsed: ParsedEntryParserResult } | null> = [];
-
-  for (const entryItem of entries) {
-    const matchIndex = unmatchedParsed.findIndex(
-      (parsed) => entryToAllCaps(parsed.entry) === entryItem.entry,
-    );
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ entry: entryItem, parsed });
-  }
-
-  return matches;
+  parsedResults: ParsedEntryParser3Result[],
+): Array<{ entry: EntryForEntryParser; parsed: ParsedEntryParser3Result } | null> {
+  return matchParsedResultsByIdentity(
+    entries,
+    parsedResults,
+    (entryItem) => [entryItem.entry],
+    (parsed) => [parsed.entry, parsed.primary.displayText],
+  ).map((match) => (match ? { entry: match.input, parsed: match.parsed } : null));
 }
 
 function buildResultsToPersist(
   entries: EntryForEntryParser[],
-  parsedResults: ParsedEntryParserResult[],
+  parsedResults: ParsedEntryParser3Result[],
 ): EntryParserResult[] {
   const matches = matchParsedResultsToEntries(entries, parsedResults);
   const resultsToPersist: EntryParserResult[] = [];
@@ -277,10 +177,11 @@ function buildResultsToPersist(
     }
 
     const reviewedStatus = parseFailed ? 'Failed parse' : '1';
+    const isNonsense = parsed.primary.entryType === 'Nonsense';
     resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
-      displayText,
+      displayText: isNonsense ? '' : displayText,
       entryType: parsed.primary.entryType,
       baseForm: parsed.primary.baseForm,
       isVulgar: parsed.isVulgar,
@@ -290,9 +191,10 @@ function buildResultsToPersist(
 
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): type=${parsed.primary.entryType}, ` +
-        `form=${displayText}${parsed.primary.baseForm ? `, base=${parsed.primary.baseForm}` : ''}, ` +
+        `form=${isNonsense ? 'NULL' : displayText}${parsed.primary.baseForm ? `, base=${parsed.primary.baseForm}` : ''}, ` +
         `vulgar=${parsed.isVulgar}, secondary=${secondaryClasses.length}, ` +
-        `status=${reviewedStatus}${rejectedNote}`,
+        `status=${reviewedStatus}${rejectedNote}` +
+        `${isNonsense ? ', cleared display_text and familiarity/unity/quality fields' : ''}`,
     );
   }
 
@@ -338,13 +240,16 @@ export async function entryParser(
   provider: IAiProvider = cursorProvider,
   maxItems: number = DEFAULT_MAX_ITEMS,
   parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
+  entryPattern?: string,
 ): Promise<void> {
   try {
     const concurrency = Math.max(1, parallelRequests);
+    const pattern = entryPattern?.trim() || undefined;
 
     console.log(
       `Starting entry parser with provider ${provider.sourceAI} ` +
-        `(max ${maxItems} AI requests, ${concurrency} parallel)...`,
+        `(max ${maxItems} AI requests, ${concurrency} parallel` +
+        `${pattern ? `, pattern ${pattern}` : ''})...`,
     );
 
     const promptTemplate = await loadEntryParserPrompt3Async();
@@ -358,9 +263,12 @@ export async function entryParser(
       const requestsThisCycle = Math.min(concurrency, remainingItems);
       const selectLimit = requestsThisCycle * ENTRIES_PER_REQUEST;
 
-      const entries = await getEntriesForEntryParserTop50(selectLimit);
+      const entries = await getEntriesForEntryParser(selectLimit, pattern);
       if (entries.length === 0) {
-        console.log('No entries remaining without reviewed_status R, 1, or Failed parse');
+        console.log(
+          `No entries remaining whose reviewed_status does not start with 1` +
+            `${pattern ? ` (pattern ${pattern})` : ''}`,
+        );
         break;
       }
 

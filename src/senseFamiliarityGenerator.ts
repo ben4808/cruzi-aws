@@ -19,6 +19,7 @@ import {
 import { LanguageNames } from 'cruzi-models';
 import { loadSenseFamiliarityPromptAsync, parseSenseFamiliarityResponse } from './ai/common';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
+import { matchParsedResultsByIdentity } from './lib/resultMatching';
 import { isGeminiTimeoutError } from './lib/utils';
 
 const geminiProvider = new GeminiWebAiProvider();
@@ -43,45 +44,12 @@ function matchParsedResultsToSenses(
   senses: SenseWithoutFamiliarity[],
   parsedResults: ReturnType<typeof parseSenseFamiliarityResponse>,
 ): Array<{ sense: SenseWithoutFamiliarity; parsed: (typeof parsedResults)[number] } | null> {
-  const unmatchedParsed = [...parsedResults];
-  const matches: Array<{ sense: SenseWithoutFamiliarity; parsed: (typeof parsedResults)[number] } | null> = [];
-
-  for (const sense of senses) {
-    const promptLine = promptLineForSense(sense);
-
-    let matchIndex = unmatchedParsed.findIndex(
-      (parsed) => `${parsed.displayText} (${parsed.summary})` === promptLine,
-    );
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) =>
-          parsed.displayText === sense.displayText && parsed.summary === sense.senseSummary,
-      );
-    }
-
-    if (matchIndex === -1) {
-      matchIndex = unmatchedParsed.findIndex(
-        (parsed) =>
-          parsed.displayText.toLowerCase() === sense.displayText.toLowerCase() &&
-          parsed.summary.toLowerCase() === sense.senseSummary.toLowerCase(),
-      );
-    }
-
-    if (matchIndex === -1 && unmatchedParsed.length > 0) {
-      matchIndex = 0;
-    }
-
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
-
-    const [parsed] = unmatchedParsed.splice(matchIndex, 1);
-    matches.push({ sense, parsed });
-  }
-
-  return matches;
+  return matchParsedResultsByIdentity(
+    senses,
+    parsedResults,
+    (sense) => [promptLineForSense(sense)],
+    (parsed) => [`${parsed.displayText} (${parsed.summary})`],
+  ).map((match) => (match ? { sense: match.input, parsed: match.parsed } : null));
 }
 
 async function processLangGroup(

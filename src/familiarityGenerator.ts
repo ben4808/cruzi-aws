@@ -2,16 +2,26 @@
 Keep looping through the following steps until maxItems AI requests have been sent (default 100), then stop:
 1. Select enough entries for parallelRequests concurrent executions via get_entries_for_familiarity_generator_top_50
    (each request uses ENTRIES_PER_REQUEST entries). Entries have a reviewed_status of "12", along with all of their secondary classes.
+   Skip entries whose unity_bucket or entry_type is Nonsense.
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
-   a. For each chunk, generate a prompt using the familiarity_prompt_3.txt file. Include the unity bucket with each entry in the prompt.
-      Also check if there are any secondary classes for that entry. If so, include them in the prompt (each on a new line) using the entry's unity bucket.
+   a. For each chunk, generate a prompt using the familiarity_prompt_3.txt file. Include the classification (entry_type)
+      and the unity bucket with each entry in the prompt.
+      Also check if there are any secondary classes for that entry. If so, include them in the prompt (each on a new line),
+      using that secondary's own classification and unity bucket rather than the main entry's.
       Send the prompt to the AIProvider (make this a parameter).
-   b. Update a few fields in the entry table with the results:
+    b. Update a few fields in the entry table with the results:
       - familiarity_bucket
-      - familiarity_score (Beginner Core = 50, Ubiquitous = 45, Active = 40, Easy Collocation = 35, General Knowledge = 30,
-        Inferred = 25, Niche = 20, Obscure = 15, Barely Exists = 10, Nonsense = 0).
+      - familiarity_score (Beginner Core = 50, Ubiquitous = 45, Active = 40, Easy Collocation = 35,
+        General Knowledge = 30, Colloquial = 30, Inferred = 25, Niche = 20, Variant = 20,
+        Partial Phrase = 20, Obscure = 15, Barely Exists = 10, Nonsense = 0).
+        Partial Phrase is not an AI bucket. After AI results, collect items rated Obscure and run one
+        bulk get_partial_phrase_items query per AI batch for phrases that start or end with those
+        items (space-separated, e.g. "Velva" matches "Aqua Velva" but not "AqueVelva"). If any such
+        phrase has familiarity_score >= 20, overwrite the item's familiarity bucket to Partial Phrase
+        and the score to 20.
       - reviewed_status = "123"
    c. If any secondary classes get rated as Obscure, Barely Exists, or Nonsense, delete them from the entry_secondary_class table.
+      For secondaries that are rated and kept, set their familiarity_bucket on the entry_secondary_class row.
       Among the primary class and secondary classes, replace the entry_type and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
@@ -25,6 +35,7 @@ Keep these requirements in the file.
 
 import {
   getEntriesForFamiliarityGeneratorTop50,
+  getPartialPhraseItems,
   upsertFamiliarityGeneratorResults,
   EntryForFamiliarityGenerator,
   FamiliarityGeneratorResult,
@@ -45,8 +56,11 @@ const FAMILIARITY_SCORES: Record<string, number> = {
   Active: 40,
   'Easy Collocation': 35,
   'General Knowledge': 30,
+  Colloquial: 30,
   Inferred: 25,
   Niche: 20,
+  Variant: 20,
+  'Partial Phrase': 20,
   Obscure: 15,
   'Barely Exists': 10,
   Nonsense: 0,
@@ -60,28 +74,92 @@ function isDeletableFamiliarityBucket(bucket: string): boolean {
 
 function collectPromptPhrases(
   entries: EntryForFamiliarityGenerator[],
-): Array<{ phrase: string; unityBucket: string }> {
-  const phrases: Array<{ phrase: string; unityBucket: string }> = [];
+): Array<{ phrase: string; entryType: string; unityBucket: string }> {
+  const phrases: Array<{ phrase: string; entryType: string; unityBucket: string }> = [];
   const seen = new Set<string>();
 
   for (const entryItem of entries) {
-    const unityBucket = entryItem.unityBucket?.trim() || 'Concept';
     const candidates = [
-      entryItem.displayText,
-      ...entryItem.secondaryClasses.map((secondary) => secondary.secondaryDisplay),
+      {
+        phrase: entryItem.displayText,
+        entryType: entryItem.entryType,
+        unityBucket: entryItem.unityBucket,
+      },
+      ...entryItem.secondaryClasses.map((secondary) => ({
+        phrase: secondary.secondaryDisplay,
+        entryType: secondary.secondaryClass,
+        unityBucket: secondary.unityBucket,
+      })),
     ];
 
-    for (const phrase of candidates) {
-      const trimmed = phrase.trim();
+    for (const candidate of candidates) {
+      const trimmed = candidate.phrase.trim();
       if (!trimmed || seen.has(trimmed)) {
         continue;
       }
       seen.add(trimmed);
-      phrases.push({ phrase: trimmed, unityBucket });
+      phrases.push({
+        phrase: trimmed,
+        entryType: candidate.entryType?.trim() || 'Word',
+        unityBucket: candidate.unityBucket?.trim() || 'Nonsense',
+      });
     }
   }
 
   return phrases;
+}
+
+async function applyPartialPhraseInference(
+  entries: EntryForFamiliarityGenerator[],
+  resultsByPhrase: Map<string, { bucket: string }>,
+): Promise<void> {
+  const obscureItems: Array<{ displayText: string; lang: string }> = [];
+  const seen = new Set<string>();
+
+  const consider = (phrase: string, lang: string) => {
+    const trimmed = phrase.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const parsed = resultsByPhrase.get(trimmed) ?? resultsByPhrase.get(phrase);
+    if (parsed?.bucket !== 'Obscure') {
+      return;
+    }
+
+    const key = `${lang}\0${trimmed}`;
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    obscureItems.push({ displayText: trimmed, lang });
+  };
+
+  for (const entryItem of entries) {
+    consider(entryItem.displayText, entryItem.lang);
+    for (const secondary of entryItem.secondaryClasses) {
+      consider(secondary.secondaryDisplay, entryItem.lang);
+    }
+  }
+
+  if (obscureItems.length === 0) {
+    return;
+  }
+
+  // One bulk lookup for the whole AI batch, not one query per obscure item.
+  const matches = await getPartialPhraseItems(obscureItems);
+  for (const match of matches) {
+    const parsed = resultsByPhrase.get(match.displayText);
+    if (!parsed) {
+      continue;
+    }
+
+    parsed.bucket = 'Partial Phrase';
+    console.log(
+      `  inferred Partial Phrase for "${match.displayText}" (${match.lang})`,
+    );
+  }
 }
 
 function pickHighestFamiliarityCandidate(
@@ -138,15 +216,24 @@ function buildResultsToPersist(
     }
 
     const secondaryClassesToDelete: string[] = [];
+    const secondaryClassesToUpdate: NonNullable<FamiliarityGeneratorResult['secondaryClassesToUpdate']> = [];
     for (const secondary of entryItem.secondaryClasses) {
       const secondaryParsed = resultsByPhrase.get(secondary.secondaryDisplay);
-      if (secondaryParsed && isDeletableFamiliarityBucket(secondaryParsed.bucket)) {
+      if (!secondaryParsed) {
+        continue;
+      }
+      if (isDeletableFamiliarityBucket(secondaryParsed.bucket)) {
         secondaryClassesToDelete.push(secondary.secondaryClass);
         console.log(
           `  deleting secondary ${entryItem.entry}: class=${secondary.secondaryClass}, ` +
             `form=${secondary.secondaryDisplay}, familiarity=${secondaryParsed.bucket}`,
         );
+        continue;
       }
+      secondaryClassesToUpdate.push({
+        secondaryClass: secondary.secondaryClass,
+        familiarityBucket: secondaryParsed.bucket,
+      });
     }
 
     const remainingSecondaries = entryItem.secondaryClasses.filter(
@@ -173,12 +260,19 @@ function buildResultsToPersist(
       entryType = winner.secondary.secondaryClass;
       baseForm = winner.secondary.secondaryBaseForm;
       secondaryClassesToDelete.push(winner.secondary.secondaryClass);
+      const promotedIndex = secondaryClassesToUpdate.findIndex(
+        (item) => item.secondaryClass === winner.secondary.secondaryClass,
+      );
+      if (promotedIndex >= 0) {
+        secondaryClassesToUpdate.splice(promotedIndex, 1);
+      }
 
       if (entryItem.entryType && !isDeletableFamiliarityBucket(primaryParsed.bucket)) {
         secondaryClassesToInsert.push({
           secondaryClass: entryItem.entryType,
           secondaryDisplay: entryItem.displayText,
           secondaryBaseForm: entryItem.baseForm,
+          familiarityBucket: primaryParsed.bucket,
         });
       }
 
@@ -199,6 +293,7 @@ function buildResultsToPersist(
       entryType,
       baseForm,
       secondaryClassesToDelete,
+      secondaryClassesToUpdate,
       secondaryClassesToInsert,
     });
 
@@ -206,6 +301,7 @@ function buildResultsToPersist(
       `Processed ${entryItem.entry} (${entryItem.lang}): familiarity_bucket=${familiarityBucket}, ` +
         `familiarity_score=${persistedScore}, reviewed_status=123, ` +
         `deleted_secondaries=${secondaryClassesToDelete.length}, ` +
+        `updated_secondaries=${secondaryClassesToUpdate.length}, ` +
         `inserted_secondaries=${secondaryClassesToInsert.length}`,
     );
   }
@@ -225,6 +321,8 @@ async function processBatch(
 
   const resultsByPhrase = await scorePhrasesForFamiliarityBucket(phrases, provider);
   console.log(`${requestLabel}: received ${resultsByPhrase.size} familiarity ratings`);
+
+  await applyPartialPhraseInference(entries, resultsByPhrase);
 
   const resultsToPersist = buildResultsToPersist(entries, resultsByPhrase);
   if (resultsToPersist.length === 0) {
