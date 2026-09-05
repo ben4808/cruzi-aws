@@ -24,28 +24,38 @@ import { strictDomainNames } from './strictDomainNames';
 import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 import { shortPhraseGenerator } from './shortPhraseGenerator';
 import { sensesGenerator } from './sensesGenerator';
+import { crosswordListExtractor } from './crosswordListExtractor';
 
 const aiProvider = new CursorAiProvider(
   'grok-4.6',
+  //'gemini-3.8-flash',
 );
 
-(async () => {
-  const steps = [
-    { name: "Entry parser", run: () => entryParser(aiProvider, 600, 10) },
-    { name: "Unity generator", run: () => unityGenerator(aiProvider, 600, 10) },
-    { name: "Familiarity generator", run: () => familiarityGenerator(aiProvider, 600, 10) },
-    { name: "Quality generator", run: () => qualityGenerator(aiProvider, 600, 10) },
-  ];
+// (async () => {
+//   const steps = [
+//     //{ name: "Entry parser", run: () => entryParser(aiProvider, 1000, 10) },
+//     //{ name: "Unity generator", run: () => unityGenerator(aiProvider, 1000, 10) },
+//     //{ name: "Familiarity generator", run: () => familiarityGenerator(aiProvider, 1000, 10) },
+//     { name: "Quality generator", run: () => qualityGenerator(aiProvider, 1000, 10) },
+//   ];
 
-  for (const step of steps) {
-    try {
-      await step.run();
-      console.log(`${step.name} completed successfully.`);
-    } catch (error) {
-      console.error(`Error in ${step.name.toLowerCase()}: `, error);
-    }
-  }
-})();
+//   for (const step of steps) {
+//     try {
+//       await step.run();
+//       console.log(`${step.name} completed successfully.`);
+//     } catch (error) {
+//       console.error(`Error in ${step.name.toLowerCase()}: `, error);
+//     }
+//   }
+// })();
+
+// crosswordListExtractor(3, 5, true)
+//   .then(() => console.log("Crossword list extractor completed successfully."))
+//   .catch(error => console.error("Error in crossword list extractor: ", error));
+
+// entryParser(aiProvider, 600, 10)
+//   .then(() => console.log("Entry parser completed successfully."))
+//   .catch(error => console.error("Error in entry parser: ", error));
 
 // shortPhraseGenerator(aiProvider, 5, 500, 10, "VI___")
 //   .then(() => console.log("Short phrase generator completed successfully."))

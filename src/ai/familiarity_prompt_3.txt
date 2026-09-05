@@ -19,7 +19,6 @@ GUIDELINES
 - Don't include any bare abbreviations or acronyms in Beginner Core or Ubiquitous.
 - Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active, or Colloquial.
 - Don't include any items with unity bucket Partial in Beginner Core, Ubiquitous, or Active, or Colloquial.
-- Don't include any single given names or surnames in Beginner Core, Ubiquitous, or Active, or Colloquial.
 - Compositional numbers (e.g. "fifty-eight") and Roman numerals with unity bucket Non-unit should be rated Inferred.
 - Verify before demoting to Barely Exists or Nonsense. 
    Perform a mandatory search to check whether the exact string is indeed rare or non-existent in the language.
@@ -33,25 +32,26 @@ BUCKETS
 3. Ubiquitous: Highly polysemous high-frequency core content words/phrases.
     - Probably used in idiomatic phrases.
     - Also includes high-frequency function words.
-4. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
+4. Common Name: Frequent single given name or surname that doesn't refer to anyone in particular. 
+5. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
     Must be the most canonical spelling and phrasing. 
     - Does NOT include acronyms or abbreviations unless they are actually produced verbally as such.
     - Literary/SAT vocabulary that people recognize but don’t say is not Active.
-5. Colloquial: Slang or jargon produced in coversation by specific cohorts of people in colloquial contexts.
-6. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
+6. Colloquial: Slang or jargon produced in coversation by specific cohorts of people in colloquial contexts.
+7. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
     fixture of the global culture.
     - Referenced in allusions, metaphors, and/or memes.
     - Makes for easy trivia. Harder trivia belongs in Niche.
-7. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
+8. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
     - Includes uncommon word inflections that nonetheless are easily understood.
-8. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
+9. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
     - Might make a good difficult trivia answer.
-9. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
+10. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
     - Only people specialized in the area are likely to know it.
     - Might be a non-standard spelling or phrase formulation.
     - Might only exist in another language.
-10. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
-11. Nonsense: Everything else.
+11. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
+12. Nonsense: Everything else.
 
 OUTPUT
 Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.

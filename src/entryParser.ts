@@ -21,7 +21,10 @@ Keep looping through the following steps until maxItems AI requests have been se
         If none of the resulting keys equal the original input entry, set the display_text for that class to simply the original
         input entry lowercased and set the reviewed_status to "Failed parse" instead of "1".
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
-   If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
+   Keep querying new batches as long as get_entries_for_entry_parser returns eligible items,
+   until maxItems AI requests have been sent. A cycle that persists nothing must not stop the loop
+   while eligible items remain.
+   If an AI request takes more than 10 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -49,6 +52,7 @@ import { batchArray, entryToAllCaps, isGeminiTimeoutError, stripAccents } from '
 const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
+const ENTRY_PARSER_AI_TIMEOUT_MS = 10 * 60 * 1000;
 
 export { parseEntryParser3Response };
 
@@ -211,7 +215,7 @@ async function processBatch(
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
   console.log(`${requestLabel}: sending entry parser prompt for ${entries.length} entries`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
+  const aiResponse = await provider.generateResultsAsync(prompt, ENTRY_PARSER_AI_TIMEOUT_MS);
   console.log(`${requestLabel}: received response (${aiResponse.length} characters)`);
 
   const parsedResults = parseEntryParser3Response(aiResponse);
@@ -280,7 +284,6 @@ export async function entryParser(
           `${itemsCompleted}/${maxItems} requests completed so far`,
       );
 
-      let cycleHadTimeout = false;
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -290,9 +293,8 @@ export async function entryParser(
             return await processBatch(chunk, promptTemplate, provider, requestLabel);
           } catch (error) {
             if (isGeminiTimeoutError(error)) {
-              cycleHadTimeout = true;
               console.warn(
-                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+                `${requestLabel}: AI request took more than 10 minutes; abandoning and continuing`,
               );
               return 0;
             }
@@ -306,9 +308,10 @@ export async function entryParser(
 
       itemsCompleted += chunks.length;
 
-      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
-        console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
-        break;
+      if (persistedCounts.every((count) => count === 0)) {
+        console.warn(
+          `No entries persisted in cycle ${cycleNumber}; continuing while eligible items remain`,
+        );
       }
     }
 

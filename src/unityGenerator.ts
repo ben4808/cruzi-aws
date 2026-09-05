@@ -19,6 +19,9 @@ Keep looping through the following steps until maxItems AI requests have been se
       from the entry_secondary_class table.
    d. Set reviewed_status to "12" for the entry row.
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
+   Keep querying new batches as long as get_entries_for_unity_generator_top_50 returns eligible items,
+   until maxItems AI requests have been sent. A cycle that persists nothing must not stop the loop
+   while eligible items remain.
    If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
@@ -265,7 +268,6 @@ export async function unityGenerator(
           `${itemsCompleted}/${maxItems} requests completed so far`,
       );
 
-      let cycleHadTimeout = false;
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -275,7 +277,6 @@ export async function unityGenerator(
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
             if (isGeminiTimeoutError(error)) {
-              cycleHadTimeout = true;
               console.warn(
                 `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
               );
@@ -291,9 +292,10 @@ export async function unityGenerator(
 
       itemsCompleted += chunks.length;
 
-      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
-        console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
-        break;
+      if (persistedCounts.every((count) => count === 0)) {
+        console.warn(
+          `No entries persisted in cycle ${cycleNumber}; continuing while eligible items remain`,
+        );
       }
     }
 

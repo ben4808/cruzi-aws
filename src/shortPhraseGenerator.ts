@@ -83,6 +83,7 @@ const FAMILIARITY_SCORES: Record<string, number> = {
   Ubiquitous: 45,
   Active: 40,
   'Easy Collocation': 35,
+  'Common Name': 30,
   'General Knowledge': 30,
   Colloquial: 30,
   Inferred: 25,

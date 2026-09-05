@@ -88,6 +88,7 @@ const FAMILIARITY_BUCKETS = new Set([
   'Easy Collocation',
   'Beginner Core',
   'Ubiquitous',
+  'Common Name',
   'Active',
   'Colloquial',
   'General Knowledge',
@@ -346,23 +347,41 @@ export async function loadFamiliarityBucketPrompt3Async(): Promise<string> {
   }
 }
 
+function parseDisplayTextAndBucket(
+  line: string,
+  resolveBucket: (raw: string) => string | undefined,
+): { parsedForm: string; bucket: string } | null {
+  const lastColon = line.lastIndexOf(':');
+  if (lastColon <= 0) {
+    return null;
+  }
+
+  const bucket = resolveBucket(line.slice(lastColon + 1).trim());
+  if (!bucket) {
+    return null;
+  }
+
+  const parsedForm = line.slice(0, lastColon).trim();
+  if (!parsedForm) {
+    return null;
+  }
+
+  return { parsedForm, bucket };
+}
+
 export function parseFamiliarityBucketResponse(response: string): ParsedFamiliarityBucketResult[] {
   const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
 
   const results: ParsedFamiliarityBucketResult[] = [];
   for (const line of lines) {
-    const separatorIndex = line.lastIndexOf(' : ');
-    if (separatorIndex === -1) {
+    const parsed = parseDisplayTextAndBucket(line, (raw) =>
+      FAMILIARITY_BUCKETS.has(raw) ? raw : undefined,
+    );
+    if (!parsed) {
       continue;
     }
 
-    const parsedForm = line.slice(0, separatorIndex).trim();
-    const bucket = line.slice(separatorIndex + 3).trim();
-    if (!parsedForm || !FAMILIARITY_BUCKETS.has(bucket)) {
-      continue;
-    }
-
-    results.push({ parsedForm, bucket });
+    results.push(parsed);
   }
 
   return results;
@@ -426,7 +445,7 @@ function stripTrailingQualityPromptAnnotations(text: string): string {
         '',
       )
       .replace(
-        /\s*\((Easy Collocation|Beginner Core|Ubiquitous|Active|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
+        /\s*\((Easy Collocation|Beginner Core|Ubiquitous|Common Name|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
         '',
       )
       .trim();
@@ -455,31 +474,17 @@ export function parseQualityBucketResponse(response: string): ParsedQualityBucke
   const results: ParsedQualityBucketResult[] = [];
   for (const line of lines) {
     const cleaned = line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
-    const parts = cleaned.split(/\s*:\s*/).map((part) => part.trim()).filter((part) => part !== '');
-    if (parts.length < 2) {
+    const parsed = parseDisplayTextAndBucket(cleaned, canonicalQualityBucket);
+    if (!parsed) {
       continue;
     }
 
-    let bucket: string | undefined;
-    let bucketIndex = -1;
-    for (let i = parts.length - 1; i >= 1; i--) {
-      const canonical = canonicalQualityBucket(parts[i]);
-      if (canonical) {
-        bucket = canonical;
-        bucketIndex = i;
-        break;
-      }
-    }
-    if (!bucket || bucketIndex < 1) {
-      continue;
-    }
-
-    const parsedForm = stripTrailingQualityPromptAnnotations(parts[0]);
+    const parsedForm = stripTrailingQualityPromptAnnotations(parsed.parsedForm);
     if (!parsedForm) {
       continue;
     }
 
-    results.push({ parsedForm, bucket });
+    results.push({ parsedForm, bucket: parsed.bucket });
   }
 
   return results;

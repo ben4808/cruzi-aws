@@ -12,7 +12,7 @@ Keep looping through the following steps until maxItems AI requests have been se
     b. Update a few fields in the entry table with the results:
       - familiarity_bucket
       - familiarity_score (Beginner Core = 50, Ubiquitous = 45, Active = 40, Easy Collocation = 35,
-        General Knowledge = 30, Colloquial = 30, Inferred = 25, Niche = 20, Variant = 20,
+        Common Name = 30, General Knowledge = 30, Colloquial = 30, Inferred = 25, Niche = 20, Variant = 20,
         Partial Phrase = 20, Obscure = 15, Barely Exists = 10, Nonsense = 0).
         Partial Phrase is not an AI bucket. After AI results, collect items rated Obscure and run one
         bulk get_partial_phrase_items query per AI batch for phrases that start or end with those
@@ -24,7 +24,11 @@ Keep looping through the following steps until maxItems AI requests have been se
       For secondaries that are rated and kept, set their familiarity_bucket on the entry_secondary_class row.
       Among the primary class and secondary classes, replace the entry_type and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
-3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
+3. maxItems is the total number of AI requests to send before quitting (not the number of entries
+   processed, and not the number of DB cycles).
+   Keep querying new batches as long as get_entries_for_familiarity_generator_top_50 returns eligible items,
+   until maxItems AI requests have been sent. A cycle that persists nothing must not stop the loop
+   while eligible items remain.
    If an AI request takes more than 5 minutes, abandon it and continue with the remaining work.
 
 Output messages to the console updating all progress.
@@ -55,6 +59,7 @@ const FAMILIARITY_SCORES: Record<string, number> = {
   Ubiquitous: 45,
   Active: 40,
   'Easy Collocation': 35,
+  'Common Name': 30,
   'General Knowledge': 30,
   Colloquial: 30,
   Inferred: 25,
@@ -348,13 +353,13 @@ export async function familiarityGenerator(
         `(max ${maxItems} AI requests, ${concurrency} parallel)...`,
     );
 
-    let itemsCompleted = 0;
+    let requestsCompleted = 0;
     let cycleNumber = 0;
     let shouldStop = false;
 
-    while (itemsCompleted < maxItems && !shouldStop) {
-      const remainingItems = maxItems - itemsCompleted;
-      const requestsThisCycle = Math.min(concurrency, remainingItems);
+    while (requestsCompleted < maxItems && !shouldStop) {
+      const remainingRequests = maxItems - requestsCompleted;
+      const requestsThisCycle = Math.min(concurrency, remainingRequests);
       const selectLimit = requestsThisCycle * ENTRIES_PER_REQUEST;
 
       const entries = await getEntriesForFamiliarityGeneratorTop50(selectLimit);
@@ -368,20 +373,18 @@ export async function familiarityGenerator(
       console.log(
         `Cycle ${cycleNumber}: ${chunks.length} parallel AI requests ` +
           `(${entries.length} entries); ` +
-          `${itemsCompleted}/${maxItems} requests completed so far`,
+          `${requestsCompleted}/${maxItems} requests completed so far`,
       );
 
-      let cycleHadTimeout = false;
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
-          const itemNumber = itemsCompleted + index + 1;
-          const requestLabel = `Request ${itemNumber}/${maxItems}`;
+          const requestNumber = requestsCompleted + index + 1;
+          const requestLabel = `Request ${requestNumber}/${maxItems}`;
 
           try {
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
             if (isGeminiTimeoutError(error)) {
-              cycleHadTimeout = true;
               console.warn(
                 `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
               );
@@ -395,18 +398,19 @@ export async function familiarityGenerator(
         }),
       );
 
-      itemsCompleted += chunks.length;
+      requestsCompleted += chunks.length;
 
-      if (!shouldStop && !cycleHadTimeout && persistedCounts.every((count) => count === 0)) {
-        console.warn(`No entries persisted in cycle ${cycleNumber}; stopping`);
-        break;
+      if (persistedCounts.every((count) => count === 0)) {
+        console.warn(
+          `No entries persisted in cycle ${cycleNumber}; continuing while eligible items remain`,
+        );
       }
     }
 
-    if (itemsCompleted >= maxItems) {
+    if (requestsCompleted >= maxItems) {
       console.log(`Reached max AI request limit of ${maxItems}; stopping`);
     } else {
-      console.log(`Stopped after ${itemsCompleted} AI requests`);
+      console.log(`Stopped after ${requestsCompleted} AI requests`);
     }
   } catch (error) {
     console.error('Fatal error in familiarityGenerator:', error);
