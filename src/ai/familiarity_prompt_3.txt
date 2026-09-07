@@ -26,32 +26,29 @@ GUIDELINES
 IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
 
 BUCKETS
-0. Variant: Unity bucket is Variant -> familiarity bucket is automatically Variant.
-1. Easy Collocation: In Collocation, Formula, Partial, or Non-unit unity bucket and transparently understood from constituent words.
-2. Beginner Core: Typical of literally the first week of a beginner language course. Very few words achieve this category.
-3. Ubiquitous: Highly polysemous high-frequency core content words/phrases.
+1. Literal: In Collocation, Formula, Partial, Variant, or Non-unit unity bucket and transparently understood from constituent words.
+2. Ubiquitous: Highly polysemous high-frequency core content words/phrases.
     - Probably used in idiomatic phrases.
     - Also includes high-frequency function words.
-4. Common Name: Frequent single given name or surname that doesn't refer to anyone in particular. 
-5. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
+3. Common Name: Frequent single given name or surname that doesn't refer to anyone in particular. 
+4. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
     Must be the most canonical spelling and phrasing. 
     - Does NOT include acronyms or abbreviations unless they are actually produced verbally as such.
     - Literary/SAT vocabulary that people recognize but don’t say is not Active.
-6. Colloquial: Slang or jargon produced in coversation by specific cohorts of people in colloquial contexts.
-7. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
+5. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
     fixture of the global culture.
     - Referenced in allusions, metaphors, and/or memes.
     - Makes for easy trivia. Harder trivia belongs in Niche.
-8. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
+6. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
     - Includes uncommon word inflections that nonetheless are easily understood.
-9. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
+7. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
     - Might make a good difficult trivia answer.
-10. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
+8. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
     - Only people specialized in the area are likely to know it.
     - Might be a non-standard spelling or phrase formulation.
     - Might only exist in another language.
-11. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
-12. Nonsense: Everything else.
+9. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
+10. Nonsense: Everything else.
 
 OUTPUT
 Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.

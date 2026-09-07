@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { LanguageNames } from 'cruzi-models';
 import { entryToAllCaps } from '../lib/utils';
-import { parseEntryParser3Response } from './entryParserFormat';
+import { ParsedEntryParser3Result, parseEntryParser3Response } from './entryParserFormat';
 import { GeminiWebAiProvider } from './geminiWebProvider';
 import { IAiProvider } from './IAiProvider';
 import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
@@ -85,17 +85,13 @@ const UNITY_BUCKETS = new Set([
 ]);
 
 const FAMILIARITY_BUCKETS = new Set([
-  'Easy Collocation',
-  'Beginner Core',
+  'Literal',
   'Ubiquitous',
   'Common Name',
   'Active',
-  'Colloquial',
   'General Knowledge',
   'Inferred',
   'Niche',
-  'Variant',
-  'Partial Phrase',
   'Obscure',
   'Barely Exists',
   'Nonsense',
@@ -411,14 +407,13 @@ export function matchFamiliarityBucketResultsToPhrases(
 
 const QUALITY_BUCKETS = new Set([
   'Non-unit',
-  'Unfamiliar',
   'Uncommon Inflection',
-  'Partial',
   'Clunky',
+  'Sensitive',
   'Idiomatic',
   'Interesting',
   'Appealing',
-  'Emotional',
+  'Positive',
   'Trendy',
   'Normal',
 ]);
@@ -670,13 +665,12 @@ export function parseEntryParser3PrimaryResponse(response: string): ParsedEntryP
   }));
 }
 
-export async function parseEntriesWithEntryParser3(
+export async function parseEntriesWithEntryParser3Full(
   entries: string[],
   provider: IAiProvider,
-): Promise<Map<string, ParsedEntryParserResult>> {
-  const resultsByEntry = new Map<string, ParsedEntryParserResult>();
+): Promise<ParsedEntryParser3Result[]> {
   if (entries.length === 0) {
-    return resultsByEntry;
+    return [];
   }
 
   const promptTemplate = await loadEntryParserPrompt3Async();
@@ -686,7 +680,28 @@ export async function parseEntriesWithEntryParser3(
   const aiResponse = await provider.generateResultsAsync(prompt);
   console.log(`Received entry parser prompt 3 response (${aiResponse.length} characters)`);
 
-  const parsedResults = parseEntryParser3PrimaryResponse(aiResponse);
+  const parsedResults = parseEntryParser3Response(aiResponse);
+  console.log(`Parsed ${parsedResults.length} entry parser 3 results (including secondaries)`);
+  return parsedResults;
+}
+
+export async function parseEntriesWithEntryParser3(
+  entries: string[],
+  provider: IAiProvider,
+): Promise<Map<string, ParsedEntryParserResult>> {
+  const resultsByEntry = new Map<string, ParsedEntryParserResult>();
+  if (entries.length === 0) {
+    return resultsByEntry;
+  }
+
+  const parsedFull = await parseEntriesWithEntryParser3Full(entries, provider);
+  const parsedResults = parsedFull.map((parsed) => ({
+    entry: parsed.entry,
+    entryType: parsed.primary.entryType,
+    displayText: parsed.primary.displayText,
+    baseForm: parsed.primary.baseForm,
+    isVulgar: parsed.isVulgar,
+  }));
   const matches = matchEntryParserResultsToEntries(entries, parsedResults);
   const matchedCount = matches.filter((match) => match !== null).length;
   if (parsedResults.length !== entries.length || matchedCount !== entries.length) {

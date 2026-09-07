@@ -57,6 +57,10 @@ const aiProvider = new CursorAiProvider(
 //   .then(() => console.log("Entry parser completed successfully."))
 //   .catch(error => console.error("Error in entry parser: ", error));
 
+phraseGenerator(aiProvider, 1000, 10)
+  .then(() => console.log("Phrase generator completed successfully."))
+  .catch(error => console.error("Error in phrase generator: ", error));
+
 // shortPhraseGenerator(aiProvider, 5, 500, 10, "VI___")
 //   .then(() => console.log("Short phrase generator completed successfully."))
 //   .catch(error => console.error("Error in short phrase generator: ", error));
@@ -100,10 +104,6 @@ const aiProvider = new CursorAiProvider(
 // displayNameFixer()
 //   .then(() => console.log("Display name fixer completed successfully."))
 //   .catch(error => console.error("Error in display name fixer: ", error));
-
-// phraseGenerator(aiProvider, 500, 10)
-//   .then(() => console.log("Phrase generator completed successfully."))
-//   .catch(error => console.error("Error in phrase generator: ", error));
 
 // senseFamiliarityGenerator()
 //   .then(() => console.log("Sense familiarity generator completed successfully."))

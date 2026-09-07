@@ -10,13 +10,14 @@ PASS 1
 First, consider if the item belongs to any of these buckets, evaluating from top to bottom. 
 If it does, assign that bucket and immediately move on to the next item.
 
-Non-unit: Has a unity bucket of Variant, Non-unit, or Nonsense -> automatic Non-unit
-Unfamiliar: Has a familiarity bucket of Obscure, Barely Exists, or Nonsense -> automatic Unfamiliar
-Partial: Has a unity bucket of Partial or familiarty bucket of Partial Phrase -> automatic Partial
+Non-unit: Has a unity bucket of Non-unit or Nonsense -> automatic Non-unit
 Uncommon Inflection: An inflection or derivation that is rarely used in modern natural speech, 
   even if grammatically valid or present in specialized dictionaries.
 Clunky: The phrasing is noticeably worse than a better alternative.
   Includes items that are shortened or abbreviated in a way that seems contrived or non-standard.
+  Includes all items with unity bucket of Variant.
+Sensitive: Hits on a sensitive or touchy subject for some people. May bring up insecurities or negative feelings.
+  Includes provocative political topics.
 
 PASS 2
 Again, choose the first bucket that applies, evaluating from top to bottom.
@@ -28,11 +29,12 @@ Interesting: Has substantial, widely known lore — famous stories, history, or 
 Appealing: Conveys high quality or desirability. 
   EITHER Is a product, feature, or trait that is inherently attractive
   OR Makes a product, feature, or trait sound inherently attractive
-Emotional: Evokes a human experience or situation that carries emotional weight — exciting or story-worthy
-  life events, deep nostalgia, provocation/debate, or something people tell personal stories about.
-  Includes provocative political topics.
+Positive: Evokes a human experience or situation that carries positive emotional weight — exciting, story-worthy,
+  encouraging, or evoking deep nostalgia.
 Trendy: Saying that feels hip, savvy, and fluent in slang and cultural references.
   Includes sayings that were trendy in any era of history.
+  Includes tech buzzwords.
+  Includes colloquial sayings.
 
 DEFAULT
 An item that doesn't fit into any bucket should be classified as "Normal".

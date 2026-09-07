@@ -120,7 +120,7 @@ function matchParsedResultsToEntries(
   ).map((match) => (match ? { entry: match.input, parsed: match.parsed } : null));
 }
 
-function buildResultsToPersist(
+export function buildResultsToPersist(
   entries: EntryForEntryParser[],
   parsedResults: ParsedEntryParser3Result[],
 ): EntryParserResult[] {

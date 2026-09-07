@@ -3,32 +3,34 @@ Extracts a list of entries to make a crossword word list.
 
 The entries will recieve 2 main classifications:
 1. Gettable-ness
-This measures how gettable an entry is for the average solver. Levels of gettable-ness are:
-- Very Gettable: 
-   Entry has unity bucket of Concept or Formula.
-   Entry has familiarity bucket of Beginner Core, Ubiquitous, Active, or Colloquial.
-- Likely Gettable:
-   Entry has unity bucket of Concept, Collocation, Formular, or Partial.
-   Entry has familiarity bucket of Common Name, Easy Collocation, or Inferred.
-- Maybe Gettable:
-   Entry has unity bucket of Concept, Collocation, Formula, Partial, or Variant.
-   Entry has familiarity bucket of General Knowledge, Niche, or Variant.
-- Not Gettable:
-   Entry has a unity bucket of Concept, Collocation, Formula, or Partial.
-   Entry has familiarity bucket of Obscure or Barely Exists.
+This measures how gettable an entry is for the average solver. Levels of gettable-ness are defined below.
+Pick the first level of gettable-ness that applies to the entry.
+
 - Not a Thing:
    Entry has a unity bucket of Non-unit or Nonsense.
+- Very Gettable: 
+   Entry has unity bucket of Concept or Formula.
+   Entry has familiarity bucket of Ubiquitous, or Active.
+- Likely Gettable:
+   Entry has unity bucket of Concept, Collocation, Formula, or Partial.
+   Entry has familiarity bucket of Literal, Common Name, or Inferred.
+- Maybe Gettable:
+   Entry has familiarity bucket of General Knowledge, Niche, or Literal.
+- Not Gettable:
+   Entry has familiarity bucket of Obscure or Barely Exists.
 
 2. Desirability
 This measures how desirable an entry is for a crossword solver. Levels of desirability are:
+
 - Prefer:
-   Entry has a quality bucket of Idiomatic, Interesting, Appealing, Emotional, or Trendy.
+   Entry has a quality bucket of Idiomatic, Interesting, Appealing, Positive, or Trendy.
 - Normal:
-   Entry has a quality bucket of Normal.
+   Entry has a quality bucket of Normal or Sensitive.
 - Avoid:
-   Entry has a quality bucket of Non-unit, Unfamiliar, Partial, Uncommon Inflection, or Clunky.
+   Entry has a quality bucket of Non-unit, Uncommon Inflection, or Clunky.
 
 Go through the entry table and pull out all entries that don't have entry_type Nonsense or unity_bucket one of [Non-unit, Nonsense].
+Exclude entries with is_vulgar = true or an entry_tags row with tag 'breakfast_test'.
 Also include parameters for max length and min length of the entries to include. Default min length 3 and max length 5.
 Include a parameter to exclude obscure entries which would also exclude familiarity bucket of Obscure or Barely Exists. Default is true.
 If unity_bucket or familiarity_bucket is not set, default gettable-ness to Maybe Gettable.
@@ -53,19 +55,18 @@ import { CrosswordListEntry, getCrosswordListEntries } from 'cruzi-db';
 
 const OUTPUT_DIR = 'C:\\Users\\ben_z\\Desktop\\crossword_lists';
 
+const NOT_A_THING_UNITY = new Set(['Non-unit', 'Nonsense']);
 const VERY_GETTABLE_UNITY = new Set(['Concept', 'Formula']);
 const LIKELY_GETTABLE_UNITY = new Set(['Concept', 'Collocation', 'Formula', 'Partial']);
-const MAYBE_GETTABLE_UNITY = new Set(['Concept', 'Collocation', 'Formula', 'Partial', 'Variant']);
-const NOT_GETTABLE_UNITY = new Set(['Concept', 'Collocation', 'Formula', 'Partial']);
-const NOT_A_THING_UNITY = new Set(['Non-unit', 'Nonsense']);
 
-const VERY_GETTABLE_FAMILIARITY = new Set(['Beginner Core', 'Ubiquitous', 'Active', 'Colloquial']);
-const LIKELY_GETTABLE_FAMILIARITY = new Set(['Common Name', 'Easy Collocation', 'Inferred']);
-const MAYBE_GETTABLE_FAMILIARITY = new Set(['General Knowledge', 'Niche', 'Variant']);
+const VERY_GETTABLE_FAMILIARITY = new Set(['Ubiquitous', 'Active']);
+const LIKELY_GETTABLE_FAMILIARITY = new Set(['Literal', 'Common Name', 'Inferred']);
+const MAYBE_GETTABLE_FAMILIARITY = new Set(['General Knowledge', 'Niche', 'Literal']);
 const NOT_GETTABLE_FAMILIARITY = new Set(['Obscure', 'Barely Exists']);
 
-const PREFER_QUALITY = new Set(['Idiomatic', 'Interesting', 'Appealing', 'Emotional', 'Trendy']);
-const AVOID_QUALITY = new Set(['Non-unit', 'Unfamiliar', 'Partial', 'Uncommon Inflection', 'Clunky']);
+const PREFER_QUALITY = new Set(['Idiomatic', 'Interesting', 'Appealing', 'Positive', 'Trendy']);
+const NORMAL_QUALITY = new Set(['Normal', 'Sensitive']);
+const AVOID_QUALITY = new Set(['Non-unit', 'Uncommon Inflection', 'Clunky']);
 
 export type GettableNess =
   | 'Very Gettable'
@@ -97,10 +98,10 @@ function classifyGettableNess(unityBucket: string | null, familiarityBucket: str
   if (LIKELY_GETTABLE_UNITY.has(unity) && LIKELY_GETTABLE_FAMILIARITY.has(familiarity)) {
     return 'Likely Gettable';
   }
-  if (MAYBE_GETTABLE_UNITY.has(unity) && MAYBE_GETTABLE_FAMILIARITY.has(familiarity)) {
+  if (MAYBE_GETTABLE_FAMILIARITY.has(familiarity)) {
     return 'Maybe Gettable';
   }
-  if (NOT_GETTABLE_UNITY.has(unity) && NOT_GETTABLE_FAMILIARITY.has(familiarity)) {
+  if (NOT_GETTABLE_FAMILIARITY.has(familiarity)) {
     return 'Not Gettable';
   }
   return 'Maybe Gettable';
@@ -115,7 +116,7 @@ function classifyDesirability(qualityBucket: string | null): Desirability {
   if (PREFER_QUALITY.has(quality)) {
     return 'Prefer';
   }
-  if (quality === 'Normal') {
+  if (NORMAL_QUALITY.has(quality)) {
     return 'Normal';
   }
   if (AVOID_QUALITY.has(quality)) {

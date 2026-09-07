@@ -11,17 +11,16 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
     b. Update a few fields in the entry table with the results:
       - familiarity_bucket
-      - familiarity_score (Beginner Core = 50, Ubiquitous = 45, Active = 40, Easy Collocation = 35,
-        Common Name = 30, General Knowledge = 30, Colloquial = 30, Inferred = 25, Niche = 20, Variant = 20,
-        Partial Phrase = 20, Obscure = 15, Barely Exists = 10, Nonsense = 0).
-        Partial Phrase is not an AI bucket. After AI results, collect items rated Obscure and run one
-        bulk get_partial_phrase_items query per AI batch for phrases that start or end with those
-        items (space-separated, e.g. "Velva" matches "Aqua Velva" but not "AqueVelva"). If any such
-        phrase has familiarity_score >= 20, overwrite the item's familiarity bucket to Partial Phrase
-        and the score to 20.
+      - familiarity_score (Ubiquitous = 45, Active = 40, Literal = 35,
+        Common Name = 30, General Knowledge = 30, Inferred = 25, Niche = 20,
+        Obscure = 15, Barely Exists = 10, Nonsense = 0).
+        After AI results, collect items rated Obscure and run one bulk get_partial_phrase_items query
+        per AI batch for phrases that start or end with those items (space-separated, e.g. "Velva"
+        matches "Aqua Velva" but not "AqueVelva"). If any such phrase has familiarity_score >= 20,
+        overwrite the item's unity bucket to Partial (unity_score 2) and familiarity bucket to Niche.
       - reviewed_status = "123"
    c. If any secondary classes get rated as Obscure, Barely Exists, or Nonsense, delete them from the entry_secondary_class table.
-      For secondaries that are rated and kept, set their familiarity_bucket on the entry_secondary_class row.
+      For secondaries that are rated and kept, set their familiarity_bucket (and unity_bucket when inferred Partial) on the entry_secondary_class row.
       Among the primary class and secondary classes, replace the entry_type and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
 3. maxItems is the total number of AI requests to send before quitting (not the number of entries
@@ -54,21 +53,24 @@ const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
-const FAMILIARITY_SCORES: Record<string, number> = {
-  'Beginner Core': 50,
+export const FAMILIARITY_SCORES: Record<string, number> = {
   Ubiquitous: 45,
   Active: 40,
-  'Easy Collocation': 35,
+  Literal: 35,
   'Common Name': 30,
   'General Knowledge': 30,
-  Colloquial: 30,
   Inferred: 25,
   Niche: 20,
-  Variant: 20,
-  'Partial Phrase': 20,
   Obscure: 15,
   'Barely Exists': 10,
   Nonsense: 0,
+};
+
+const PARTIAL_UNITY_SCORE = 2;
+
+type FamiliarityRating = {
+  bucket: string;
+  unityBucket?: string;
 };
 
 const cursorProvider = new CursorAiProvider();
@@ -77,7 +79,7 @@ function isDeletableFamiliarityBucket(bucket: string): boolean {
   return bucket === 'Obscure' || bucket === 'Barely Exists' || bucket === 'Nonsense';
 }
 
-function collectPromptPhrases(
+export function collectPromptPhrases(
   entries: EntryForFamiliarityGenerator[],
 ): Array<{ phrase: string; entryType: string; unityBucket: string }> {
   const phrases: Array<{ phrase: string; entryType: string; unityBucket: string }> = [];
@@ -114,9 +116,9 @@ function collectPromptPhrases(
   return phrases;
 }
 
-async function applyPartialPhraseInference(
+export async function applyPartialPhraseInference(
   entries: EntryForFamiliarityGenerator[],
-  resultsByPhrase: Map<string, { bucket: string }>,
+  resultsByPhrase: Map<string, FamiliarityRating>,
 ): Promise<void> {
   const obscureItems: Array<{ displayText: string; lang: string }> = [];
   const seen = new Set<string>();
@@ -160,16 +162,17 @@ async function applyPartialPhraseInference(
       continue;
     }
 
-    parsed.bucket = 'Partial Phrase';
+    parsed.bucket = 'Niche';
+    parsed.unityBucket = 'Partial';
     console.log(
-      `  inferred Partial Phrase for "${match.displayText}" (${match.lang})`,
+      `  inferred Partial unity / Niche familiarity for "${match.displayText}" (${match.lang})`,
     );
   }
 }
 
 function pickHighestFamiliarityCandidate(
   remainingSecondaries: FamiliarityGeneratorSecondaryClass[],
-  resultsByPhrase: Map<string, { bucket: string }>,
+  resultsByPhrase: Map<string, FamiliarityRating>,
   primaryScore: number,
 ): { kind: 'primary' } | { kind: 'secondary'; secondary: FamiliarityGeneratorSecondaryClass; score: number } {
   const rankedSecondaries = remainingSecondaries
@@ -197,9 +200,9 @@ function pickHighestFamiliarityCandidate(
   return { kind: 'primary' };
 }
 
-function buildResultsToPersist(
+export function buildResultsToPersist(
   entries: EntryForFamiliarityGenerator[],
-  resultsByPhrase: Map<string, { bucket: string }>,
+  resultsByPhrase: Map<string, FamiliarityRating>,
 ): FamiliarityGeneratorResult[] {
   const resultsToPersist: FamiliarityGeneratorResult[] = [];
 
@@ -238,6 +241,7 @@ function buildResultsToPersist(
       secondaryClassesToUpdate.push({
         secondaryClass: secondary.secondaryClass,
         familiarityBucket: secondaryParsed.bucket,
+        unityBucket: secondaryParsed.unityBucket,
       });
     }
 
@@ -252,6 +256,7 @@ function buildResultsToPersist(
 
     let familiarityBucket = primaryParsed.bucket;
     let persistedScore = familiarityScore;
+    let unityBucket = primaryParsed.unityBucket;
     let displayText: string | undefined;
     let entryType: string | undefined;
     let baseForm: string | undefined;
@@ -261,6 +266,7 @@ function buildResultsToPersist(
       const promotedParsed = resultsByPhrase.get(winner.secondary.secondaryDisplay);
       familiarityBucket = promotedParsed?.bucket ?? familiarityBucket;
       persistedScore = FAMILIARITY_SCORES[familiarityBucket] ?? winner.score;
+      unityBucket = promotedParsed?.unityBucket;
       displayText = winner.secondary.secondaryDisplay;
       entryType = winner.secondary.secondaryClass;
       baseForm = winner.secondary.secondaryBaseForm;
@@ -278,6 +284,7 @@ function buildResultsToPersist(
           secondaryDisplay: entryItem.displayText,
           secondaryBaseForm: entryItem.baseForm,
           familiarityBucket: primaryParsed.bucket,
+          unityBucket: primaryParsed.unityBucket,
         });
       }
 
@@ -294,6 +301,8 @@ function buildResultsToPersist(
       familiarityBucket,
       familiarityScore: persistedScore,
       reviewedStatus: '123',
+      unityBucket,
+      unityScore: unityBucket === 'Partial' ? PARTIAL_UNITY_SCORE : undefined,
       displayText,
       entryType,
       baseForm,
@@ -304,7 +313,8 @@ function buildResultsToPersist(
 
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): familiarity_bucket=${familiarityBucket}, ` +
-        `familiarity_score=${persistedScore}, reviewed_status=123, ` +
+        `familiarity_score=${persistedScore}` +
+        `${unityBucket ? `, unity_bucket=${unityBucket}` : ''}, reviewed_status=123, ` +
         `deleted_secondaries=${secondaryClassesToDelete.length}, ` +
         `updated_secondaries=${secondaryClassesToUpdate.length}, ` +
         `inserted_secondaries=${secondaryClassesToInsert.length}`,

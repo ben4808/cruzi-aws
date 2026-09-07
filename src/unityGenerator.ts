@@ -46,7 +46,7 @@ const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
-const UNITY_SCORES: Record<string, number> = {
+export const UNITY_SCORES: Record<string, number> = {
   Concept: 5,
   Collocation: 4,
   Formula: 3,
@@ -70,7 +70,7 @@ function isDeletableUnityBucket(bucket: string): boolean {
   return bucket === 'Non-unit' || bucket === 'Nonsense';
 }
 
-function collectPromptPhrases(entries: EntryForUnityGenerator[]): string[] {
+export function collectPromptPhrases(entries: EntryForUnityGenerator[]): string[] {
   const phrases: string[] = [];
   const seen = new Set<string>();
 
@@ -111,7 +111,7 @@ function pickPromotableSecondary(
   return ranked[0]?.secondary ?? null;
 }
 
-function buildResultsToPersist(
+export function buildResultsToPersist(
   entries: EntryForUnityGenerator[],
   resultsByPhrase: Map<string, { bucket: string }>,
 ): UnityGeneratorResult[] {
