@@ -1,0 +1,53 @@
+TASK
+You are given a list of words and phrases, together with the sense in which they must be interpreted.
+Your task is to classify each item into buckets according to its linguistic unity.
+
+GUIDELINES
+- Consider the EXACT string given and not a similar one.
+- Verify before demoting to Non-unit or Nonsense. 
+   Perform a mandatory search to check whether the exact string is indeed used regularly in the given sense.
+- Non-canonical numbers/ordinals should be rated as Non-unit unless they have other meanings (e.g. "fifty-six" is Non-unit, "eighty-six" is Concept).
+   This includes Roman numerals.
+- Non-canonical forms of an otherwise unified term → NOT Concept, Collocation, or Formula.
+   Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
+- Plural surnames should be rated as Concept.
+
+IMPORTANT: Evaluate first Concept, Collocation, and Formula buckets, and if the item doesn't fit in any of those, evaluate the rest
+  in numerical order.
+
+BUCKETS
+1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain. 
+    Includes idioms and conventionalized metaphors.
+    Includes attested phrasal verbs with their respective particles.
+    Includes all standard inflections.
+    Ask: "Would a native speaker treat this exact string as one stored unit,
+      or just a description built on the fly?" Description → not Concept.
+    If an item would fit here except it is a formulaic name, consider placing it in the Formulaic bucket instead.
+2. Collocation: A reusable phrase whose meaning is exactly its constituent words, but the exact string is the preferred locked wording in its register.
+    Includes light-verb constructions / locked V+N frames that pass the Ask below.
+    Don't penalize for inflections.
+    Ask: "Among near-paraphrases, is this the tightest conventional frame (e.g. app idea ≫ app concept; email body ≫ body of the email)?"
+    Same grain rule as Concept: reject padded or truncated variants of a better-locked frame.
+    Collocation examples: off-duty cops, sci-fi series, mountain peaks, one-sided victory, abstract artist, loose skin, death metal band
+3. Formula: A fixed conversational habit — a pre-packaged social/speech reflex.
+    Includes colloquial, slangy, or sarcastic habits.
+    Ask: "Is this exact string itself the preferred locked reflex, or just one fill of an open pattern / a padded version of a shorter habit?"
+      Open pattern or padding → not Formula.
+4. Partial: Part of phrase or proper name that would have fit in the first 3 categories if it was complete.
+    Includes prefixes and suffixes.
+    Does not include standard shortenings of a word.
+5. Variant: Variant spelling that is valid but non-dominant.
+6. Formulaic: Could refer to a specific concept, but has a very formulaic name.
+    e.g. act III, Mac OSX, Psalm 25
+7. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
+    Does not include single words.
+8. Nonsense: Everything else.
+
+OUTPUT
+Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name>
+
+ITEMS TO CLASSIFY
+
+[[DATA]]

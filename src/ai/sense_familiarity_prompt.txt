@@ -1,71 +1,60 @@
 TASK
-Analyze the provided list of words and phrases in the English language from the point of view of the United States. 
-Every word or phrase will be given together with the sense in which it should be interpreted.
+You are given a list of words and phrases along with the senses that they must be interpreted as.
 
-CORE EVALUATION RULES
-- The Sense Isolation Rule: Evaluate only the specific sense and definition provided. Completely ignore the word's primary or most common meaning if it differs from the target sense.
-- Part-of-Speech Shift Penalty: If the target sense forces a word into a syntactic category different from its most common, intuitive usage, deduct 0.5 to 1.0 points from what its baseline score would be.
-Example: she (pronoun) is a 5.0, but she (noun: a female person/animal) drops to 3.5.
-- Metaphorical Extension Cap: Senses that are vivid, figurative, or cognitive extensions of a physical action or shape are capped at a maximum of 4.0.
-Example: shoulder (to bear a burden) or jump (a sudden numerical increase).
-- Collocation & Context Cap: If a word relies heavily on a highly specific surrounding phrase or modifier to sound natural in the target sense, cap it at a maximum of 4.0.
-Example: sex (demographic total of males/females) usually requires "distribution by sex" or "broken down by sex" to feel natural. somewhere (approximately) requires "somewhere around", "somewhere in the ballpark of", etc.
-- Register & Tone Filter: Senses confined to formal, legal, literary, or bureaucratic contexts rather than casual spoken conversation are capped at a maximum of 4.0.
-Example: right (to rectify or correct a mistake).
-- Synonym Replacement Check: If the target audience almost universally prefers and uses a completely different synonym in daily speech, cap the target word at a maximum of 3.5.
-Example: coach (long-distance bus) is eclipsed by "bus" or "charter" in American speech.
-- Score phrases based on the familiarity of the specific given phrasing. For example "Pacific Ring" is uncommon/awkward as a phrasing and would score 1.5, while "Pacific Rim" or "Pacific Ring of Fire" are both recognized and would score around 3. "Pacific Trench", though understood upon hearing it, is not really used in this form and would also be 1.5.
-- Be strict. Err on the side of lower scores for borderline cases. Do not be generous.
+Each item is given as: <item> (<classification>) (<unity bucket>) (<sense summary>)
+The classification will be one of:
+  Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix
 
-RUBRIC
-5 — Foundational Bedrock. You cannot navigate life without these. These words appear in the first few weeks of any introductory language course. No contractions, abbreviations, or acronyms. It is extremely hard to achieve this level.
-Criteria: Literal, direct meanings. Highly active vocabulary for 100% of native speakers. Must be the primary part of speech. No contractions, abbreviations, or acronyms.
-Examples: sit (rest on a seat), tree (perennial woody plant), difficult (not easy; requiring effort), red (the color), check (restaurant bill in the US—learned immediately due to sheer daily necessity).
+The unity bucket will be one of:
+  Concept, Collocation, Formula, Partial, Variant, Non-unit, Nonsense
 
-4.5 - Extremely Common: Everyday phrases and expressions. Active conversational vocabulary. No contractions, abbreviations, or acronyms.
-Criteria: Fully integrated into daily life, but slightly less primitive than Tier 5. These feel like 5's but don't quite pass as absolutely 100% essential. Fundamental phrases.
-Examples: bow (Decorative knot of ribbon), toast (sliced bread browned by heat), under (experiencing a state or condition, like "under pressure"), go ahead (proceed).
+Your task is to classify each item into buckets according to its familiarity.
 
-4 - Very Common: In practically every native speaker's active vocabulary. Highly recognizable phrasal verbs, contractions, and abbreviations. Non-native speakers might still struggle with them.
-Examples: public (the community in general—penalized for noun shift), shoulder (accept a burden—capped for metaphor), right (to rectify—capped for formal register), extra (dramatic/over-the-top—slang), social media (online community), I've (contraction of I and have), attic (area above the ceiling).
+GUIDELINES
+- Interpret the item strictly according to its given classification
+   - Word or Phrase classification cannot be interpreted as a proper name.
+   - Proper Name classification must be interpreted as a proper name.
+- Target audience: A well-rounded, educated adult native speaker from the US.
+- For names, score based on the most famous person, place, thing, or idea with that name.
+- Don't include any bare abbreviations or acronyms in Beginner Core or Ubiquitous.
+- Don't include any bare prefixes/suffixes in Beginner Core, Ubiquitous, or Active, or Colloquial.
+- Don't include any items with unity bucket Partial in Beginner Core, Ubiquitous, or Active, or Colloquial.
+- Compositional numbers (e.g. "fifty-eight") and Roman numerals with unity bucket Non-unit should be rated Inferred.
+- Verify before demoting to Barely Exists or Nonsense. 
+   Perform a mandatory search to check whether the exact string is indeed rare or non-existent in the language.
 
-3.5 - Quite Common: In the active vocabulary of the majority of natives. Non-native speakers might not recognize them.
-- Includes common single generic names.
-Examples: coach (long-distance bus—capped by synonym replacement), train (point or aim a device), she (a female person/animal—penalized for noun shift), thrive (live and grow successfully), speed trap (police enmplacement), arable land (land that can be farmed)
+IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
 
-3 - Active Recall/Common Knowledge: Recognized by the vast majority of native speakers, but only recalled/used actively by about half.
-Criteria: The Active Recall Test applies here: the majority of native speakers could accurately produce or identify this word as the direct answer to a trivia question or a specific technical need, but they don't use it in daily conversation. Includes common acronyms.
-Examples: ladder (a run in fabric—niche), deuce (tennis or dice term), DEA (Drug Enforcement Admininistration), U-boat (German submarine), contrite (deeply sorry), souffle (French egg dish), orcs (Tolkien evil minions).
-
-2.5 - Moderate Recall / Borderline Niche: Recognized by a distinct minority of native speakers. 
-Criteria: Slightly niche terms, minor academic jargon, less common derivatives, or words tied to specific cultural sub-groups. Passable trivia fodder for a general audience. Less common derivatives. Less common synonyms. Less common single names.
-Examples: kitchen (hair at the nape of the neck—demographically/culturally specific), event horizon (black hole border), accede (yield to a demand), slier (more crafty-less common derivative), quixotic (impractical or impulsive), Arctic hare (species)
-
-2 - Limited Familiarity: Known only to a small segment of the population.
-Criteria: Standalone technical terms where the layperson might understand the individual words but does not recognize the phrase as an official concept. Rare names, highly specific domain jargon, or tough trivia fodder.
-Examples: wow (audio pitch fluctuation—restricted to analog audio engineering), moment of inertia (physics concept), persiflage (frivolous banter), tatterdemalion (person in tattered clothing), Arctic char (fish species)
-
-1.5 - Generally Obscure: Known only in highly technical, hyper-regional, or archaic contexts.
-Criteria: Too obscure to make good general trivia. Grammatical fragments that are rare, obscure alternative spellings, or abbreviations almost never seen.
-Examples: plagioclase (mineralogy), iterative deepening (computer science), aqua fortis (historical chemistry), meeter (rare agent noun)
-
-1 - Extremely Rare/Obscure: Almost entirely unknown to the general public. Everyone has to look it up.
-Examples: Cantor Set (advanced mathematics), Three Forks (specific geographic micro-locations)
-
-0 - Non-Existent. Total nonsense, typographic errors, or a combination of words that communicates no real-world meaning or concept.
+BUCKETS
+1. Literal: In Collocation, Formula, Partial, Variant, or Non-unit unity bucket and transparently understood from constituent words.
+2. Ubiquitous: Highly polysemous high-frequency core content words/phrases.
+    - Probably used in idiomatic phrases.
+    - Also includes high-frequency function words.
+3. Common Name: Frequent single given name or surname that doesn't refer to anyone in particular. 
+4. Active: Part of a universal active vocabulary. Terms of everyday conversation. Commonly produced verbally in the exact given form.
+    Must be the most canonical spelling and phrasing. 
+    - Does NOT include acronyms or abbreviations unless they are actually produced verbally as such.
+    - Literary/SAT vocabulary that people recognize but don’t say is not Active.
+5. General Knowledge: Well-known enough that it has transcended its niche and generation and become a permanent
+    fixture of the global culture.
+    - Referenced in allusions, metaphors, and/or memes.
+    - Makes for easy trivia. Harder trivia belongs in Niche.
+6. Inferred: Belongs to a niche, but the meaning is easily inferred from the constituent words.
+    - Includes uncommon word inflections that nonetheless are easily understood.
+7. Niche: Well-known and belongs to a specific subculture, generational cohort, hobby area, trade, etc.
+    - Might make a good difficult trivia answer.
+8. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche.
+    - Only people specialized in the area are likely to know it.
+    - Might be a non-standard spelling or phrase formulation.
+    - Might only exist in another language.
+9. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
+10. Nonsense: Everything else.
 
 OUTPUT
-Present each evaluation in the following strict format, without any introductory or auxiliary text:
+Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.
 
-<original word/phrase> (<summary>) : <score>
+<input item> : <bucket name>
 
-Example Outputs:
-goal (Desired result or objective) : 5
-pan (Wash gravel for gold) : 4
-quasar (Active galaxy) : 3
-Arctic char (alpine lake fish) : 2
-break and run (pool feat) : 3.5
-
-WORDS/PHRASES
+ITEMS TO CLASSIFY
 
 [[DATA]]

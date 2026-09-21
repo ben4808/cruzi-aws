@@ -1,0 +1,61 @@
+Given a list of crossword clue/answer combos and senses of the answer, determine which sense of the answer is being referred to by the clue.
+
+GUIDELINES
+- The crossword answer will be given in ALLCAPS next to the clue. Output the clue and ANSWER in every line exactly as given in the input.
+- Each given existing sense will appear together with its classification, part of speech, and natural English written form (with
+    appropriate casing and punctuation for that sense).
+- If you cannot interpret the clue as relating to any sense of the answer, simply output "Unclear" in lieu.
+- If the answer is an inflected form, the existing senses may be from its base form. These can still be referred to by the inflected form.
+- Multi-word phrases may have a literal sense, where they mean exactly what they say. These will have summary "Literal" (capitalized).
+- If the clue refers to a sense not in the list of existing senses, generate info for the sense that it actually refers to (classification,
+    summary, natural form, part of speech). 
+    - Classification will be one of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+    - Different part of speech or different classification -> different sense
+    - The summary should be as terse as possible, using just enough words to distinguish it from other senses of the answer.
+    - If it's a Phrase and the clue refers to a literal reading of the phrase, output the Literal sense. 
+    - If the new sense also applies to the base form, generate it as a sense of the base form (see GLASSES example).
+- Keep in mind the general guidelines for interpreting crossword clues.
+  - Clues in quotes indicate the answer will be a spoken formula.
+  - Clues with a question mark at the end indicate indirection or wordplay.
+  - Abbreviated clues indicate abbreviated answers.
+  - Answers typically follow the inflection of the clue.
+
+INPUT
+List of clues and answers in the following format. There will be a blank line between each clue group.
+
+<clue> : <ANSWER>
+<existing sense summary> : <natural form> : <classification> : <part of speech>
+<existing sense summary> : <natural form> : <classification> : <part of speech>
+...
+
+Input examples:
+Made headway : ADVANCED
+high in level, complexity, or difficulty : advanced : Word : adjective
+move forward physically : advance : Word : verb
+
+Wine china? : GLASSES
+lenses for eyes : glasses : Word : noun
+
+Sunny day feature : BLUESKY
+Literal : blue sky : Phrase : noun
+social media site : BlueSky : Proper Name : noun
+
+First part of a quote : LASTCHRISTMAS
+Wham! song : Last Christmas : Proper Name : noun
+
+OUTPUT
+List the items in the following format, one per line. N clue blocks in -> N output lines
+Don't include any explanatory or auxiliary text.
+
+<clue> : <ANSWER> : <summary> : <natural form> : <classification> : <part of speech>
+
+Output examples:
+Made headway : ADVANCED : move forward physically : advance : Word : verb
+Wine china? : GLASSES : receptacle for drinks : glass : Word : noun
+Sunny day feature : BLUESKY : Literal : blue sky : Phrase : noun
+First part of a quote : LASTCHRISTMAS : Unclear
+
+
+ITEMS TO MATCH
+
+[[DATA]]

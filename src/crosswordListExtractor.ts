@@ -2,9 +2,9 @@
 Extracts a list of entries to make a crossword word list.
 
 The entries will recieve 2 main classifications:
-1. Gettable-ness
-This measures how gettable an entry is for the average solver. Levels of gettable-ness are defined below.
-Pick the first level of gettable-ness that applies to the entry.
+1. Gettability
+This measures how gettable an entry is for the average solver. Levels of gettability are defined below.
+Pick the first level of gettability that applies to the entry.
 
 - Not a Thing:
    Entry has a unity bucket of Non-unit or Nonsense.

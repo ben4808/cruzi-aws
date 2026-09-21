@@ -1,0 +1,63 @@
+TASK
+You are given a list of words and phrases, along with the senses that they must be interpreted as.
+Each item is also labeled with a unity bucket and a familiarity bucket. They are referred to in some criteria below.
+
+Each item is given as: <item> (<unity bucket>) (<familiarity bucket>) (<sense summary>)
+
+Your task is to classify each item into one of the buckets specified below.
+
+PASS 1
+First, consider if the item belongs to any of these buckets, evaluating from top to bottom. 
+If it does, assign that bucket and immediately move on to the next item.
+
+Non-unit: Has a unity bucket of Non-unit or Nonsense -> automatic Non-unit
+Uncommon Inflection: An inflection or derivation that is rarely used in modern natural speech, 
+  even if grammatically valid or present in specialized dictionaries.
+Clunky: The phrasing is noticeably worse than a better alternative.
+  Includes items that are shortened or abbreviated in a way that seems contrived or non-standard.
+  Includes all items with unity bucket of Variant.
+
+PASS 2
+Again, choose the first bucket that applies, evaluating from top to bottom.
+
+Idiomatic: The meaning cannot be fully predicted from its literal constituent words.
+  Does NOT include single words.
+Interesting: Has substantial, widely known lore — famous stories, history, or cultural footprint that would
+  interest the average person. Good fodder for a movie, book, or trivia question because of that lore.
+Appealing: Conveys high quality or desirability. 
+  EITHER Is a product, feature, or trait that is inherently attractive
+  OR Makes a product, feature, or trait sound inherently attractive
+Positive: Evokes a human experience or situation that carries positive emotional weight — exciting, story-worthy,
+  encouraging, or evoking deep nostalgia.
+Trendy: Saying that feels hip, savvy, and fluent in slang and cultural references.
+  Includes sayings that were trendy in any era of history.
+  Includes tech buzzwords.
+  Includes colloquial sayings.
+
+PASS 3
+Determine whether these attributes either apply to the item or they don't.
+
+Vulgar: Vulgar and inappropriate to use in formal settings or around children.
+Sensitive: Hits on a sensitive or touchy subject for some people. May bring up insecurities or negative feelings.
+  Includes provocative political topics.
+
+DEFAULT
+An item that doesn't fit into any bucket from Pass 1 or Pass 2 should be classified as "Normal".
+
+OUTPUT
+Output according to the following format, one item per line.
+Do not re-output the unity or familiarity buckets.
+Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name> (Vulgar, Sensitive)
+
+Examples:
+crown : Normal
+George Foreman : Interesting
+funnest : Uncommon Inflection
+shit-faced : Idiomatic (Vulgar)
+obese : Normal (Sensitive)
+
+WORDS/PHRASES
+
+[[DATA]]

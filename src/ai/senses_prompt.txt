@@ -1,9 +1,12 @@
-Analyze the distinct senses of the following word or phrase: [[PHRASE]]
+Analyze the distinct senses of the following word or phrase: [[ITEM]]
 Language of the item: [[SOURCE_LANGUAGE]]
 Language of translations: [[TRANSLATION_LANGUAGE]]
 
 EXISTING SENSES
 [[REFERENCE SENSES]]
+
+HINT
+[[HINT]]
 
 LANGUAGE
 Write all output in the language of the item, with the exception of the Natural and Colloquial Translations.
@@ -11,26 +14,22 @@ Write all output in the language of the item, with the exception of the Natural 
 TASKS
 1. If the item is uninterpretable gibberish, reply ONLY with the word "Nonsense".
 
-2. Generate senses from the item alone. Ignore Existing Senses until step 3. Cover every distinct attested reading.
-  - The item is presented all caps. Also consider it lowercase and with natural capitalization. 
+2. Generate senses from the item alone. Ignore Existing Senses until step 3.
+  - The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation.
+     Generate senses of all presented forms or even forms not presented.
+  - Take extra care to generate the sense that is described or hinted at by the HINT, if one is given.
   - Different part of speech → different sense.
-  - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix, but only output a sense when that reading is actually used.
-  - Each sense has its own display text: the usual way that reading is written. Do not expand an acronym into its full phrase as display text.
+  - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+     Only output a sense when that classification is actually used.
+  - Each generated sense has its own display text: the usual way that reading is written. Do not expand an acronym into its full phrase as display text.
   - One meaning per sense. If you would write "A or B", split into two senses.
 
 3. Then match. For each generated sense, look at Existing Senses.
-  - Same meaning → in "Corresponding existing sense", paste that existing short description character-for-character. Leave your own short description as you wrote it; do not rewrite it to match.
+  - Same meaning → in "Corresponding existing sense", paste that existing short description character-for-character. 
+     Leave your own short description as you wrote it; do not rewrite it to match.
   - No match → None
 
-4. Frequency: exactly one tier per sense, and exactly one Primary in the whole output.
-  - Primary: the single most dominant, immediate usage. If two are tied, pick the most historically rooted.
-  - Common: standard and recognizable.
-  - Uncommon: rare, archaic, or highly technical.
-
-5. Base form: if the item is an inflected form of that sense, output its citation/base form. e.g. "Base form: tree"
-  - Item is already in base form, or does not inflect (typical for names, acronyms, affixes): (None)
-
-6. Translations and alternatives: 1–3 each. Empty → (None)
+4. Translations and alternatives: 1–3 each. Empty → (None)
   - Natural: default equivalents in the Translation Language.
   - Colloquial: informal equivalents in the Translation Language.
   - Alternatives: other ways to say this same sense in the language of the item.
@@ -39,43 +38,38 @@ OUTPUT
 Format below, nothing else. One blank line between senses.
 Short description: as short as possible, only to tell this sense apart from the others.
 
-([Part of Speech], [Classification], [Frequency]) [Display Text]
+([Part of Speech], [Classification]) [Display Text]
 [Short Description] : [Definition]
-Base form: [Base form, or (None)]
 Natural: [Translation 1; Translation 2]
 Colloquial: [Translation 1; Translation 2]
 Alternatives: [Alternative 1; Alternative 2]
 Corresponding existing sense: [Exact existing short description, or None]
 
-EXAMPLE (item: "ram")
+EXAMPLE (item: "ram/Ram/RAM")
 
-(Noun, Word, Primary) ram
+(Noun, Word) ram
 Male sheep : A male sheep.
-Base form: (None)
 Natural: carnero; morueco
 Colloquial: macho
 Alternatives: (None)
 Corresponding existing sense: Male sheep
 
-(Verb, Word, Common) ram
+(Verb, Word) ram
 Strike with force : To crash into or drive something with great force.
-Base form: (None)
 Natural: embestir; arremeter
 Colloquial: darse contra
 Alternatives: slam; crash into
 Corresponding existing sense: None
 
-(Noun, Acronym/Abbreviation, Common) RAM
+(Noun, Acronym/Abbreviation) RAM
 Working memory : Random-access memory, the working memory of a computer.
-Base form: (None)
 Natural: RAM; memoria RAM
 Colloquial: (None)
 Alternatives: memory; random-access memory
 Corresponding existing sense: Computer memory
 
-(Noun, Proper Name, Common) Ram
+(Noun, Proper Name) Ram
 Truck brand : A brand of pickup trucks.
-Base form: (None)
 Natural: Ram
 Colloquial: (None)
 Alternatives: Ram truck
