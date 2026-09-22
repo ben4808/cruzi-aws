@@ -11,12 +11,13 @@ import { AI_REQUEST_TIMEOUT_MS, AiRequestTimeoutError, withTimeout } from '../li
 dotenv.config();
 
 /** Supported Cursor plan models (non-fast variants only). */
-export type CursorSourceAi = 'composer-2.5' | 'grok-4.5' | 'grok-4.6' | 'gemini-3.8-flash';
+export type CursorSourceAi = 'composer-2.5' | 'grok-4.5' | 'grok-4.6' | 'grok-4.7' | 'gemini-3.8-flash';
 
 /**
  * Explicit SDK selections so we never fall through to Fast defaults.
  * - Composer 2.5: standard (fast=false)
  * - Grok 4.5 / 4.6: Medium effort, non-fast
+ * - Grok 4.7: Medium reasoning effort, 256k context, non-fast
  * - Gemini 3.8 Flash (high): High effort
  */
 const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
@@ -35,6 +36,14 @@ const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
     id: 'grok-4.6',
     params: [
       { id: 'effort', value: 'medium' },
+      { id: 'fast', value: 'false' },
+    ],
+  },
+  'grok-4.7': {
+    id: 'grok-4.7',
+    params: [
+      { id: 'context', value: '256k' },
+      { id: 'reasoning_effort', value: 'medium' },
       { id: 'fast', value: 'false' },
     ],
   },
@@ -113,7 +122,7 @@ function buildTextOnlyPrompt(prompt: string): string {
 export class CursorAiProvider implements IAiProvider {
   sourceAI: CursorSourceAi;
 
-  constructor(sourceAi: CursorSourceAi = 'grok-4.6') {
+  constructor(sourceAi: CursorSourceAi = 'grok-4.7') {
     this.sourceAI = sourceAi;
   }
 

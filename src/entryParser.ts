@@ -6,8 +6,9 @@ Keep looping through the following steps until maxItems AI requests have been se
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
    a. For each chunk, generate a prompt using the entry_parser_prompt_3.txt file. Use the entry field as the input.
       Send the prompt to the AIProvider (make this a parameter).
-   b. Update the display_text, entry_type, base_form (from "display (base)" inflections; not separate Inflected Word/Phrase types),
-      and is_vulgar fields in the entry table with the results.
+   b. Update the display_text and entry_type in the entry table (from "display (base)" inflections; not separate Inflected Word/Phrase types).
+      Write inflected forms to inflected_entry (base_entry, inflected_entry, lang) rather than entry.base_form.
+      Inflected keys may still have their own entry row when they have senses that do not apply to the base form.
       Also set reviewed_status to "1".
       Overwrite the existing values for the fields.
       If the primary class is Nonsense, set display_text, familiarity_bucket, familiarity_score,
@@ -47,7 +48,7 @@ import {
 } from './ai/entryParserFormat';
 import { IAiProvider } from './ai/IAiProvider';
 import { matchParsedResultsByIdentity } from './lib/resultMatching';
-import { batchArray, entryToAllCaps, isGeminiTimeoutError, stripAccents } from './lib/utils';
+import { batchArray, isGeminiTimeoutError, stripAccents } from './lib/utils';
 
 const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
@@ -188,7 +189,6 @@ export function buildResultsToPersist(
       displayText: isNonsense ? '' : displayText,
       entryType: parsed.primary.entryType,
       baseForm: parsed.primary.baseForm,
-      isVulgar: parsed.isVulgar,
       reviewedStatus,
       secondaryClasses,
     });
@@ -196,7 +196,7 @@ export function buildResultsToPersist(
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): type=${parsed.primary.entryType}, ` +
         `form=${isNonsense ? 'NULL' : displayText}${parsed.primary.baseForm ? `, base=${parsed.primary.baseForm}` : ''}, ` +
-        `vulgar=${parsed.isVulgar}, secondary=${secondaryClasses.length}, ` +
+        `secondary=${secondaryClasses.length}, ` +
         `status=${reviewedStatus}${rejectedNote}` +
         `${isNonsense ? ', cleared display_text and familiarity/unity/quality fields' : ''}`,
     );
@@ -235,9 +235,52 @@ async function processBatch(
 
   await upsertEntryParserResults(resultsToPersist);
   console.log(
-    `${requestLabel}: updated display fields, vulgarity, reviewed_status, and secondary classes for ${resultsToPersist.length} entries`,
+    `${requestLabel}: updated display fields, reviewed_status, and secondary classes for ${resultsToPersist.length} entries`,
   );
   return resultsToPersist.length;
+}
+
+export async function parseProvidedEntries(
+  entries: EntryForEntryParser[],
+  provider: IAiProvider = cursorProvider,
+  parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
+): Promise<boolean> {
+  if (entries.length === 0) {
+    return false;
+  }
+
+  const concurrency = Math.max(1, parallelRequests);
+  const promptTemplate = await loadEntryParserPrompt3Async();
+  const chunks = batchArray(entries, ENTRIES_PER_REQUEST);
+  let timedOut = false;
+
+  console.log(
+    `Parsing ${entries.length} provided entries in ${chunks.length} batches (${concurrency} parallel)`,
+  );
+
+  for (let offset = 0; offset < chunks.length; offset += concurrency) {
+    const wave = chunks.slice(offset, offset + concurrency);
+    await Promise.all(
+      wave.map(async (chunk, waveIndex) => {
+        const batchNumber = offset + waveIndex + 1;
+        const requestLabel = `Entry parser batch ${batchNumber}/${chunks.length}`;
+        try {
+          await processBatch(chunk, promptTemplate, provider, requestLabel);
+        } catch (error) {
+          if (isGeminiTimeoutError(error)) {
+            timedOut = true;
+            console.warn(
+              `${requestLabel}: AI request took more than 10 minutes; abandoning and continuing`,
+            );
+            return;
+          }
+          throw error;
+        }
+      }),
+    );
+  }
+
+  return timedOut;
 }
 
 export async function entryParser(

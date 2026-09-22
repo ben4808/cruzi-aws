@@ -8,13 +8,13 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update the unity_bucket and unity_score fields in the entry table with the results.
       The unity_score is a direct mapping of the unity_bucket to a number:
-      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Variant = 2, Non-unit = 2, Nonsense = 1.
+      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Variant = 2, Formulaic = 2, Non-unit = 2, Nonsense = 1.
       If the (final) unity_bucket is Nonsense, also set familiarity_bucket, familiarity_score,
       quality_bucket, and quality_score to null.
    c. If any secondary classes get rated as Non-unit or Nonsense, delete them from the entry_secondary_class table.
       Do not delete secondary classes rated as Partial or Variant. For secondaries that are rated and kept, set their
       unity_bucket on the entry_secondary_class row.
-      If the primary class gets rated as Partial, Variant, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
+      If the primary class gets rated as Partial, Variant, Formulaic, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
       set the the entry row's entry_type and display_text to the secondary class's entry_type and display_text and then delete the row
       from the entry_secondary_class table.
    d. Set reviewed_status to "12" for the entry row.
@@ -52,6 +52,7 @@ export const UNITY_SCORES: Record<string, number> = {
   Formula: 3,
   Partial: 2,
   Variant: 2,
+  Formulaic: 2,
   'Non-unit': 2,
   Nonsense: 1,
 };
@@ -63,7 +64,7 @@ function isGoodUnityBucket(bucket: string): boolean {
 }
 
 function isBadUnityBucket(bucket: string): boolean {
-  return bucket === 'Partial' || bucket === 'Variant' || bucket === 'Non-unit' || bucket === 'Nonsense';
+  return bucket === 'Partial' || bucket === 'Variant' || bucket === 'Formulaic' || bucket === 'Non-unit' || bucket === 'Nonsense';
 }
 
 function isDeletableUnityBucket(bucket: string): boolean {

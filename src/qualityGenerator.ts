@@ -10,9 +10,11 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update a few fields in the entry table with the results:
       - quality_bucket
-      - quality_score (Pass 1 buckets = 20 except Sensitive = 30, Pass 2 buckets = 40, Normal = 30).
-        Pass 1: Non-unit, Uncommon Inflection, Clunky, Sensitive.
+      - quality_score (Pass 1 buckets = 20, Pass 2 buckets = 40, Normal = 30).
+        Pass 1: Non-unit, Uncommon Inflection, Clunky.
         Pass 2: Idiomatic, Interesting, Appealing, Positive, Trendy.
+        Vulgar and Sensitive are parenthetical flags, not buckets. Replace the entry's
+        entry_tags rows for 'vulgar' and 'sensitive' with the flags on this result.
       - reviewed_status = "1234"
 3. maxItems is the total number of AI requests to send before quitting (not the number of entries
    processed, and not the number of DB cycles).
@@ -46,7 +48,6 @@ const QUALITY_SCORES: Record<string, number> = {
   'Non-unit': 20,
   'Uncommon Inflection': 20,
   Clunky: 20,
-  Sensitive: 30,
   Idiomatic: 40,
   Interesting: 40,
   Appealing: 40,
@@ -81,7 +82,7 @@ function collectPromptPhrases(
 
 function buildResultsToPersist(
   entries: EntryForQualityGenerator[],
-  resultsByPhrase: Map<string, { bucket: string }>,
+  resultsByPhrase: Map<string, { bucket: string; flags?: string[] }>,
 ): QualityGeneratorResult[] {
   const resultsToPersist: QualityGeneratorResult[] = [];
 
@@ -102,17 +103,20 @@ function buildResultsToPersist(
       continue;
     }
 
+    const flags = parsed.flags ?? [];
     resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
       qualityBucket: parsed.bucket,
       qualityScore,
       reviewedStatus: '1234',
+      flags,
     });
 
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): quality_bucket=${parsed.bucket}, ` +
-        `quality_score=${qualityScore}, reviewed_status=1234`,
+        `quality_score=${qualityScore}, reviewed_status=1234` +
+        `${flags.length > 0 ? `, flags=${flags.join(',')}` : ''}`,
     );
   }
 

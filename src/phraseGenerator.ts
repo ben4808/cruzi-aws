@@ -12,18 +12,19 @@ Keep looping through the following steps until maxItems queue items have been pr
       Populate the banned list with the display_text from the results from step a.
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
-   e. Run the phrases through entry_parser_prompt_3.txt as entryParser does: display_text, entry_type, base_form, is_vulgar,
-      secondary classes (when secondary_display differs from primary), and the display-key match check (Failed parse).
+   e. Run the phrases through entry_parser_prompt_3.txt as entryParser does: display_text, entry_type, inflected_entry
+      mappings from parsed base forms, secondary classes (when secondary_display differs from primary), and the display-key match check (Failed parse).
    f. Run successful parses through unity_prompt_3.txt as unityGenerator does (primary + secondaries, promote a good secondary
-      when the primary is Partial/Variant/Non-unit/Nonsense, delete Non-unit/Nonsense secondaries, keep Partial/Variant secondaries).
+      when the primary is Partial/Variant/Formulaic/Non-unit/Nonsense, delete Non-unit/Nonsense secondaries, keep Partial/Variant/Formulaic secondaries).
    g. Run remaining items through familiarity_prompt_3.txt as familiarityGenerator does (include class and unity bucket, secondaries
       with their own class/unity, Obscure→Partial/Niche inference via get_partial_phrase_items, delete Obscure/Barely Exists/Nonsense
       secondaries, promote the highest-familiarity class). Skip Nonsense entry_type/unity_bucket.
-   h. For each phrase from step d, insert a phrase_generator_result row with all fields (base_form, is_vulgar, entry_type,
+   h. For each phrase from step d, insert a phrase_generator_result row with all fields (base_form, entry_type,
       display_text, unity_bucket, familiarity_bucket). Persist remaining secondaries to entry_secondary_class for keys that are
       not already in entry (same table/keys as entry).
    i. Insert vetted phrases into the entry table (not Nonsense type; unity not Partial/Variant/Non-unit/Nonsense; familiarity not
-      Obscure/Barely Exists/Nonsense; not Failed parse), including display_text, entry_type, base_form, is_vulgar, unity
+      Obscure/Barely Exists/Nonsense; not Failed parse), including display_text, entry_type, inflected_entry
+      mappings from parsed base forms, unity
       bucket/score, familiarity bucket/score, and reviewed_status "123". Do not overwrite existing entry fields with non-null
       values; only insert new rows or populate null fields on existing rows. For entries that were not already in the entry table,
       insert an entry_tag record with the tag "phrase_generator".
@@ -247,7 +248,6 @@ async function parsePhrasesForPipeline(
     item.displayText = parsed.displayText || item.displayText;
     item.entryType = parsed.entryType;
     item.baseForm = parsed.baseForm;
-    item.isVulgar = parsed.isVulgar;
     item.secondaries = (parsed.secondaryClasses ?? []).map((secondary) => ({
       secondaryClass: secondary.secondaryClass,
       secondaryDisplay: secondary.secondaryDisplay,

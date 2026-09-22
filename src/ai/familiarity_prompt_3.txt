@@ -6,7 +6,7 @@ The classification will be one of:
   Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix
 
 The unity bucket will be one of:
-  Concept, Collocation, Formula, Partial, Variant, Non-unit, Nonsense
+  Concept, Collocation, Formula, Partial, Variant, Formulaic, Non-unit, Nonsense
 
 Your task is to classify each item into buckets according to its familiarity.
 

@@ -16,8 +16,6 @@ Uncommon Inflection: An inflection or derivation that is rarely used in modern n
 Clunky: The phrasing is noticeably worse than a better alternative.
   Includes items that are shortened or abbreviated in a way that seems contrived or non-standard.
   Includes all items with unity bucket of Variant.
-Sensitive: Hits on a sensitive or touchy subject for some people. May bring up insecurities or negative feelings.
-  Includes provocative political topics.
 
 PASS 2
 Again, choose the first bucket that applies, evaluating from top to bottom.
@@ -36,20 +34,29 @@ Trendy: Saying that feels hip, savvy, and fluent in slang and cultural reference
   Includes tech buzzwords.
   Includes colloquial sayings.
 
+PASS 3
+Determine whether these attributes either apply to the item or they don't.
+
+Vulgar: Vulgar and inappropriate to use in formal settings or around children.
+Sensitive: Hits on a sensitive or touchy subject for some people. May bring up insecurities or negative feelings.
+  Includes provocative political topics.
+
 DEFAULT
-An item that doesn't fit into any bucket should be classified as "Normal".
+An item that doesn't fit into any bucket from Pass 1 or Pass 2 should be classified as "Normal".
 
 OUTPUT
 Output according to the following format, one item per line.
 Do not re-output the unity or familiarity buckets.
 Don't include any explanatory or auxiliary text.
 
-<input item> : <bucket name>
+<input item> : <bucket name> (Vulgar, Sensitive)
 
 Examples:
 crown : Normal
 George Foreman : Interesting
 funnest : Uncommon Inflection
+shit-faced : Idiomatic (Vulgar)
+obese : Normal (Sensitive)
 
 WORDS/PHRASES
 

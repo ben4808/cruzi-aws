@@ -40,31 +40,28 @@ Preserve the input sequence of letters and numbers exactly, in order. Only capit
 - "AT" may be transformed to "@" where appropriate. 
 Don't automatically capitalize the first word. (except when conventional, e.g. a proper name)
 
-3. Vulgarity
-Is the item offensive, crude, highly inappropriate, or unfit to use in front of children?  Yes or No
-
 OUTPUT
 Output the items according to the following output examples. Don't include any explanatory or auxiliary text.
 
-<input> : <Yes or No> : <primary class> : <primary display>[: <secondary class> : <secondary display>]...
+<input> : <primary class> : <primary display>[: <secondary class> : <secondary display>]...
 
 "display" is the natural form for that class. If that class is inflected, write display (base) in the same field (crocs (croc), orders food (order food)).
 Repeat : <class> : <display> only when another class applies. Stop when there are no more.
 
 EXAMPLES
-SIGN : No : Word : sign
-DAMNIT : Yes : Phrase : damn it
-AANDW : No : Proper Name : A&W
-VEIGHT : No : Phrase : V-eight
-CROCS : No : Word : crocs (croc) : Proper Name : Crocs
-ORDERSFOOD : No : Phrase : orders food (order food)
-RAM : No : Word : ram : Proper Name : Ram : Acronym/Abbreviation : RAM
-CANDIES : No : Word : candies (candy)
-DALLASTEXAS : No : Proper Name : Dallas, Texas
-TRI : No : Prefix/Suffix : tri-
-NASA : No : Acronym/Abbreviation : NASA
-IDS : No : Acronym/Abbreviation : IDs (ID) 
-HKJLJ : No : Nonsense : HKJLJ
+SIGN : Word : sign
+DAMNIT : Phrase : damn it
+AANDW : Proper Name : A&W
+VEIGHT : Phrase : V-eight
+CROCS : Word : crocs (croc) : Proper Name : Crocs
+ORDERSFOOD : Phrase : orders food (order food)
+RAM : Word : ram : Proper Name : Ram : Acronym/Abbreviation : RAM
+CANDIES : Word : candies (candy)
+DALLASTEXAS : Proper Name : Dallas, Texas
+TRI : Prefix/Suffix : tri-
+NASA : Acronym/Abbreviation : NASA
+IDS : Acronym/Abbreviation : IDs (ID) 
+HKJLJ : Nonsense : HKJLJ
 
 WORDS/PHRASES
 

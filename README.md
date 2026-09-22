@@ -1,5 +1,5 @@
 The idea here is that words and phrases can be classified by AI according to the following dimensions:
-1. Idiomacity: How cohesive a phrase is, how much it represents a single, fixed idea and not just a random collection of words.
+1. Unity: How cohesive a phrase is, how much it represents a single, fixed idea and not just a random collection of words.
 2. Familiarity: How recognizable is it to the general population? Is it in people's active vocabulary?
 3. Quality: How cool is it? Does it spark joy? Is it interesting?
 

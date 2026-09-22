@@ -7,7 +7,7 @@ Keep looping through the following steps until maxBatches AI requests have been 
 4. Aggregate all parsed results from the parallel requests, then perform a single DB upsert:
     - entry_type
     - display_text
-    - base_form
+    - inflected_entry mapping from parsed base_form (not stored on entry)
     - unity_bucket
     - unity_score (Concept = 5, Collocation = 4, Formula = 3, Non-unit = 2, Nonsense = 1)
     - familiarity_bucket

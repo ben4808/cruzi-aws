@@ -16,11 +16,13 @@ TASKS
 
 2. Generate senses from the item alone. Ignore Existing Senses until step 3.
   - The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation.
-     Generate senses of all presented forms or even forms not presented.
+  - Generate senses of all presented forms or even forms not presented, as long as the sequence of alphanumeric characters is preserved.
+     - e.g. for the word "edge", generate senses for edge, Edge, and EDGE, but not for "on edge" or "The Edge"
+     - e.g. for the phrase "blue sky/BLueSky", generate senses for "blue sky" and "BlueSky" but not "blue sky law"
   - Take extra care to generate the sense that is described or hinted at by the HINT, if one is given.
   - Different part of speech → different sense.
   - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
-     Only output a sense when that classification is actually used.
+     - Only output a sense when that classification is actually used.
   - Each generated sense has its own display text: the usual way that reading is written. Do not expand an acronym into its full phrase as display text.
   - One meaning per sense. If you would write "A or B", split into two senses.
 

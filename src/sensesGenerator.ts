@@ -15,14 +15,14 @@ Keep looping through the following steps until maxItems AI requests have been se
         sense, that sense ID should be conserved even as the summary etc. are updated.
    c. Whether the entry already existed or was just created, update the entry's display_text and entry_type
       from the sense that was deemed Primary (display_text and classification). If that Primary sense has a
-      base form, also update the entry's base_form.
+      base form, write it to inflected_entry rather than entry.base_form.
       If a Word or Phrase sense has Base form, set that sense's classification to Inflected Word or Inflected Phrase.
       Proper Name, Acronym/Abbreviation, and Prefix/Suffix are left unchanged.
       If that sense is Primary, entry_type follows it.
       If the AI returns Nonsense, still update the entry but set entry_type to "Nonsense".
    d. Set the entry's loading_status to "Senses" and reviewed_status to "1".
-      Do not update any other fields on the entry table besides display_text, entry_type, base_form,
-      loading_status, and reviewed_status.
+      Do not update any other fields on the entry table besides display_text, entry_type,
+      loading_status, and reviewed_status. Inflection mappings go in inflected_entry.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -82,7 +82,7 @@ async function loadSensesPromptAsync(): Promise<string> {
   }
 }
 
-interface ParsedSense {
+export interface ParsedSense {
   partOfSpeech: string;
   classification: string;
   frequency: string;
@@ -106,8 +106,8 @@ function splitListField(text: string): string[] {
     .filter((item) => item !== '' && item.toLowerCase() !== '(none)');
 }
 
-const SENSE_HEADER_REGEX =
-  /\(([^,\n)]+),\s*([^,\n)]+),\s*(Primary|Common|Uncommon)\)\s+([^\n]+)/g;
+const SENSE_HEADER_REGEX = /\(([^,\n)]+),\s*([^)\n]+)\)\s+([^\n]+)/g;
+const SENSE_FREQUENCY_REGEX = /^(.*?),\s*(Primary|Common|Uncommon)$/;
 
 const SENSE_FIELD_LABELS = [
   'Base form',
@@ -153,12 +153,19 @@ function parseSenseBlock(
   const fieldStart = blockContent.search(/^(?:Base form|Natural)\s*:/m);
   const headerSection = (fieldStart === -1 ? blockContent : blockContent.slice(0, fieldStart)).trim();
   const colonIndex = headerSection.indexOf(':');
-  if (colonIndex === -1) {
+  const summaryRaw = (colonIndex === -1 ? headerSection : headerSection.slice(0, colonIndex))
+    .replace(/\s+/g, ' ')
+    .trim();
+  const definitionRaw = (colonIndex === -1 ? '' : headerSection.slice(colonIndex + 1))
+    .replace(/\s+/g, ' ')
+    .trim();
+  const isLiteral = summaryRaw.toLowerCase() === 'literal';
+  if (colonIndex === -1 && !isLiteral) {
     return null;
   }
 
-  const summary = headerSection.slice(0, colonIndex).replace(/\s+/g, ' ').trim();
-  const definition = headerSection.slice(colonIndex + 1).replace(/\s+/g, ' ').trim();
+  const summary = isLiteral ? 'Literal' : summaryRaw;
+  const definition = isLiteral ? '' : definitionRaw;
 
   const baseFormText = extractLabeledField(blockContent, 'Base form', SENSE_FIELD_LABELS.slice(1));
   const naturalText = extractLabeledField(blockContent, 'Natural', SENSE_FIELD_LABELS.slice(2));
@@ -174,7 +181,7 @@ function parseSenseBlock(
     [],
   );
 
-  if (!summary || !definition || naturalText === undefined || colloquialText === undefined || alternativesText === undefined) {
+  if (!summary || (!definition && !isLiteral) || naturalText === undefined || colloquialText === undefined || alternativesText === undefined) {
     return null;
   }
 
@@ -198,7 +205,7 @@ function parseSenseBlock(
   };
 }
 
-function parseSensesResponse(response: string): ParsedSense[] {
+export function parseSensesResponse(response: string): ParsedSense[] {
   const senses: ParsedSense[] = [];
   const normalized = response.replace(/```(?:\w+)?/g, '').trim();
   const headers: RegExpExecArray[] = [];
@@ -215,11 +222,14 @@ function parseSensesResponse(response: string): ParsedSense[] {
     const blockEnd = i + 1 < headers.length ? headers[i + 1].index! : normalized.length;
     const blockContent = normalized.slice(blockStart, blockEnd).trim();
 
+    const frequencyMatch = header[2].trim().match(SENSE_FREQUENCY_REGEX);
+    const classification = frequencyMatch ? frequencyMatch[1].trim() : header[2].trim();
+    const frequency = frequencyMatch ? frequencyMatch[2] : '';
     const parsed = parseSenseBlock(
       header[1],
-      header[2],
+      classification,
+      frequency,
       header[3],
-      header[4],
       blockContent,
     );
     if (parsed) {
@@ -391,7 +401,7 @@ async function processEntry(
     console.log(
       `${requestLabel}: updated entry ${item.entry} display_text="${primarySense.displayText ?? item.displayText}" ` +
         `entry_type="${primarySense.classification ?? ''}"` +
-        `${primarySense.baseForm ? `, base_form="${primarySense.baseForm}"` : ''}` +
+        `${primarySense.baseForm ? `, inflected_entry base="${primarySense.baseForm}"` : ''}` +
         `, loading_status=Senses, reviewed_status=1`,
     );
   } else {

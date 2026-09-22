@@ -5,8 +5,6 @@ import { entryInfoGenerator } from './entryInfoGenerator';
 import { exampleSentenceGenerator } from './exampleSentenceGenerator';
 import { familiarityGenerator } from './familiarityGenerator';
 import { qualityGenerator } from './qualityGenerator';
-import { idiomacityGenerator } from './idiomacityGenerator';
-import { idiomacityGeneratorRound2 } from './idiomacityGeneratorRound2';
 import { scrabbleLoader } from './scrabbleLoader';
 import { displayNameFixer } from './displayNameFixer';
 import { accentFixer } from './accentFixer';
@@ -25,6 +23,7 @@ import { phraseGeneratorMiner } from './phraseGeneratorMiner';
 import { shortPhraseGenerator } from './shortPhraseGenerator';
 import { sensesGenerator } from './sensesGenerator';
 import { crosswordListExtractor } from './crosswordListExtractor';
+import { crosswordProcessor } from './crosswordProcessor';
 
 const aiProvider = new CursorAiProvider(
   'grok-4.6',
@@ -49,6 +48,10 @@ const aiProvider = new CursorAiProvider(
 //   }
 // })();
 
+crosswordProcessor(aiProvider, 10)
+  .then(() => console.log("Crossword processor completed successfully."))
+  .catch(error => console.error("Error in crossword processor: ", error));
+
 // crosswordListExtractor(3, 5, true)
 //   .then(() => console.log("Crossword list extractor completed successfully."))
 //   .catch(error => console.error("Error in crossword list extractor: ", error));
@@ -57,9 +60,9 @@ const aiProvider = new CursorAiProvider(
 //   .then(() => console.log("Entry parser completed successfully."))
 //   .catch(error => console.error("Error in entry parser: ", error));
 
-phraseGenerator(aiProvider, 1000, 10)
-  .then(() => console.log("Phrase generator completed successfully."))
-  .catch(error => console.error("Error in phrase generator: ", error));
+// phraseGenerator(aiProvider, 1000, 10)
+//   .then(() => console.log("Phrase generator completed successfully."))
+//   .catch(error => console.error("Error in phrase generator: ", error));
 
 // shortPhraseGenerator(aiProvider, 5, 500, 10, "VI___")
 //   .then(() => console.log("Short phrase generator completed successfully."))
@@ -88,14 +91,6 @@ phraseGenerator(aiProvider, 1000, 10)
 // allExploredLoader()
 //   .then(() => console.log("AllExplored loader completed successfully."))
 //   .catch(error => console.error("Error in AllExplored loader: ", error));
-
-// idiomacityGenerator()
-//   .then(() => console.log("Idiomacity generator completed successfully."))
-//   .catch(error => console.error("Error in idiomacity generator: ", error));
-
-// idiomacityGeneratorRound2()
-//   .then(() => console.log("Idiomacity generator round 2 completed successfully."))
-//   .catch(error => console.error("Error in idiomacity generator round 2: ", error));
 
 // scrabbleLoader()
 //   .then(() => console.log("Scrabble loader completed successfully."))

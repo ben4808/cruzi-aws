@@ -15,7 +15,8 @@ GUIDELINES
 - Plural surnames should be rated as Concept.
 - If multiple senses exist, pick the most conventionally lexicalized one.
 
-IMPORTANT: Evaluate the buckets one at a time, starting at the top. Choose the first bucket that applies and then move on.
+IMPORTANT: Evaluate first Concept, Collocation, and Formula buckets, and if the item doesn't fit in any of those, evaluate the rest
+  in numerical order.
 
 BUCKETS
 1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain. 
@@ -24,6 +25,7 @@ BUCKETS
     Includes all standard inflections.
     Ask: "Would a native speaker treat this exact string as one stored unit,
       or just a description built on the fly?" Description → not Concept.
+    If an item would fit here except it is a formulaic name, consider placing it in the Formulaic bucket instead.
 2. Collocation: A reusable phrase whose meaning is exactly its constituent words, but the exact string is the preferred locked wording in its register.
     Includes light-verb constructions / locked V+N frames that pass the Ask below.
     Don't penalize for inflections.
@@ -38,9 +40,11 @@ BUCKETS
     Includes prefixes and suffixes.
     Does not include standard shortenings of a word.
 5. Variant: Variant spelling that is valid but non-dominant.
-6. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
+6. Formulaic: Could refer to a specific concept, but has a very formulaic name.
+    e.g. act III, Mac OSX, Psalm 25
+7. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
     Does not include single words.
-7. Nonsense: Everything else.
+8. Nonsense: Everything else.
 
 OUTPUT
 Output accoring to the following format, one item per line. Don't include any explanatory or auxiliary text.

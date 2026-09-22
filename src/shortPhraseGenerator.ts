@@ -13,12 +13,12 @@ Keep looping through the following steps until maxItems queue items have been pr
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
    e. Normalize those phrases to ALLCAPS and run them through entry_parser_prompt_3.txt. Parse entry_type, display_text,
-      base_form, and is_vulgar. Match parser/unity/familiarity results by identity only (never shift leftover rows).
+      and base_form. Match parser/unity/familiarity results by identity only (never shift leftover rows).
    f. Run the parsed phrases through unity_prompt_3.txt, then through familiarity_prompt_3.txt.
    g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include entry_type, display_text,
-      base_form, is_vulgar, unity_bucket, and familiarity_bucket where possible.
+      base_form, unity_bucket, and familiarity_bucket where possible.
    h. Insert into the entry table the phrases whose entry_type is not Nonsense, unity_bucket is not Variant, Non-unit, or Nonsense,
-      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include entry_type, display_text, base_form, is_vulgar,
+      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include entry_type, display_text, base_form,
       unity bucket/score, and familiarity bucket/score. Do not overwrite entry fields with non-null values; only insert new rows
       or populate null fields on existing rows. For entries that were not already in the entry table, insert an entry_tag record
       with the tag "short_phrase_generator".
@@ -311,7 +311,6 @@ async function processQueueItem(
   const displayByEntry = new Map<string, string>();
   const entryTypeByEntry = new Map<string, string>();
   const baseFormByEntry = new Map<string, string>();
-  const isVulgarByEntry = new Map<string, boolean>();
   for (const entryKey of entryKeys) {
     const parsed = parsedByEntry.get(entryKey);
     if (parsed) {
@@ -319,9 +318,6 @@ async function processQueueItem(
       displayByEntry.set(entryKey, parsed.displayText);
       if (parsed.baseForm) {
         baseFormByEntry.set(entryKey, parsed.baseForm);
-      }
-      if (parsed.isVulgar != null) {
-        isVulgarByEntry.set(entryKey, parsed.isVulgar);
       }
     } else {
       displayByEntry.set(entryKey, uniqueByEntryKey.get(entryKey)!);
@@ -373,7 +369,6 @@ async function processQueueItem(
     entryType: entryTypeByEntry.get(entryKey),
     displayText: displayByEntry.get(entryKey),
     baseForm: baseFormByEntry.get(entryKey),
-    isVulgar: isVulgarByEntry.get(entryKey),
     unityBucket: unityByEntry.get(entryKey)?.bucket,
     familiarityBucket: familiarityByEntry.get(entryKey)?.bucket,
   }));
@@ -412,7 +407,6 @@ async function processQueueItem(
         displayText: string;
         entryType: string;
         baseForm?: string;
-        isVulgar?: boolean;
         unityBucket: string;
         unityScore: number;
         familiarityBucket: string;
@@ -439,7 +433,6 @@ async function processQueueItem(
           displayText: displayByEntry.get(entryKey)!,
           entryType: entryTypeByEntry.get(entryKey)!,
           baseForm: baseFormByEntry.get(entryKey),
-          isVulgar: isVulgarByEntry.get(entryKey),
           unityBucket: unity.bucket,
           unityScore,
           familiarityBucket: familiarity.bucket,
@@ -460,7 +453,6 @@ async function processQueueItem(
       displayText: item.displayText,
       entryType: item.entryType,
       baseForm: item.baseForm,
-      isVulgar: item.isVulgar,
       unityBucket: item.unityBucket,
       unityScore: item.unityScore,
       familiarityBucket: item.familiarityBucket,

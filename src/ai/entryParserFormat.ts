@@ -22,7 +22,6 @@ export interface ParsedEntryClass {
 
 export interface ParsedEntryParser3Result {
   entry: string;
-  isVulgar: boolean;
   primary: ParsedEntryClass;
   secondary: ParsedEntryClass[];
 }
@@ -92,20 +91,6 @@ export function parseEntryParser3Line(line: string): ParsedEntryParser3Result | 
     return null;
   }
 
-  const vulgarity = parts.length >= 4 ? parseVulgarity(parts[1]) : null;
-  if (vulgarity !== null) {
-    const primary = parseEntryClass(parts[2], parts[3]);
-    if (!primary) {
-      return null;
-    }
-    return {
-      entry: parts[0],
-      isVulgar: vulgarity,
-      primary,
-      secondary: parseSecondaryClasses(parts, 4),
-    };
-  }
-
   const primary = parseEntryClass(parts[1], parts[2]);
   if (!primary) {
     return null;
@@ -113,7 +98,6 @@ export function parseEntryParser3Line(line: string): ParsedEntryParser3Result | 
 
   return {
     entry: parts[0],
-    isVulgar: false,
     primary,
     secondary: parseSecondaryClasses(parts, 3),
   };

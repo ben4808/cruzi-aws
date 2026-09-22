@@ -7,12 +7,6 @@ import { IAiProvider } from './IAiProvider';
 import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
 import { matchPhrasesToParsed } from '../lib/resultMatching';
 
-export interface ParsedIdiomacityResult {
-  parsedForm: string;
-  category: string;
-  score: number;
-}
-
 export interface ParsedUnityBucketResult {
   parsedForm: string;
   bucket: string;
@@ -80,6 +74,7 @@ const UNITY_BUCKETS = new Set([
   'Formula',
   'Partial',
   'Variant',
+  'Formulaic',
   'Non-unit',
   'Nonsense',
 ]);
@@ -100,36 +95,6 @@ const FAMILIARITY_BUCKETS = new Set([
 export interface ParsedFamiliarityBucketResult {
   parsedForm: string;
   bucket: string;
-}
-
-export interface ScoredPhrase {
-  phrase: string;
-  entryKey: string;
-  displayText: string;
-  entryType: string;
-  baseForm?: string;
-  idiomacityScore: number;
-  familiarityScore: number;
-}
-
-export async function loadIdiomacityPromptAsync(): Promise<string> {
-  try {
-    const promptPath = './src/ai/phrase_idiomacity_prompt.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
-  } catch (err) {
-    console.error('Error reading idiomacity prompt file:', err);
-    throw err;
-  }
-}
-
-async function loadUnityPromptAsync(): Promise<string> {
-  try {
-    const promptPath = './src/ai/unity_prompt.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
-  } catch (err) {
-    console.error('Error reading unity prompt file:', err);
-    throw err;
-  }
 }
 
 export async function loadUnityBucketPromptAsync(): Promise<string> {
@@ -200,63 +165,6 @@ export async function loadSpokenFamiliarityPromptAsync(): Promise<string> {
     console.error('Error reading spoken familiarity prompt file:', err);
     throw err;
   }
-}
-
-export function parseIdiomacityResponse(response: string): ParsedIdiomacityResult[] {
-  const summaryIndex = response.indexOf('SUMMARY:');
-  if (summaryIndex === -1) {
-    return [];
-  }
-
-  const summaryText = response.slice(summaryIndex + 'SUMMARY:'.length);
-  const lines = summaryText.split('\n').map((line) => line.trim()).filter((line) => line !== '');
-
-  const results: ParsedIdiomacityResult[] = [];
-  for (const line of lines) {
-    const parts = line.split(' : ').map((part) => part.trim());
-    if (parts.length < 3) {
-      continue;
-    }
-
-    const score = parseInt(parts[2], 10);
-    if (Number.isNaN(score)) {
-      continue;
-    }
-
-    results.push({
-      parsedForm: parts[0],
-      category: parts[1],
-      score,
-    });
-  }
-
-  return results;
-}
-
-function parseUnityResponse(response: string): ParsedIdiomacityResult[] {
-  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
-
-  const results: ParsedIdiomacityResult[] = [];
-  for (const line of lines) {
-    const separatorIndex = line.lastIndexOf(' : ');
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const parsedForm = line.slice(0, separatorIndex).trim();
-    const score = parseInt(line.slice(separatorIndex + 3).trim(), 10);
-    if (!parsedForm || Number.isNaN(score)) {
-      continue;
-    }
-
-    results.push({
-      parsedForm,
-      category: '',
-      score,
-    });
-  }
-
-  return results;
 }
 
 export function parseUnityBucketResponse(response: string): ParsedUnityBucketResult[] {
@@ -389,7 +297,7 @@ function stripTrailingFamiliarityPromptAnnotations(text: string): string {
   while (result !== previous) {
     previous = result;
     result = result
-      .replace(/\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i, '')
+      .replace(/\s*\((Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i, '')
       .replace(/\s*\((Word|Phrase|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
       .trim();
   }
@@ -409,7 +317,6 @@ const QUALITY_BUCKETS = new Set([
   'Non-unit',
   'Uncommon Inflection',
   'Clunky',
-  'Sensitive',
   'Idiomatic',
   'Interesting',
   'Appealing',
@@ -436,21 +343,41 @@ function stripTrailingQualityPromptAnnotations(text: string): string {
     previous = result;
     result = result
       .replace(
-        /\s*\((Concept|Collocation|Formula|Partial|Non-unit|Nonsense)\)\s*$/i,
+        /\s*\((Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i,
         '',
       )
       .replace(
-        /\s*\((Easy Collocation|Beginner Core|Ubiquitous|Common Name|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
+        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
         '',
       )
+      .replace(/\s*\((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?\)\s*$/i, '')
       .trim();
   }
   return result;
 }
 
+const QUALITY_FLAG_SUFFIX =
+  /\s*\(((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?)\)\s*$/i;
+
+function splitQualityBucketAndFlags(raw: string): { bucket: string; flags: string[] } {
+  const match = raw.match(QUALITY_FLAG_SUFFIX);
+  if (!match || match.index == null) {
+    return { bucket: raw.trim(), flags: [] };
+  }
+
+  const flags = [...new Set(
+    match[1]
+      .split(',')
+      .map((flag) => flag.trim().toLowerCase())
+      .filter((flag) => flag === 'vulgar' || flag === 'sensitive'),
+  )];
+  return { bucket: raw.slice(0, match.index).trim(), flags };
+}
+
 export interface ParsedQualityBucketResult {
   parsedForm: string;
   bucket: string;
+  flags: string[];
 }
 
 export async function loadQualityBucketPrompt3Async(): Promise<string> {
@@ -469,17 +396,19 @@ export function parseQualityBucketResponse(response: string): ParsedQualityBucke
   const results: ParsedQualityBucketResult[] = [];
   for (const line of lines) {
     const cleaned = line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
-    const parsed = parseDisplayTextAndBucket(cleaned, canonicalQualityBucket);
-    if (!parsed) {
+    const lastColon = cleaned.lastIndexOf(':');
+    if (lastColon <= 0) {
       continue;
     }
 
-    const parsedForm = stripTrailingQualityPromptAnnotations(parsed.parsedForm);
-    if (!parsedForm) {
+    const { bucket: bucketText, flags } = splitQualityBucketAndFlags(cleaned.slice(lastColon + 1));
+    const bucket = canonicalQualityBucket(bucketText);
+    const parsedForm = stripTrailingQualityPromptAnnotations(cleaned.slice(0, lastColon).trim());
+    if (!bucket || !parsedForm) {
       continue;
     }
 
-    results.push({ parsedForm, bucket: parsed.bucket });
+    results.push({ parsedForm, bucket, flags });
   }
 
   return results;
@@ -661,7 +590,6 @@ export function parseEntryParser3PrimaryResponse(response: string): ParsedEntryP
     entryType: parsed.primary.entryType,
     displayText: parsed.primary.displayText,
     baseForm: parsed.primary.baseForm,
-    isVulgar: parsed.isVulgar,
   }));
 }
 
@@ -700,7 +628,6 @@ export async function parseEntriesWithEntryParser3(
     entryType: parsed.primary.entryType,
     displayText: parsed.primary.displayText,
     baseForm: parsed.primary.baseForm,
-    isVulgar: parsed.isVulgar,
   }));
   const matches = matchEntryParserResultsToEntries(entries, parsedResults);
   const matchedCount = matches.filter((match) => match !== null).length;
@@ -791,13 +718,6 @@ export async function parseEntriesWithStrictDomainNames(
   return resultsByEntry;
 }
 
-export function matchIdiomacityResultsToPhrases(
-  phrases: string[],
-  parsedResults: ParsedIdiomacityResult[],
-): Array<{ phrase: string; parsed: ParsedIdiomacityResult } | null> {
-  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.parsedForm]);
-}
-
 export function matchFamiliarityResultsToPhrases(
   phrases: string[],
   parsedResults: ParsedFamiliarityResult[],
@@ -806,36 +726,6 @@ export function matchFamiliarityResultsToPhrases(
     parsed.entry,
     parsed.displayText,
   ]);
-}
-
-export async function scorePhrasesForIdiomacity(
-  phrases: string[],
-  provider: GeminiWebAiProvider,
-): Promise<Map<string, ParsedIdiomacityResult>> {
-  const resultsByPhrase = new Map<string, ParsedIdiomacityResult>();
-  if (phrases.length === 0) {
-    return resultsByPhrase;
-  }
-
-  const promptTemplate = await loadUnityPromptAsync();
-  const promptData = phrases.join('\n');
-  const prompt = promptTemplate.replace('[[DATA]]', promptData);
-
-  console.log(`Sending unity (idiomacity) prompt for ${phrases.length} phrases`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
-  console.log(`Received unity response (${aiResponse.length} characters)`);
-
-  const parsedResults = parseUnityResponse(aiResponse);
-  const matches = matchIdiomacityResultsToPhrases(phrases, parsedResults);
-
-  for (const match of matches) {
-    if (!match) {
-      continue;
-    }
-    resultsByPhrase.set(match.phrase, match.parsed);
-  }
-
-  return resultsByPhrase;
 }
 
 export async function scorePhrasesForFamiliarity(
@@ -1010,69 +900,4 @@ export function computeSpokenFamiliarityScore(
   }
 
   return aiFamiliarityScore;
-}
-
-function combinedScore(item: ScoredPhrase): number {
-  return item.idiomacityScore + item.familiarityScore / 10;
-}
-
-export function dedupeScoredPhrasesByEntryKey(phrases: ScoredPhrase[]): ScoredPhrase[] {
-  const byEntryKey = new Map<string, ScoredPhrase>();
-
-  for (const item of phrases) {
-    const existing = byEntryKey.get(item.entryKey);
-    if (!existing || combinedScore(item) > combinedScore(existing)) {
-      byEntryKey.set(item.entryKey, item);
-    }
-  }
-
-  const deduped = [...byEntryKey.values()];
-  const collapsed = phrases.length - deduped.length;
-  if (collapsed > 0) {
-    console.log(
-      `Collapsed ${collapsed} qualifying phrases that mapped to duplicate entry keys`,
-    );
-  }
-
-  return deduped;
-}
-
-export function combinePhraseScores(
-  phrases: string[],
-  idiomacityByPhrase: Map<string, ParsedIdiomacityResult>,
-  familiarityByPhrase: Map<string, ParsedFamiliarityResult>,
-  minIdiomacityScore: number,
-  minFamiliarityScore: number,
-): ScoredPhrase[] {
-  const minFamiliarityStored = Math.round(minFamiliarityScore * 10);
-  const qualifying: ScoredPhrase[] = [];
-
-  for (const phrase of phrases) {
-    const idiomacity = idiomacityByPhrase.get(phrase);
-    const familiarity = familiarityByPhrase.get(phrase);
-
-    if (!idiomacity || !familiarity) {
-      continue;
-    }
-
-    if (idiomacity.score < minIdiomacityScore) {
-      continue;
-    }
-
-    if (familiarity.familiarityScore < minFamiliarityStored) {
-      continue;
-    }
-
-    qualifying.push({
-      phrase,
-      entryKey: entryToAllCaps(familiarity.displayText),
-      displayText: familiarity.displayText,
-      entryType: familiarity.entryType,
-      baseForm: familiarity.baseForm,
-      idiomacityScore: idiomacity.score,
-      familiarityScore: familiarity.familiarityScore,
-    });
-  }
-
-  return dedupeScoredPhrasesByEntryKey(qualifying);
 }

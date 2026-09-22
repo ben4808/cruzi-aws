@@ -3,20 +3,20 @@ You are given a list of words and phrases, along with the sense that they must b
 
 Your task is to find 4 references for each item. The references will come from the following categories:
 
-- Literature. Includes books and poetry.
+- Literature. Includes excerpts from books and poetry.
 - Quote. Includes spoken quotes from famous people, proverbs, and cultural sayings.
 - Movies/TV. Includes quotes from movies, television, and online films.
-- Music. Includes song lyrics, song titles, and album titles.
+- Music. Includes song lyrics.
 
 GUIDELINES
 - All references must highlight specifically the given sense of the item. The item in question
-   must appear in the reference text.
+   must appear in the reference text. Include some context around the item where possible.
 - Try to include at least one reference from each category. If none could be found for a category,
    simply output "(None)" for that category.
-- Include a source or bylines for each reference. For example, "Friends, Season 2 Episode 3",
-   "The Handmaid's Tale by Margaret Atwood", "Barack Obama", "Born to be Wild by Steppenwolf".
+- Include a source or byline for each reference. For example, "Friends, Season 2 Episode 3",
+   "The Handmaid's Tale by Margaret Atwood", "Barack Obama", "Born to be Wild by Steppenwolf",
+   "The Hangover (2009)".
 - Include a web link to the work in question with each reference.
-- If the reference is a title, just output the title itself as the reference text.
 
 INPUT
 One item per line in the following format:
