@@ -18,6 +18,7 @@ Keep looping through the following steps until maxItems AI requests have been se
         per AI batch for phrases that start or end with those items (space-separated, e.g. "Velva"
         matches "Aqua Velva" but not "AqueVelva"). If any such phrase has familiarity_score >= 20,
         overwrite the item's unity bucket to Partial (unity_score 2) and familiarity bucket to Niche.
+      - domain, when the prompt includes a parenthetical domain/area
       - reviewed_status = "123"
    c. If any secondary classes get rated as Obscure, Barely Exists, or Nonsense, delete them from the entry_secondary_class table.
       For secondaries that are rated and kept, set their familiarity_bucket (and unity_bucket when inferred Partial) on the entry_secondary_class row.
@@ -71,6 +72,7 @@ const PARTIAL_UNITY_SCORE = 2;
 type FamiliarityRating = {
   bucket: string;
   unityBucket?: string;
+  domain?: string;
 };
 
 const cursorProvider = new CursorAiProvider();
@@ -257,6 +259,7 @@ export function buildResultsToPersist(
     let familiarityBucket = primaryParsed.bucket;
     let persistedScore = familiarityScore;
     let unityBucket = primaryParsed.unityBucket;
+    let domain = primaryParsed.domain;
     let displayText: string | undefined;
     let entryType: string | undefined;
     let baseForm: string | undefined;
@@ -267,6 +270,7 @@ export function buildResultsToPersist(
       familiarityBucket = promotedParsed?.bucket ?? familiarityBucket;
       persistedScore = FAMILIARITY_SCORES[familiarityBucket] ?? winner.score;
       unityBucket = promotedParsed?.unityBucket;
+      domain = promotedParsed?.domain;
       displayText = winner.secondary.secondaryDisplay;
       entryType = winner.secondary.secondaryClass;
       baseForm = winner.secondary.secondaryBaseForm;
@@ -303,6 +307,7 @@ export function buildResultsToPersist(
       reviewedStatus: '123',
       unityBucket,
       unityScore: unityBucket === 'Partial' ? PARTIAL_UNITY_SCORE : undefined,
+      domain,
       displayText,
       entryType,
       baseForm,
@@ -314,7 +319,8 @@ export function buildResultsToPersist(
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): familiarity_bucket=${familiarityBucket}, ` +
         `familiarity_score=${persistedScore}` +
-        `${unityBucket ? `, unity_bucket=${unityBucket}` : ''}, reviewed_status=123, ` +
+        `${unityBucket ? `, unity_bucket=${unityBucket}` : ''}` +
+        `${domain ? `, domain=${domain}` : ''}, reviewed_status=123, ` +
         `deleted_secondaries=${secondaryClassesToDelete.length}, ` +
         `updated_secondaries=${secondaryClassesToUpdate.length}, ` +
         `inserted_secondaries=${secondaryClassesToInsert.length}`,

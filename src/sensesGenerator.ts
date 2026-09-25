@@ -90,6 +90,7 @@ export interface ParsedSense {
   summary: string;
   definition: string;
   baseForm?: string;
+  regionality?: string;
   naturalTranslations: string[];
   colloquialTranslations: string[];
   alternatives: string[];
@@ -111,6 +112,7 @@ const SENSE_FREQUENCY_REGEX = /^(.*?),\s*(Primary|Common|Uncommon)$/;
 
 const SENSE_FIELD_LABELS = [
   'Base form',
+  'Regionality',
   'Natural',
   'Colloquial',
   'Alternatives',
@@ -132,6 +134,27 @@ function extractLabeledField(
   return match?.[1]?.trim();
 }
 
+export function parseRegionalityValue(text: string | undefined): string | undefined {
+  const trimmed = (text ?? '').replace(/^:\s*/, '').trim();
+  if (!trimmed || /^(none|\(none\))$/i.test(trimmed)) {
+    return undefined;
+  }
+
+  const parenMatch = trimmed.match(/^(.*?)\s*\((.+)\)\s*$/);
+  const bucket = (parenMatch ? parenMatch[1] : trimmed).trim();
+  const region = parenMatch ? parenMatch[2].trim() : '';
+  if (!bucket || /^widespread$/i.test(bucket)) {
+    return undefined;
+  }
+  if (region) {
+    return region;
+  }
+  if (/^regional$/i.test(bucket)) {
+    return undefined;
+  }
+  return bucket;
+}
+
 function inflectedClassification(classification: string): string | undefined {
   const normalized = classification.trim().toLowerCase();
   if (normalized === 'phrase' || normalized === 'inflected phrase') {
@@ -150,7 +173,7 @@ function parseSenseBlock(
   displayText: string,
   blockContent: string,
 ): ParsedSense | null {
-  const fieldStart = blockContent.search(/^(?:Base form|Natural)\s*:/m);
+  const fieldStart = blockContent.search(/^(?:Base form|Regionality|Natural)\s*:/m);
   const headerSection = (fieldStart === -1 ? blockContent : blockContent.slice(0, fieldStart)).trim();
   const colonIndex = headerSection.indexOf(':');
   const summaryRaw = (colonIndex === -1 ? headerSection : headerSection.slice(0, colonIndex))
@@ -168,12 +191,13 @@ function parseSenseBlock(
   const definition = isLiteral ? '' : definitionRaw;
 
   const baseFormText = extractLabeledField(blockContent, 'Base form', SENSE_FIELD_LABELS.slice(1));
-  const naturalText = extractLabeledField(blockContent, 'Natural', SENSE_FIELD_LABELS.slice(2));
-  const colloquialText = extractLabeledField(blockContent, 'Colloquial', SENSE_FIELD_LABELS.slice(3));
+  const regionalityText = extractLabeledField(blockContent, 'Regionality', SENSE_FIELD_LABELS.slice(2));
+  const naturalText = extractLabeledField(blockContent, 'Natural', SENSE_FIELD_LABELS.slice(3));
+  const colloquialText = extractLabeledField(blockContent, 'Colloquial', SENSE_FIELD_LABELS.slice(4));
   const alternativesText = extractLabeledField(
     blockContent,
     'Alternatives',
-    SENSE_FIELD_LABELS.slice(4),
+    SENSE_FIELD_LABELS.slice(5),
   );
   const correspondingText = extractLabeledField(
     blockContent,
@@ -186,6 +210,7 @@ function parseSenseBlock(
   }
 
   const baseForm = baseFormText ? splitListField(baseFormText)[0] : undefined;
+  const regionality = parseRegionalityValue(regionalityText);
   const isInflectedForm = Boolean(baseForm);
   const resolvedClassification =
     (isInflectedForm ? inflectedClassification(classification) : undefined) ?? classification.trim();
@@ -198,6 +223,7 @@ function parseSenseBlock(
     summary,
     definition,
     ...(baseForm ? { baseForm } : {}),
+    ...(regionality ? { regionality } : {}),
     naturalTranslations: splitListField(naturalText),
     colloquialTranslations: splitListField(colloquialText),
     alternatives: splitListField(alternativesText),

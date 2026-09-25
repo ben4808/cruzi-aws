@@ -44,7 +44,7 @@ const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
-const QUALITY_SCORES: Record<string, number> = {
+export const QUALITY_SCORES: Record<string, number> = {
   'Non-unit': 20,
   'Uncommon Inflection': 20,
   Clunky: 20,

@@ -50,10 +50,19 @@ BUCKETS
 9. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
 10. Nonsense: Everything else.
 
+For items in the buckets Literal, General Knowledge, Inferred, Niche, and Obscure:
+Include in parentheses the domain or area that the item belongs to.
+
 OUTPUT
 Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.
 
 <input item> : <bucket name>
+
+Examples:
+bear : Ubiquitous
+Ursa Major : Niche (astronomy)
+Sarah : Common Name
+Sri Lanka : General Knowledge (geography)
 
 WORDS/PHRASES
 

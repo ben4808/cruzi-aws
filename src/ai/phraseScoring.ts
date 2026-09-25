@@ -95,6 +95,7 @@ const FAMILIARITY_BUCKETS = new Set([
 export interface ParsedFamiliarityBucketResult {
   parsedForm: string;
   bucket: string;
+  domain?: string;
 }
 
 export async function loadUnityBucketPromptAsync(): Promise<string> {
@@ -253,15 +254,15 @@ export async function loadFamiliarityBucketPrompt3Async(): Promise<string> {
 
 function parseDisplayTextAndBucket(
   line: string,
-  resolveBucket: (raw: string) => string | undefined,
-): { parsedForm: string; bucket: string } | null {
+  resolveBucket: (raw: string) => { bucket: string; domain?: string } | undefined,
+): { parsedForm: string; bucket: string; domain?: string } | null {
   const lastColon = line.lastIndexOf(':');
   if (lastColon <= 0) {
     return null;
   }
 
-  const bucket = resolveBucket(line.slice(lastColon + 1).trim());
-  if (!bucket) {
+  const resolved = resolveBucket(line.slice(lastColon + 1).trim());
+  if (!resolved) {
     return null;
   }
 
@@ -270,7 +271,7 @@ function parseDisplayTextAndBucket(
     return null;
   }
 
-  return { parsedForm, bucket };
+  return { parsedForm, bucket: resolved.bucket, ...(resolved.domain ? { domain: resolved.domain } : {}) };
 }
 
 export function parseFamiliarityBucketResponse(response: string): ParsedFamiliarityBucketResult[] {
@@ -278,9 +279,15 @@ export function parseFamiliarityBucketResponse(response: string): ParsedFamiliar
 
   const results: ParsedFamiliarityBucketResult[] = [];
   for (const line of lines) {
-    const parsed = parseDisplayTextAndBucket(line, (raw) =>
-      FAMILIARITY_BUCKETS.has(raw) ? raw : undefined,
-    );
+    const parsed = parseDisplayTextAndBucket(line, (raw) => {
+      const domainMatch = raw.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+      const bucket = (domainMatch ? domainMatch[1] : raw).trim();
+      const domain = domainMatch?.[2]?.trim();
+      if (!FAMILIARITY_BUCKETS.has(bucket)) {
+        return undefined;
+      }
+      return { bucket, ...(domain ? { domain } : {}) };
+    });
     if (!parsed) {
       continue;
     }

@@ -6,18 +6,18 @@ The entries will recieve 2 main classifications:
 This measures how gettable an entry is for the average solver. Levels of gettability are defined below.
 Pick the first level of gettability that applies to the entry.
 
-- Not a Thing:
-   Entry has a unity bucket of Non-unit or Nonsense.
 - Very Gettable: 
-   Entry has unity bucket of Concept or Formula.
-   Entry has familiarity bucket of Ubiquitous, or Active.
+   Entry has unity bucket of Concept.
+   Entry has familiarity bucket of Ubiquitous or Active.
 - Likely Gettable:
    Entry has unity bucket of Concept, Collocation, Formula, or Partial.
    Entry has familiarity bucket of Literal, Common Name, or Inferred.
 - Maybe Gettable:
-   Entry has familiarity bucket of General Knowledge, Niche, or Literal.
+   Entry has familiarity bucket of General Knowledge, Niche, Literal, or Non-Unit.
 - Not Gettable:
    Entry has familiarity bucket of Obscure or Barely Exists.
+- Not a Thing:
+   Entry has a unity bucket of Nonsense.
 
 2. Desirability
 This measures how desirable an entry is for a crossword solver. Levels of desirability are:
@@ -25,9 +25,10 @@ This measures how desirable an entry is for a crossword solver. Levels of desira
 - Prefer:
    Entry has a quality bucket of Idiomatic, Interesting, Appealing, Positive, or Trendy.
 - Normal:
-   Entry has a quality bucket of Normal or Sensitive.
+   Entry has a quality bucket of Normal.
 - Avoid:
    Entry has a quality bucket of Non-unit, Uncommon Inflection, or Clunky.
+   AND/OR Entry has an entry_tags row with tag 'breakfast_test' or 'vulgar'.
 
 Go through the entry table and pull out all entries that don't have entry_type Nonsense or unity_bucket one of [Non-unit, Nonsense].
 Exclude entries with is_vulgar = true or an entry_tags row with tag 'breakfast_test'.

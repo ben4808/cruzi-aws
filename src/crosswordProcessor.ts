@@ -34,6 +34,7 @@ STEP 2:
    display_text of the entry record and all corresponding entry_secondary_class records.
 - Insert the sense information into the database. Keep the same puzzle_id in memory for step 3.
 - If a sense comes back with summary of "Literal", insert "Literal" into the summary field and leave the definition field blank.
+- If Regionality is anything other than Widespread, insert a sense_tags row with tag "regionality" and value the region from the prompt.
 - Keep track of the items that were sent through the senses prompt for the next step.
 
 STEP 3:
@@ -54,9 +55,16 @@ STEP 4:
    Send the display text of the sense. If that is null, send the display text of the entry
    the sense references.
 - After the unity prompt, update the reviewed_status of the sense to "2". After the familiarity prompt, update the 
-   reviewed_status to "23". After the quality prompt, update the reviewed_status to "234".
+   reviewed_status to "23" and set sense.domain from the parenthetical domain/area when the prompt returns one.
+   After the quality prompt, update the reviewed_status to "234".
    Vulgar and Sensitive are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
    'vulgar' and 'sensitive' with the flags on this result.
+- When a sense has been scored successfully for unity, familiarity, and quality, look at its entry record.
+  If the entry is missing any of display_text, entry_type (sense.classification), unity_bucket,
+  familiarity_bucket, quality_bucket, or domain, fill those fields from the scored sense.
+  When unity_bucket is filled, set unity_score from UNITY_SCORES in unityGenerator.ts.
+  When familiarity_bucket is filled, set familiarity_score from FAMILIARITY_SCORES in familiarityGenerator.ts.
+  When quality_bucket is filled, set quality_score from QUALITY_SCORES in qualityGenerator.ts.
 - Batches of 50.
 
 STEP 5:
@@ -92,15 +100,20 @@ import {
   PuzzleSenseForProcessing,
   PuzzleSenseReferenceItem,
   PuzzleSenseScoringItem,
+  ScoredSenseEntryFill,
   SenseGeneratorQueueItem,
   updateClueSenseMatches,
   updateSenseScoringResults,
+  fillEntryFieldsFromScoredSenses,
 } from 'cruzi-db';
 import { LanguageNames } from 'cruzi-models';
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { parseProvidedEntries } from './entryParser';
+import { FAMILIARITY_SCORES } from './familiarityGenerator';
+import { QUALITY_SCORES } from './qualityGenerator';
 import { ParsedSense, parseSensesResponse } from './sensesGenerator';
+import { UNITY_SCORES } from './unityGenerator';
 import { matchParsedResultsByIdentity } from './lib/resultMatching';
 import { batchArray, entryToAllCaps, generateId, isGeminiTimeoutError } from './lib/utils';
 
@@ -167,7 +180,7 @@ type ParsedClueMatch =
       partOfSpeech: string;
     };
 
-type BucketRating = { parsedForm: string; bucket: string; flags: string[] };
+type BucketRating = { parsedForm: string; bucket: string; flags: string[]; domain?: string };
 
 type ParsedSenseReference = {
   item: string;
@@ -361,11 +374,11 @@ export function parseSenseBucketResponse(response: string, allowed: Set<string>)
       continue;
     }
     const parsedForm = cleaned.slice(0, separatorIndex).trim();
-    const { bucket, flags } = splitBucketAndFlags(cleaned.slice(separatorIndex + 3));
+    const { bucket, flags, domain } = splitBucketFlagsAndDomain(cleaned.slice(separatorIndex + 3));
     if (!parsedForm || !allowed.has(bucket)) {
       continue;
     }
-    results.push({ parsedForm, bucket, flags });
+    results.push({ parsedForm, bucket, flags, ...(domain ? { domain } : {}) });
   }
 
   return results;
@@ -384,6 +397,21 @@ function splitBucketAndFlags(raw: string): { bucket: string; flags: string[] } {
       .filter((flag) => flag === 'vulgar' || flag === 'sensitive'),
   )];
   return { bucket: raw.trim().slice(0, match.index).trim(), flags };
+}
+
+function splitBucketFlagsAndDomain(raw: string): { bucket: string; flags: string[]; domain?: string } {
+  const { bucket: withDomain, flags } = splitBucketAndFlags(raw);
+  const domainMatch = withDomain.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (!domainMatch) {
+    return { bucket: withDomain, flags };
+  }
+
+  const bucket = domainMatch[1].trim();
+  const domain = domainMatch[2].trim();
+  if (!bucket) {
+    return { bucket: withDomain, flags };
+  }
+  return { bucket, flags, ...(domain ? { domain } : {}) };
 }
 
 function cleanReferenceField(value: string | undefined): string | null {
@@ -694,6 +722,9 @@ function generatedSenseRows(
       part_of_speech: parsed.partOfSpeech,
       classification: parsed.classification,
       similar_entries: alternatives,
+      tags: parsed.regionality
+        ? [{ tag: 'regionality', value: parsed.regionality }]
+        : [],
       translations: natural.length > 0 || colloquial.length > 0
         ? [{
             translation_lang: translationLang,
@@ -754,7 +785,10 @@ async function processSenseGeneratorItem(
     processedEntryKeys.add(entryKey(item.entry, item.lang));
     console.log(
       `${requestLabel}: inserted ${rows.length} senses for ${item.entry}: ` +
-        rows.map((row) => row.summary).join('; '),
+        rows.map((row) => {
+          const regionality = row.tags?.find((tag) => tag.tag === 'regionality')?.value;
+          return regionality ? `${row.summary} [regionality=${regionality}]` : row.summary;
+        }).join('; '),
     );
     return true;
   } catch (error) {
@@ -774,6 +808,7 @@ type ScoringState = {
   classification: string;
   unityBucket: string | null;
   familiarityBucket: string | null;
+  qualityBucket: string | null;
   reviewedStatus: string | null;
 };
 
@@ -786,7 +821,26 @@ function scoringState(item: PuzzleSenseScoringItem): ScoringState {
     classification: item.classification?.trim() || 'Word',
     unityBucket: item.unityBucket,
     familiarityBucket: item.familiarityBucket,
+    qualityBucket: item.qualityBucket,
     reviewedStatus: item.reviewedStatus,
+  };
+}
+
+function entryFillFromScoredSense(state: ScoringState): ScoredSenseEntryFill | null {
+  if (
+    state.reviewedStatus !== '234'
+    || !state.unityBucket
+    || !state.familiarityBucket
+    || !state.qualityBucket
+  ) {
+    return null;
+  }
+
+  return {
+    senseId: state.senseId,
+    unityScore: UNITY_SCORES[state.unityBucket],
+    familiarityScore: FAMILIARITY_SCORES[state.familiarityBucket],
+    qualityScore: QUALITY_SCORES[state.qualityBucket],
   };
 }
 
@@ -895,15 +949,23 @@ async function scoreSenseBatch(
       const buckets = applyBucketRatings(needFamiliarity, ratings, familiarityLine);
       const updates = [];
       for (const state of needFamiliarity) {
-        const bucket = buckets.get(state.senseId)?.bucket;
-        if (!bucket) {
+        const rating = buckets.get(state.senseId);
+        if (!rating) {
           console.warn(`${requestLabel}: no familiarity rating for ${state.displayText} (${state.senseId})`);
           continue;
         }
-        state.familiarityBucket = bucket;
+        state.familiarityBucket = rating.bucket;
         state.reviewedStatus = '23';
-        updates.push({ senseId: state.senseId, familiarityBucket: bucket, reviewedStatus: '23' });
-        console.log(`${requestLabel}: ${state.displayText} familiarity=${bucket}, reviewed_status=23`);
+        updates.push({
+          senseId: state.senseId,
+          familiarityBucket: rating.bucket,
+          reviewedStatus: '23',
+          domain: rating.domain ?? '',
+        });
+        console.log(
+          `${requestLabel}: ${state.displayText} familiarity=${rating.bucket}` +
+            `${rating.domain ? `, domain=${rating.domain}` : ''}, reviewed_status=23`,
+        );
       }
       await updateSenseScoringResults(updates);
     }
@@ -927,6 +989,7 @@ async function scoreSenseBatch(
           console.warn(`${requestLabel}: no quality rating for ${state.displayText} (${state.senseId})`);
           continue;
         }
+        state.qualityBucket = rating.bucket;
         state.reviewedStatus = '234';
         updates.push({
           senseId: state.senseId,
@@ -940,6 +1003,14 @@ async function scoreSenseBatch(
         );
       }
       await updateSenseScoringResults(updates);
+    }
+
+    const entryFills = states
+      .map(entryFillFromScoredSense)
+      .filter((fill): fill is ScoredSenseEntryFill => fill != null);
+    if (entryFills.length > 0) {
+      await fillEntryFieldsFromScoredSenses(entryFills);
+      console.log(`${requestLabel}: filled missing entry fields from ${entryFills.length} scored senses`);
     }
 
     const unfinished = active.filter((state) => state.reviewedStatus !== '234').length;
