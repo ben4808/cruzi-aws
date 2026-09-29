@@ -13,15 +13,15 @@ Keep looping through the following steps until maxItems AI requests have been se
    b. Update the database with the info returned from the API.
       - The senses should be updated whether or not they already existed. If the sense is referenced to an existing
         sense, that sense ID should be conserved even as the summary etc. are updated.
-   c. Whether the entry already existed or was just created, update the entry's display_text and entry_type
+   c. Whether the entry already existed or was just created, update the entry's display_text and classification
       from the sense that was deemed Primary (display_text and classification). If that Primary sense has a
       base form, write it to inflected_entry rather than entry.base_form.
       If a Word or Phrase sense has Base form, set that sense's classification to Inflected Word or Inflected Phrase.
       Proper Name, Acronym/Abbreviation, and Prefix/Suffix are left unchanged.
-      If that sense is Primary, entry_type follows it.
-      If the AI returns Nonsense, still update the entry but set entry_type to "Nonsense".
+      If that sense is Primary, classification follows it.
+      If the AI returns Nonsense, still update the entry but set classification to "Nonsense".
    d. Set the entry's loading_status to "Senses" and reviewed_status to "1".
-      Do not update any other fields on the entry table besides display_text, entry_type,
+      Do not update any other fields on the entry table besides display_text, classification,
       loading_status, and reviewed_status. Inflection mappings go in inflected_entry.
 
 Output messages to the console updating all progress.
@@ -369,7 +369,7 @@ async function processEntry(
   if (aiResponse.trim().toLowerCase() === 'nonsense') {
     await updateEntryFromPrimarySense(item.entry, item.lang, '', 'Nonsense');
     console.log(
-      `${requestLabel}: set ${item.entry} entry_type=Nonsense, loading_status=Senses, reviewed_status=1`,
+      `${requestLabel}: set ${item.entry} classification=Nonsense, loading_status=Senses, reviewed_status=1`,
     );
     return true;
   }
@@ -426,14 +426,14 @@ async function processEntry(
     );
     console.log(
       `${requestLabel}: updated entry ${item.entry} display_text="${primarySense.displayText ?? item.displayText}" ` +
-        `entry_type="${primarySense.classification ?? ''}"` +
+        `classification="${primarySense.classification ?? ''}"` +
         `${primarySense.baseForm ? `, inflected_entry base="${primarySense.baseForm}"` : ''}` +
         `, loading_status=Senses, reviewed_status=1`,
     );
   } else {
     await updateEntryFromPrimarySense(item.entry, item.lang, '', '');
     console.warn(
-      `${requestLabel}: no Primary sense for ${item.entry}; set loading_status=Senses, reviewed_status=1 without changing display_text or entry_type`,
+      `${requestLabel}: no Primary sense for ${item.entry}; set loading_status=Senses, reviewed_status=1 without changing display_text or classification`,
     );
   }
 

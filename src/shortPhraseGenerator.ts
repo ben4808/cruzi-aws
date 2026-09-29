@@ -12,13 +12,13 @@ Keep looping through the following steps until maxItems queue items have been pr
       Populate the banned list with the display_text from the results from step a.
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
-   e. Normalize those phrases to ALLCAPS and run them through entry_parser_prompt_3.txt. Parse entry_type, display_text,
+   e. Normalize those phrases to ALLCAPS and run them through entry_parser_prompt_3.txt. Parse classification, display_text,
       and base_form. Match parser/unity/familiarity results by identity only (never shift leftover rows).
    f. Run the parsed phrases through unity_prompt_3.txt, then through familiarity_prompt_3.txt.
-   g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include entry_type, display_text,
+   g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include classification, display_text,
       base_form, unity_bucket, and familiarity_bucket where possible.
-   h. Insert into the entry table the phrases whose entry_type is not Nonsense, unity_bucket is not Variant, Non-unit, or Nonsense,
-      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include entry_type, display_text, base_form,
+   h. Insert into the entry table the phrases whose classification is not Nonsense, unity_bucket is not Variant, Non-unit, or Nonsense,
+      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include classification, display_text, base_form,
       unity bucket/score, and familiarity bucket/score. Do not overwrite entry fields with non-null values; only insert new rows
       or populate null fields on existing rows. For entries that were not already in the entry table, insert an entry_tag record
       with the tag "short_phrase_generator".
@@ -309,12 +309,12 @@ async function processQueueItem(
   console.log(`Parsed ${parsedByEntry.size}/${entryKeys.length} entries with entry_parser_prompt_3`);
 
   const displayByEntry = new Map<string, string>();
-  const entryTypeByEntry = new Map<string, string>();
+  const classificationByEntry = new Map<string, string>();
   const baseFormByEntry = new Map<string, string>();
   for (const entryKey of entryKeys) {
     const parsed = parsedByEntry.get(entryKey);
     if (parsed) {
-      entryTypeByEntry.set(entryKey, parsed.entryType);
+      classificationByEntry.set(entryKey, parsed.classification);
       displayByEntry.set(entryKey, parsed.displayText);
       if (parsed.baseForm) {
         baseFormByEntry.set(entryKey, parsed.baseForm);
@@ -338,14 +338,14 @@ async function processQueueItem(
   }
 
   const familiarityInputs = entryKeys.flatMap((entryKey) => {
-    const entryType = entryTypeByEntry.get(entryKey);
+    const classification = classificationByEntry.get(entryKey);
     const unity = unityByEntry.get(entryKey);
-    if (!entryType || !unity) {
+    if (!classification || !unity) {
       return [];
     }
     return [{
       phrase: displayByEntry.get(entryKey)!,
-      entryType,
+      classification,
       unityBucket: unity.bucket,
     }];
   });
@@ -366,7 +366,7 @@ async function processQueueItem(
     prompt: queuePrompt,
     entry: entryKey,
     lang,
-    entryType: entryTypeByEntry.get(entryKey),
+    classification: classificationByEntry.get(entryKey),
     displayText: displayByEntry.get(entryKey),
     baseForm: baseFormByEntry.get(entryKey),
     unityBucket: unityByEntry.get(entryKey)?.bucket,
@@ -379,12 +379,12 @@ async function processQueueItem(
   );
 
   const qualifyingEntries = entryKeys.filter((entryKey) => {
-    const entryType = entryTypeByEntry.get(entryKey);
+    const classification = classificationByEntry.get(entryKey);
     const unity = unityByEntry.get(entryKey);
     const familiarity = familiarityByEntry.get(entryKey);
     return (
-      entryType != null &&
-      !REJECTED_ENTRY_TYPES.has(entryType) &&
+      classification != null &&
+      !REJECTED_ENTRY_TYPES.has(classification) &&
       unity != null &&
       !REJECTED_UNITY_BUCKETS.has(unity.bucket) &&
       familiarity != null &&
@@ -393,7 +393,7 @@ async function processQueueItem(
   });
   console.log(
     `Qualified ${qualifyingEntries.length}/${entryKeys.length} phrases ` +
-      `(entry_type not Nonsense; unity not Variant/Non-unit/Nonsense; ` +
+      `(classification not Nonsense; unity not Variant/Non-unit/Nonsense; ` +
       `familiarity not Obscure/Barely Exists/Nonsense)`,
   );
 
@@ -405,7 +405,7 @@ async function processQueueItem(
       {
         entryKey: string;
         displayText: string;
-        entryType: string;
+        classification: string;
         baseForm?: string;
         unityBucket: string;
         unityScore: number;
@@ -431,7 +431,7 @@ async function processQueueItem(
         candidatesByKey.set(entryKey, {
           entryKey,
           displayText: displayByEntry.get(entryKey)!,
-          entryType: entryTypeByEntry.get(entryKey)!,
+          classification: classificationByEntry.get(entryKey)!,
           baseForm: baseFormByEntry.get(entryKey),
           unityBucket: unity.bucket,
           unityScore,
@@ -451,7 +451,7 @@ async function processQueueItem(
       entry: item.entryKey,
       lang,
       displayText: item.displayText,
-      entryType: item.entryType,
+      classification: item.classification,
       baseForm: item.baseForm,
       unityBucket: item.unityBucket,
       unityScore: item.unityScore,

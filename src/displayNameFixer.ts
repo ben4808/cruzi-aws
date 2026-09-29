@@ -7,7 +7,7 @@ should match the entry exactly. We want to select all entries that don't match t
 2. For all such entries, set a few fields to null:
 display_text
 inflected_entry rows for the entry
-entry_type
+classification
 unity_bucket
 unity_score
 familiarity_bucket

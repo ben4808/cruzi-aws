@@ -5,19 +5,15 @@ GUIDELINES
 - Each given existing sense will appear together with its classification, part of speech, and natural English written form (with
     appropriate casing and punctuation for that sense).
 - If you cannot interpret the clue as relating to any sense of the answer, simply output "Unclear" in lieu.
-- If the answer is an inflected form, the existing senses may be from its base form. These can still be referred to by the inflected form.
+- If the answer is an inflected form, the existing senses may be from one or more base forms. Prefer matching the
+    clue to a sense of a base form. Only match a sense of the inflected answer itself when there is no base form or 
+    the clue does not refer to the base form (e.g. "advanced" as an adjective vs. verb "advance").
+    Note than an item can have multiple base forms (e.g. DOES -> doe or do).
 - Multi-word phrases may have a literal sense, where they mean exactly what they say. These will have summary "Literal" (capitalized).
-- If the clue refers to a sense not in the list of existing senses, generate info for the sense that it actually refers to (classification,
-    summary, natural form, part of speech). 
-    - Classification will be one of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
-    - Different part of speech or different classification -> different sense
-    - The summary should be as terse as possible, using just enough words to distinguish it from other senses of the answer.
-    - If it's a Phrase and the clue refers to a literal reading of the phrase, output the Literal sense. 
-    - If the new sense also applies to the base form, generate it as a sense of the base form (see GLASSES example).
 - Keep in mind the general guidelines for interpreting crossword clues.
   - Clues in quotes indicate the answer will be a spoken formula.
   - Clues with a question mark at the end indicate indirection or wordplay.
-  - Abbreviated clues indicate abbreviated answers.
+  - Clues with abbreviations indicate abbreviated answers.
   - Answers typically follow the inflection of the clue.
 
 INPUT
@@ -51,7 +47,7 @@ Don't include any explanatory or auxiliary text.
 
 Output examples:
 Made headway : ADVANCED : move forward physically : advance : Word : verb
-Wine china? : GLASSES : receptacle for drinks : glass : Word : noun
+Wine china? : GLASSES : Unclear
 Sunny day feature : BLUESKY : Literal : blue sky : Phrase : noun
 First part of a quote : LASTCHRISTMAS : Unclear
 

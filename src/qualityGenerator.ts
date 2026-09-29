@@ -2,7 +2,7 @@
 Keep looping through the following steps until maxItems AI requests have been sent (default 100), then stop:
 1. Select enough entries for parallelRequests concurrent executions via get_entries_for_quality_generator_top_50
    (each request uses ENTRIES_PER_REQUEST entries). Entries have a reviewed_status of "123" and
-   neither unity_bucket nor entry_type is Nonsense, along with their unity and familiarity buckets,
+   neither unity_bucket nor classification is Nonsense, along with their unity and familiarity buckets,
    regardless of existing quality_bucket. Optionally further restrict by an entry LIKE pattern (e.g. "VE___").
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
    a. For each chunk, generate a prompt using the quality_prompt_3.txt file. Include the unity bucket and

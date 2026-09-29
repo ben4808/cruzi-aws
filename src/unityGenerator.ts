@@ -15,7 +15,7 @@ Keep looping through the following steps until maxItems AI requests have been se
       Do not delete secondary classes rated as Partial or Variant. For secondaries that are rated and kept, set their
       unity_bucket on the entry_secondary_class row.
       If the primary class gets rated as Partial, Variant, Formulaic, Non-unit, or Nonsense, and a secondary class is rated as Concept, Collocation, or Formula,
-      set the the entry row's entry_type and display_text to the secondary class's entry_type and display_text and then delete the row
+      set the the entry row's classification and display_text to the secondary class's classification and display_text and then delete the row
       from the entry_secondary_class table.
    d. Set reviewed_status to "12" for the entry row.
 3. maxItems is the total number of AI requests to send before quitting (not the number of DB cycles).
@@ -150,7 +150,7 @@ export function buildResultsToPersist(
 
     let unityBucket = primaryParsed.bucket;
     let displayText: string | undefined;
-    let entryType: string | undefined;
+    let classification: string | undefined;
 
     if (isBadUnityBucket(primaryParsed.bucket)) {
       const remainingSecondaries = entryItem.secondaryClasses.filter(
@@ -161,7 +161,7 @@ export function buildResultsToPersist(
         const promotedParsed = resultsByPhrase.get(promoted.secondaryDisplay);
         unityBucket = promotedParsed?.bucket ?? unityBucket;
         displayText = promoted.secondaryDisplay;
-        entryType = promoted.secondaryClass;
+        classification = promoted.secondaryClass;
         secondaryClassesToDelete.push(promoted.secondaryClass);
         const promotedIndex = secondaryClassesToUpdate.findIndex(
           (item) => item.secondaryClass === promoted.secondaryClass,
@@ -192,7 +192,7 @@ export function buildResultsToPersist(
       unityScore,
       reviewedStatus: '12',
       displayText,
-      entryType,
+      classification,
       secondaryClassesToDelete,
       secondaryClassesToUpdate,
     });

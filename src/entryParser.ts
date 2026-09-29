@@ -6,7 +6,7 @@ Keep looping through the following steps until maxItems AI requests have been se
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
    a. For each chunk, generate a prompt using the entry_parser_prompt_3.txt file. Use the entry field as the input.
       Send the prompt to the AIProvider (make this a parameter).
-   b. Update the display_text and entry_type in the entry table (from "display (base)" inflections; not separate Inflected Word/Phrase types).
+   b. Update the display_text and classification in the entry table (from "display (base)" inflections; not separate Inflected Word/Phrase types).
       Write inflected forms to inflected_entry (base_entry, inflected_entry, lang) rather than entry.base_form.
       Inflected keys may still have their own entry row when they have senses that do not apply to the base form.
       Also set reviewed_status to "1".
@@ -153,16 +153,16 @@ export function buildResultsToPersist(
       }
       if (secondaryDisplay === displayText) {
         console.log(
-          `  skipping secondary ${entryItem.entry}: class=${secondary.entryType}, ` +
+          `  skipping secondary ${entryItem.entry}: class=${secondary.classification}, ` +
             `form=${secondaryDisplay} matches primary display text` +
             `${secondaryRejected ? ` [rejected AI form="${secondary.displayText}"]` : ''}`,
         );
         continue;
       }
 
-      if (secondaryClasses.some((existing) => existing.secondaryClass === secondary.entryType)) {
+      if (secondaryClasses.some((existing) => existing.secondaryClass === secondary.classification)) {
         console.log(
-          `  skipping secondary ${entryItem.entry}: class=${secondary.entryType}, ` +
+          `  skipping secondary ${entryItem.entry}: class=${secondary.classification}, ` +
             `form=${secondaryDisplay} duplicate class, keeping first` +
             `${secondaryRejected ? ` [rejected AI form="${secondary.displayText}"]` : ''}`,
         );
@@ -170,31 +170,31 @@ export function buildResultsToPersist(
       }
 
       console.log(
-        `  secondary ${entryItem.entry}: class=${secondary.entryType}, form=${secondaryDisplay}` +
+        `  secondary ${entryItem.entry}: class=${secondary.classification}, form=${secondaryDisplay}` +
           `${secondary.baseForm ? `, base=${secondary.baseForm}` : ''}` +
           `${secondaryRejected ? ` [rejected AI form="${secondary.displayText}"]` : ''}`,
       );
       secondaryClasses.push({
-        secondaryClass: secondary.entryType,
+        secondaryClass: secondary.classification,
         secondaryDisplay,
         secondaryBaseForm: secondary.baseForm,
       });
     }
 
     const reviewedStatus = parseFailed ? 'Failed parse' : '1';
-    const isNonsense = parsed.primary.entryType === 'Nonsense';
+    const isNonsense = parsed.primary.classification === 'Nonsense';
     resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
       displayText: isNonsense ? '' : displayText,
-      entryType: parsed.primary.entryType,
+      classification: parsed.primary.classification,
       baseForm: parsed.primary.baseForm,
       reviewedStatus,
       secondaryClasses,
     });
 
     console.log(
-      `Processed ${entryItem.entry} (${entryItem.lang}): type=${parsed.primary.entryType}, ` +
+      `Processed ${entryItem.entry} (${entryItem.lang}): type=${parsed.primary.classification}, ` +
         `form=${isNonsense ? 'NULL' : displayText}${parsed.primary.baseForm ? `, base=${parsed.primary.baseForm}` : ''}, ` +
         `secondary=${secondaryClasses.length}, ` +
         `status=${reviewedStatus}${rejectedNote}` +

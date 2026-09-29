@@ -5,7 +5,7 @@ Keep looping through the following steps until maxBatches AI requests have been 
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and send that many AI requests in parallel.
 3. For each chunk, generate a prompt using the entry_improver_prompt.txt file and send it to the AI provider.
 4. Aggregate all parsed results from the parallel requests, then perform a single DB upsert:
-    - entry_type
+    - classification
     - display_text
     - inflected_entry mapping from parsed base_form (not stored on entry)
     - unity_bucket
@@ -18,7 +18,7 @@ Keep looping through the following steps until maxBatches AI requests have been 
         Awkward = 20, Clunky = 15, Barely Coherent = 10, Nonsense = 0)
     - is_vulgar
     - reviewed_status = 'R'
-5. Skip (do not update) any entry whose AI result has an invalid entry_type, unity/familiarity/quality
+5. Skip (do not update) any entry whose AI result has an invalid classification, unity/familiarity/quality
    bucket, or vulgarity value.
 6. Skip (do not update) any entry whose AI display_text does not normalize back to the original entry
    (all caps, letters and numerals only, accents stripped — same check as entryParser).
@@ -91,7 +91,7 @@ const DEFAULT_PARALLEL_REQUESTS = 1;
 
 interface ParsedEntryImproverResult {
   entry: string;
-  entryType: string;
+  classification: string;
   displayText: string;
   baseForm?: string;
   unityBucket: string;
@@ -146,13 +146,13 @@ export function parseEntryImproverResponse(response: string): ParsedEntryImprove
     }
 
     const entry = parts[0];
-    const entryType = parts[1];
+    const classification = parts[1];
     const unityBucket = parts[3];
     const familiarityBucket = parts[4];
     const qualityBucket = parts[5];
     const isVulgar = parseVulgarity(parts[6]);
 
-    if (!entry || !ENTRY_TYPES.has(entryType)) {
+    if (!entry || !ENTRY_TYPES.has(classification)) {
       continue;
     }
     if (!(unityBucket in UNITY_SCORES)) {
@@ -175,7 +175,7 @@ export function parseEntryImproverResponse(response: string): ParsedEntryImprove
 
     results.push({
       entry,
-      entryType,
+      classification,
       displayText,
       baseForm,
       unityBucket,
@@ -239,7 +239,7 @@ function buildEntriesToPersist(
     resultsToPersist.push({
       entry: entryItem.entry,
       lang: entryItem.lang,
-      entryType: parsed.entryType,
+      classification: parsed.classification,
       displayText,
       baseForm: parsed.baseForm,
       unityBucket: parsed.unityBucket,
@@ -254,7 +254,7 @@ function buildEntriesToPersist(
 
     console.log(
       `Processed ${entryItem.entry} (${entryItem.lang}): ` +
-        `type=${parsed.entryType}, display="${displayText}"` +
+        `type=${parsed.classification}, display="${displayText}"` +
         `${parsed.baseForm ? `, base=${parsed.baseForm}` : ''}, ` +
         `unity=${parsed.unityBucket}/${unityScore}, ` +
         `familiarity=${parsed.familiarityBucket}/${familiarityScore}, ` +

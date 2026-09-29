@@ -2,78 +2,90 @@
 This is a multistep process.
 Only one puzzle_id should be processed at a time, but the clues can be processed in parallel.
 All items in a given step should be completed before moving on to the next step.
-Each queue will have a puzzle_id indicator so we know which items to pull on each step.
-
 Parallel processing should be handled as familiarGenerator.ts does.
 
-STEP 1:
-- Read a puzzle_id from crossword_processing_queue at the start. Delete that queue row only when the puzzle has finished processing.
-- Fetch all the clues and entries for the given puzzle_id. Include all existing senses for the entries.
-  - Look for senses both from the entry itself and from its base form if it exists. 
-    Look for the entry in the inflected_entry table to find the base form.
-- Take all entries from the puzzle that have no display_text, and run them through the process in entryParser.ts. 
-    Refactor out the necessary code from entryParser.ts to avoid code duplication.
-- If there are entries that do not have any senses, add those entries immediately to the sense_generator_queue 
-    with the clue as a hint.
-- For entries that have senses, generate an AI prompt using crossword_matching_prompt.txt and fetch the results 
+STEP 1 (Inflections):
+- Read a puzzle_id from crossword_processing_queue. Delete that queue row only when the puzzle has finished processing.
+- Query the entry table for all entries in the puzzle whose loading_status does not start with "I".
+- Send an AI query using inflections_prompt.txt (AI provider passed in as a parameter). 20 entries per query.
+  - Also check entry_secondary_class for alternate display_texts. If multiple display_texts exist for an entry,
+    send them to inflections_prompt.txt as separate line items.
+- If the AI query returns results for an item:
+  - Delete all inflected_entry rows for that item (as base_entry).
+  - For any returned inflected forms and/or base forms that don't already exist in the entry table, create them using the
+    display text returned by the prompt. Insert an entry_tags row with tag 'inflection_generator' for
+    each newly created inflected-form or base-form entry.
+  - Create new rows in inflected_entry according to the AI results. If base_form(s) were returned, create the appropriate rows
+      but no need to populate the inflected_type field.
+  - If a base form for the item was returned, delete all senses associated with the item.
+- Set loading_status on all entries sent to AI to "I".
+- For clues whose entries did not initially have loading_status starting with "I", set match_attempted to false.
+
+STEP 2 (Sense Generation):
+a. Fetch all entries for the puzzle_id and check the inflected_entry table for base forms of the entries that have no senses.
+  - Base forms are inflected_entry rows where the puzzle entry is the inflected_form.
+  - An entry can have multiple base forms (e.g. DOES -> DOE and DO).
+b. Check each base form to see if it has reviewed_status starting with "1". If not, run them through the entryParser process to
+    generate display_text, classification, and potentially entry_secondary_class records.
+c. Then send the base forms to senses_prompt.txt. (One item per prompt.) I'm sending the base forms at first because their senses 
+    will be necessary to generate the senses of the inflected forms.
+  - As the hint in the prompt, send the clue from the puzzle associated with the inflected entry.
+  - Send every different display_text of the base form to the prompt. This includes the entry's display_text and the display_text 
+     of all entry_secondary_class records (deduplicate).
+d. Parse the results and insert the sense information into the database.
+  - If a sense comes back with summary of "Literal", insert "Literal" into the summary field and leave the definition field blank.
+  - If Regionality is anything other than Widespread, insert a sense_tags row with tag "regionality" and value the region from the prompt.
+e. Now repeat substeps b-d for all the actual entries in the puzzle. (not the base forms).
+  - When building the senses_prompt, send the base form's senses as existing senses as well as the entry's senses.
+
+STEP 3 (Clue Matching):
+- Fetch all the clues and entries for the given puzzle_id. Include all existing senses for the entries, from both
+    the entry itself and from every base form if any exist.
+- Generate an AI prompt using crossword_matching_prompt.txt and fetch the results 
     (use the AIProvider passed in as a parameter). Send 10 entries per prompt.
-  - A clue's sense_id can point to a sense of the base form entry or the entry itself. The prompt results will
-     indicate the entry whose sense was matched.
+  - Include senses from both the entry itself and from every base form if any exist.
+  - A clue's sense_id can point to a sense of a base form entry or the entry itself. The prompt results will
+      indicate the entry whose sense was matched.
 - Update the clue records with the matched sense ids.
-- If there are entries that could not be matched to an existing sense, add them to the sense_generator_queue with 
-    the hint as the sense summary returned by the AI for that entry. Discard the invented info other than the summary.
-    - You know that an existing sense was not matched because the prompt returned an invented sense summary.
-      A successful match will return an existing sense summary.
-- If the prompt returns Unclear, leave the sense_id field null for that clue.
-- All clues that were successfully matched with a sense or were Unclear should have match_attempted set to true.
+- If there are entries that could not be matched to an existing sense, or the prompt returns Unclear, 
+   leave the sense_id field null for that clue.
+- At the end of the step, all clues from the puzzle should have match_attempted set to true.
 
-STEP 2:
-- Fetch items from the sense_generator_queue for the puzzle_id and build AI prompts with senses_prompt.txt. (One item per prompt.)
-- As well as the hint, send every different display_text of the entry to the prompt. If there are already senses for the
-   entry, this would be all the display_text values of the existing senses. If there are no existing senses, send the
-   display_text of the entry record and all corresponding entry_secondary_class records.
-- Insert the sense information into the database. Keep the same puzzle_id in memory for step 3.
-- If a sense comes back with summary of "Literal", insert "Literal" into the summary field and leave the definition field blank.
-- If Regionality is anything other than Widespread, insert a sense_tags row with tag "regionality" and value the region from the prompt.
-- Keep track of the items that were sent through the senses prompt for the next step.
-
-STEP 3:
-- For entries processed in step 2, generate an AI prompt using crossword_matching_prompt.txt and fetch the results 
-    (use the AIProvider passed in as a parameter). Send 10 entries per prompt.
-- If there are entries that could not be matched to an existing sense, leave the sense_id field null for that clue.
-- Update the clue records with the matched sense ids and set match_attempted to true.
-
-STEP 4:
-- Read senses matched with clues for the puzzle_id (number based on the parallel processing parameters)
-  whose reviewed_status is null, "2", or "23". Skip reviewed_status "234".
-  - reviewed_status null -> unity generator
-  - reviewed_status "2" -> familiarity generator
-  - reviewed_status "23" -> quality generator
+STEP 4 (Sense Scoring):
+Loop through the steps until all eligible senses have been scored.
+- Fetch a number of senses that were matched with clues for the puzzle_id and have reviewed_status not "234"
+   (number to select at a time is based on the parallel processing parameters).
 - Run the items through a pipeline of sense_unity_prompt.txt, sense_familiarity_prompt.txt, and sense_quality_prompt.txt. 
    Take inspiration from unityGenerator.ts, familiarityGenerator.ts, and qualityGenerator.ts to implement the pipeline,
-   refactoring out common code where possible to avoid code duplication.
-   Send the display text of the sense. If that is null, send the display text of the entry
-   the sense references.
-- After the unity prompt, update the reviewed_status of the sense to "2". After the familiarity prompt, update the 
-   reviewed_status to "23" and set sense.domain from the parenthetical domain/area when the prompt returns one.
-   After the quality prompt, update the reviewed_status to "234".
-   Vulgar and Sensitive are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
-   'vulgar' and 'sensitive' with the flags on this result.
-- When a sense has been scored successfully for unity, familiarity, and quality, look at its entry record.
-  If the entry is missing any of display_text, entry_type (sense.classification), unity_bucket,
-  familiarity_bucket, quality_bucket, or domain, fill those fields from the scored sense.
-  When unity_bucket is filled, set unity_score from UNITY_SCORES in unityGenerator.ts.
-  When familiarity_bucket is filled, set familiarity_score from FAMILIARITY_SCORES in familiarityGenerator.ts.
-  When quality_bucket is filled, set quality_score from QUALITY_SCORES in qualityGenerator.ts.
-- Batches of 50.
+   refactoring out common code where possible to avoid code duplication. Batches of 50 per prompt.
+- After the unity prompt, if the unity_bucket is Non-unit or Nonsense, delete the sense and set
+   clue.sense_id back to null for that clue. 
+  - Otherwise, update the reviewed_status of the sense to "2". 
+- After the familiarity prompt, update the reviewed_status to "23" and set sense.domain from the parenthetical domain/area when the prompt returns one.
+- After the quality prompt, update the reviewed_status to "234".
+   - Vulgar and Sensitive are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
+     'vulgar' and 'sensitive' with the flags on this result.
+- When a sense has been scored successfully for unity, familiarity, and quality, count how many senses for that entry have been scored. 
+  If 2 or more senses are scored, or if the scored sense is the only sense (scored or not) that exists for the entry, update the entry 
+  record to match the selected scored sense. 
+  Fields to update: display_text, classification (from sense.classification), unity_bucket, familiarity_bucket, quality_bucket, domain. 
+  Also set the corresponding scores from UNITY_SCORES / FAMILIARITY_SCORES / QUALITY_SCORES.
+  Replace the entry's entry_tags rows for 'vulgar' and 'sensitive' so they match that sense's sense_tags.
+  The sense to use to update the entry is selected as follows:
+  1. Highest unity_bucket: Concept > Collocation > Formula > Formulaic > Variant > Partial > Non-unit > Nonsense.
+  2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal > Common Name >
+     General Knowledge > Inferred > Niche > Obscure > Barely Exists > Nonsense.
+  3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Appealing > Positive >
+     Trendy > Normal > Uncommon Inflection > Clunky > Non-unit.
+  4. Tiebreaker: pick one at random.
 
-STEP 5:
-- Read senses matched with clues for the puzzle_id that have no records in the sense_reference table
-  (number based on the parallel processing parameters).
-- Generate an AI request to sense_reference_prompt.txt with the entries. Send 10 per prompt.
-  Send the display text of the sense. If that is null, send the display text of the entry
-  the sense references.
+STEP 5 (Sense References):
+- Fetch a number of senses that were matched with clues for the puzzle_id and have their references_attempted field set to false.
+  (number to select at a time is based on the parallel processing parameters).
+- Generate an AI request to sense_reference_prompt.txt with the senses. Send 10 senses per prompt.
+  - Send the display text of the sense to the prompt.
 - Update the sense_reference table with the new references.
+- Set the references_attempted field to true for the senses that were processed.
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -83,44 +95,50 @@ Keep these requirements in the file.
 
 import fs from 'fs';
 import {
+  applyInflectionGeneratorResults,
   ClueSenseMatchUpdate,
   deferCrosswordProcessingPuzzle,
   deleteCrosswordProcessingPuzzle,
-  deleteSenseGeneratorQueueItems,
-  enqueueSenseGeneratorItems,
+  deleteSensesAndClearClueMatches,
+  fillEntryFieldsFromScoredSenses,
   GeneratedSenseInsert,
   getMatchedSensesForScoring,
   getMatchedSensesWithoutReferences,
   getPuzzleCluesForProcessing,
-  getSenseGeneratorQueueForPuzzle,
+  getPuzzleEntriesForInflections,
+  getPuzzleEntriesForSenseGeneration,
+  InflectionGeneratorForm,
+  InflectionGeneratorResult,
   insertGeneratedSenses,
   insertSenseReferences,
+  markSensesReferencesAttempted,
   pullCrosswordProcessingPuzzle,
   PuzzleClueForProcessing,
+  PuzzleEntryForInflections,
+  PuzzleEntryForSenseGeneration,
   PuzzleSenseForProcessing,
   PuzzleSenseReferenceItem,
   PuzzleSenseScoringItem,
-  ScoredSenseEntryFill,
-  SenseGeneratorQueueItem,
+  resetPuzzleClueMatchAttemptedForEntries,
+  SenseGenerationExistingSense,
   updateClueSenseMatches,
   updateSenseScoringResults,
-  fillEntryFieldsFromScoredSenses,
 } from 'cruzi-db';
 import { LanguageNames } from 'cruzi-models';
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { parseProvidedEntries } from './entryParser';
-import { FAMILIARITY_SCORES } from './familiarityGenerator';
-import { QUALITY_SCORES } from './qualityGenerator';
 import { ParsedSense, parseSensesResponse } from './sensesGenerator';
-import { UNITY_SCORES } from './unityGenerator';
 import { matchParsedResultsByIdentity } from './lib/resultMatching';
-import { batchArray, entryToAllCaps, generateId, isGeminiTimeoutError } from './lib/utils';
+import { batchArray, displayTextToEntry, entryToAllCaps, generateId, isGeminiTimeoutError } from './lib/utils';
 
 const CLUES_PER_MATCH_PROMPT = 10;
+const ENTRIES_PER_INFLECTION_PROMPT = 20;
 const REFERENCES_PER_PROMPT = 10;
 const SCORING_BATCH_SIZE = 50;
 const DEFAULT_PARALLEL_REQUESTS = 1;
+
+const INFLECTION_TAGS = new Set(['PL', '3P', 'PT', 'PP', 'GR', 'CP', 'SP']);
 
 const SENSE_UNITY_BUCKETS = new Set([
   'Concept',
@@ -132,6 +150,8 @@ const SENSE_UNITY_BUCKETS = new Set([
   'Non-unit',
   'Nonsense',
 ]);
+
+const REJECTED_UNITY_BUCKETS = new Set(['Non-unit', 'Nonsense']);
 
 const SENSE_FAMILIARITY_BUCKETS = new Set([
   'Literal',
@@ -193,15 +213,23 @@ type ParsedSenseReference = {
   }>;
 };
 
+type ParsedInflectedForm = {
+  partOfSpeech: string;
+  tag: string;
+  displayText: string;
+};
+
+export type ParsedInflectionBlock = {
+  item: string;
+  baseForms: string[];
+  forms: ParsedInflectedForm[];
+};
+
 type MatchOutcome =
   | { kind: 'unparsed'; clue: PuzzleClueForProcessing }
   | { kind: 'unclear'; clue: PuzzleClueForProcessing }
-  | { kind: 'invented'; clue: PuzzleClueForProcessing; summary: string }
+  | { kind: 'unmatched'; clue: PuzzleClueForProcessing; summary: string }
   | { kind: 'matched'; clue: PuzzleClueForProcessing; sense: PuzzleSenseForProcessing };
-
-function entryKey(entry: string, lang: string): string {
-  return `${lang}\0${entry}`;
-}
 
 function uniqueInOrder(values: string[]): string[] {
   const seen = new Set<string>();
@@ -236,28 +264,167 @@ function removeParenthesizedComments(text: string): string {
   return text.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
 }
 
-export function displayTextsForSensePrompt(item: {
+export function entryDisplayTexts(item: {
   entry: string;
-  entryDisplayText: string | null;
+  displayText: string | null;
   secondaryDisplays: string[];
-  existingSenses: Array<{ displayText: string }>;
 }): string[] {
-  const senseTexts = uniqueInOrder(
-    item.existingSenses.map((sense) => sense.displayText.trim()).filter(Boolean),
+  const texts = uniqueInOrder(
+    [item.displayText?.trim() ?? '', ...item.secondaryDisplays.map((text) => text.trim())].filter(Boolean),
   );
-  if (senseTexts.length > 0) {
-    return senseTexts;
+  return texts.length > 0 ? texts : [item.entry];
+}
+
+function parseInflectionTaggedForms(parts: string[]): ParsedInflectedForm[] {
+  const partOfSpeech = parts[0];
+  const forms: ParsedInflectedForm[] = [];
+  for (const part of parts.slice(1)) {
+    const separatorIndex = part.indexOf(':');
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const tag = part.slice(0, separatorIndex).trim().toUpperCase();
+    const displayText = part.slice(separatorIndex + 1).trim();
+    if (!INFLECTION_TAGS.has(tag) || !displayText) {
+      continue;
+    }
+    forms.push({ partOfSpeech, tag, displayText });
+  }
+  return forms;
+}
+
+export function parseInflectionsResponse(
+  response: string,
+  items: string[],
+): Map<string, ParsedInflectionBlock> {
+  const lines = response
+    .replace(/```(?:\w+)?/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+  const knownItems = new Set(items);
+  const blocks = new Map<string, ParsedInflectionBlock>();
+  let current: ParsedInflectionBlock | null = null;
+
+  for (const line of lines) {
+    if (knownItems.has(line)) {
+      current = blocks.get(line) ?? { item: line, baseForms: [], forms: [] };
+      blocks.set(line, current);
+      continue;
+    }
+
+    if (current == null) {
+      continue;
+    }
+
+    const parts = line.split('|').map((part) => part.trim()).filter((part) => part !== '');
+    if (parts.length < 2) {
+      continue;
+    }
+    if (parts[0].toLowerCase() === 'base form') {
+      current.baseForms.push(...parts.slice(1));
+      continue;
+    }
+    current.forms.push(...parseInflectionTaggedForms(parts));
   }
 
-  const entryTexts = uniqueInOrder(
-    [item.entryDisplayText?.trim() ?? '', ...item.secondaryDisplays.map((text) => text.trim())].filter(Boolean),
+  return blocks;
+}
+
+function mergeInflectionForms(forms: ParsedInflectedForm[]): InflectionGeneratorForm[] {
+  const merged = new Map<string, InflectionGeneratorForm>();
+  for (const form of forms) {
+    const key = displayTextToEntry(form.displayText);
+    if (!key) {
+      continue;
+    }
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, { displayText: form.displayText, inflectedType: form.tag });
+      continue;
+    }
+    const tags = new Set(
+      existing.inflectedType.split(',').map((tag) => tag.trim()).filter(Boolean),
+    );
+    tags.add(form.tag);
+    existing.inflectedType = [...tags].sort().join(',');
+  }
+  return [...merged.values()];
+}
+
+async function processInflectionBatch(
+  entries: PuzzleEntryForInflections[],
+  provider: IAiProvider,
+  promptTemplate: string,
+  requestLabel: string,
+): Promise<boolean> {
+  const promptItems = entries.map((entry) => ({
+    entry,
+    displayTexts: entryDisplayTexts(entry),
+  }));
+  const lineItems = promptItems.flatMap((item) => item.displayTexts);
+  const prompt = fillPrompt(promptTemplate, {
+    '[[DATA]]': lineItems.join('\n'),
+  });
+  console.log(
+    `${requestLabel}: sending inflections prompt for ${entries.length} entries (${lineItems.length} line items)`,
   );
-  return entryTexts.length > 0 ? entryTexts : [item.entry];
+
+  const response = await provider.generateResultsAsync(prompt);
+  console.log(`${requestLabel}: received response (${response.length} characters)`);
+  const parsed = parseInflectionsResponse(response, lineItems);
+  console.log(`${requestLabel}: parsed ${parsed.size} of ${lineItems.length} line items`);
+  if (parsed.size === 0) {
+    console.warn(`${requestLabel}: nothing parseable in response; leaving entries for retry`);
+    return false;
+  }
+
+  const results: InflectionGeneratorResult[] = promptItems.map((item) => {
+    const blocks = item.displayTexts
+      .map((displayText) => parsed.get(displayText))
+      .filter((block): block is ParsedInflectionBlock => block != null);
+    const inflections = mergeInflectionForms(blocks.flatMap((block) => block.forms));
+    const baseForms = uniqueInOrder(blocks.flatMap((block) => block.baseForms))
+      .filter((baseForm) => displayTextToEntry(baseForm) !== item.entry.entry);
+
+    if (blocks.length === 0) {
+      console.log(`${requestLabel}: ${item.entry.entry} -> no results`);
+    } else if (inflections.length === 0 && baseForms.length === 0) {
+      console.log(`${requestLabel}: ${item.entry.entry} -> (None)`);
+    } else {
+      console.log(
+        `${requestLabel}: ${item.entry.entry} -> ${inflections.length} inflected forms` +
+          `${baseForms.length > 0 ? `, base forms ${baseForms.join(', ')} (deleting its senses)` : ''}`,
+      );
+    }
+
+    return {
+      entry: item.entry.entry,
+      lang: item.entry.lang,
+      hasResults: blocks.length > 0,
+      inflections,
+      baseForms,
+    };
+  });
+
+  await applyInflectionGeneratorResults(results);
+  return true;
+}
+
+function sensesForMatchingPrompt(clue: PuzzleClueForProcessing): PuzzleSenseForProcessing[] {
+  return [...clue.senses].sort((a, b) => {
+    const aOwn = a.entry === clue.entry ? 1 : 0;
+    const bOwn = b.entry === clue.entry ? 1 : 0;
+    if (aOwn !== bOwn) {
+      return aOwn - bOwn;
+    }
+    return a.entry.localeCompare(b.entry) || a.summary.localeCompare(b.summary) || a.id.localeCompare(b.id);
+  });
 }
 
 function buildClueGroup(clue: PuzzleClueForProcessing): string {
   const lines = [`${cluePromptText(clue.customClue)} : ${clue.entry}`];
-  for (const sense of clue.senses) {
+  for (const sense of sensesForMatchingPrompt(clue)) {
     if (!sense.summary.trim()) {
       continue;
     }
@@ -353,10 +520,10 @@ export function matchSenseFromPromptResult(
   }
 
   const byForm = candidates.filter((sense) => senseMatchesNaturalForm(sense, naturalForm, clueEntry));
-  if (byForm.length > 0) {
-    return byForm[0];
-  }
-  return candidates.find((sense) => sense.entry === clueEntry) ?? candidates[0];
+  const pool = byForm.length > 0 ? byForm : candidates;
+  return pool.find((sense) => sense.entry !== clueEntry)
+    ?? pool.find((sense) => sense.entry === clueEntry)
+    ?? pool[0];
 }
 
 export function parseSenseBucketResponse(response: string, allowed: Set<string>): BucketRating[] {
@@ -513,9 +680,8 @@ async function drainQueue<T, Id extends string | number>(
   concurrency: number,
   label: string,
   processBatch: (batch: T[], requestLabel: string) => Promise<boolean>,
-): Promise<{ seen: number; ok: boolean }> {
+): Promise<boolean> {
   const excludeIds: Id[] = [];
-  let seen = 0;
   let cycle = 0;
   let ok = true;
 
@@ -530,7 +696,6 @@ async function drainQueue<T, Id extends string | number>(
     for (const item of page) {
       excludeIds.push(idOf(item));
     }
-    seen += page.length;
     cycle += 1;
     const chunks = batchArray(page, batchSize);
     console.log(`${label}: cycle ${cycle}, ${page.length} items in ${chunks.length} batches`);
@@ -540,269 +705,269 @@ async function drainQueue<T, Id extends string | number>(
     }
   }
 
-  return { seen, ok };
+  return ok;
 }
 
-async function persistMatchOutcomes(
+async function processInflections(
   puzzleId: string,
-  outcomes: MatchOutcome[],
-  queueUnmatched: boolean,
-): Promise<void> {
-  const clueUpdates: ClueSenseMatchUpdate[] = [];
-  const generatorItems: Array<{ puzzleId: string; entry: string; lang: string; hint: string | null }> = [];
-
-  for (const outcome of outcomes) {
-    if (outcome.kind === 'unparsed') {
-      console.warn(
-        `  no parseable match for clue ${outcome.clue.clueId} (${outcome.clue.entry}); leaving it for retry`,
-      );
-      continue;
-    }
-
-    if (outcome.kind === 'invented') {
-      if (queueUnmatched) {
-        generatorItems.push({
-          puzzleId,
-          entry: outcome.clue.entry,
-          lang: outcome.clue.lang,
-          hint: outcome.summary,
-        });
-        console.log(
-          `  ${outcome.clue.entry}: invented sense "${outcome.summary}" queued for generation`,
-        );
-      } else {
-        clueUpdates.push({ clueId: outcome.clue.clueId, senseId: null, matchAttempted: true });
-        console.log(
-          `  ${outcome.clue.entry}: no existing sense for "${outcome.summary}"; leaving sense_id null`,
-        );
-      }
-      continue;
-    }
-
-    if (outcome.kind === 'unclear') {
-      clueUpdates.push({ clueId: outcome.clue.clueId, senseId: null, matchAttempted: true });
-      console.log(`  ${outcome.clue.entry}: Unclear`);
-      continue;
-    }
-
-    clueUpdates.push({
-      clueId: outcome.clue.clueId,
-      senseId: outcome.sense.id,
-      matchAttempted: true,
-    });
-    console.log(
-      `  ${outcome.clue.entry}: matched sense ${outcome.sense.id} "${outcome.sense.summary}"` +
-        `${outcome.sense.entry !== outcome.clue.entry ? ` on ${outcome.sense.entry}` : ''}`,
-    );
+  provider: IAiProvider,
+  promptTemplate: string,
+  concurrency: number,
+): Promise<boolean> {
+  const entries = await getPuzzleEntriesForInflections(puzzleId);
+  console.log(`Step 1: ${entries.length} entries without loading_status I*`);
+  if (entries.length === 0) {
+    return true;
   }
 
-  await updateClueSenseMatches(clueUpdates);
-  await enqueueSenseGeneratorItems(generatorItems);
-  console.log(
-    `  saved ${clueUpdates.length} clue updates, queued ${generatorItems.length} sense generations`,
+  await resetPuzzleClueMatchAttemptedForEntries(puzzleId, entries);
+  console.log(`Step 1: reset match_attempted for clues of ${entries.length} entries`);
+  return runWaves(
+    batchArray(entries, ENTRIES_PER_INFLECTION_PROMPT),
+    concurrency,
+    'Step 1 inflections',
+    (batch, requestLabel) => processInflectionBatch(batch, provider, promptTemplate, requestLabel),
   );
 }
 
-async function matchClueChunk(
+function findCorrespondingSense(
+  parsed: ParsedSense,
+  existing: SenseGenerationExistingSense[],
+): SenseGenerationExistingSense | null {
+  const corresponding = parsed.correspondingExistingSense?.trim() ?? '';
+  const normalized = corresponding.toLowerCase();
+  if (!corresponding || normalized === 'none' || normalized === '(none)') {
+    return null;
+  }
+  return existing.find((sense) => sense.summary.trim() === corresponding)
+    ?? existing.find((sense) => sense.summary.trim().toLowerCase() === normalized)
+    ?? null;
+}
+
+function generatedSenseRow(
+  parsed: ParsedSense,
+  id: string,
+  item: PuzzleEntryForSenseGeneration,
+): GeneratedSenseInsert {
+  const translationLang = item.lang === 'en' ? 'es' : 'en';
+  const isLiteral = parsed.summary.trim().toLowerCase() === 'literal';
+  const cleanList = (values: string[]) =>
+    values.map(removeParenthesizedComments).filter((text) => text !== '');
+  const natural = cleanList(parsed.naturalTranslations);
+  const colloquial = cleanList(parsed.colloquialTranslations);
+
+  return {
+    id,
+    entry: item.entry,
+    lang: item.lang,
+    display_text: parsed.displayText,
+    summary: isLiteral ? 'Literal' : parsed.summary,
+    definition: isLiteral ? '' : parsed.definition,
+    part_of_speech: parsed.partOfSpeech,
+    classification: parsed.classification,
+    similar_entries: cleanList(parsed.alternatives),
+    tags: parsed.regionality
+      ? [{ tag: 'regionality', value: parsed.regionality }]
+      : [],
+    translations: natural.length > 0 || colloquial.length > 0
+      ? [{
+          translation_lang: translationLang,
+          natural_translations: natural,
+          colloquial_translations: colloquial,
+        }]
+      : [],
+  };
+}
+
+async function generateSensesForEntry(
+  item: PuzzleEntryForSenseGeneration,
+  provider: IAiProvider,
+  promptTemplate: string,
+  requestLabel: string,
+): Promise<boolean> {
+  const displayTexts = entryDisplayTexts(item);
+  const translationLang = item.lang === 'en' ? 'es' : 'en';
+  const existingSenses = item.existingSenses
+    .filter((sense) => sense.summary !== '')
+    .map((sense) => `${sense.displayText || sense.entry} : ${sense.summary}`);
+  const prompt = fillPrompt(promptTemplate, {
+    '[[ITEM]]': displayTexts.join('/'),
+    '[[SOURCE_LANGUAGE]]': LanguageNames[item.lang] ?? item.lang,
+    '[[TRANSLATION_LANGUAGE]]': LanguageNames[translationLang] ?? translationLang,
+    '[[REFERENCE SENSES]]': existingSenses.length > 0 ? existingSenses.join('\n') : '(None)',
+    '[[HINT]]': cluePromptText(item.hint) || '(None)',
+  });
+
+  console.log(
+    `${requestLabel}: generating senses for ${item.entry} (${item.lang}) ` +
+      `forms=${displayTexts.join('/')} existing=${existingSenses.length} hint="${item.hint ?? ''}"`,
+  );
+
+  const response = await provider.generateResultsAsync(prompt);
+  console.log(`${requestLabel}: received response (${response.length} characters)`);
+  if (response.replace(/```(?:\w+)?/g, '').trim().toLowerCase() === 'nonsense') {
+    console.log(`${requestLabel}: ${item.entry} returned Nonsense`);
+    return true;
+  }
+
+  const parsed = parseSensesResponse(response);
+  console.log(`${requestLabel}: parsed ${parsed.length} senses for ${item.entry}`);
+  if (parsed.length === 0) {
+    console.warn(`${requestLabel}: no senses parsed for ${item.entry}; leaving for retry`);
+    return false;
+  }
+
+  const rows = new Map<string, GeneratedSenseInsert>();
+  for (const sense of parsed) {
+    const corresponding = findCorrespondingSense(sense, item.existingSenses);
+    if (corresponding && corresponding.entry !== item.entry) {
+      console.log(
+        `${requestLabel}: ${item.entry} sense "${sense.summary}" is covered by ` +
+          `${corresponding.entry} "${corresponding.summary}"; not inserting`,
+      );
+      continue;
+    }
+    const id = corresponding?.id ?? generateId();
+    if (!rows.has(id)) {
+      rows.set(id, generatedSenseRow(sense, id, item));
+    }
+  }
+
+  await insertGeneratedSenses([...rows.values()]);
+  console.log(
+    `${requestLabel}: inserted ${rows.size} senses for ${item.entry}: ` +
+      [...rows.values()].map((row) => {
+        const regionality = row.tags?.find((tag) => tag.tag === 'regionality')?.value;
+        return regionality ? `${row.summary} [regionality=${regionality}]` : row.summary;
+      }).join('; '),
+  );
+  return true;
+}
+
+async function generateSenses(
   puzzleId: string,
+  baseForms: boolean,
+  provider: IAiProvider,
+  promptTemplate: string,
+  concurrency: number,
+): Promise<boolean> {
+  const label = baseForms ? 'Step 2 base forms' : 'Step 2 puzzle entries';
+  let items = await getPuzzleEntriesForSenseGeneration(puzzleId, baseForms);
+  console.log(`${label}: ${items.length} entries without senses`);
+  if (items.length === 0) {
+    return true;
+  }
+
+  let ok = true;
+  const unparsed = items.filter((item) => !(item.reviewedStatus ?? '').startsWith('1'));
+  if (unparsed.length > 0) {
+    console.log(`${label}: running entry parser on ${unparsed.length} entries`);
+    const timedOut = await parseProvidedEntries(
+      unparsed.map((item) => ({ entry: item.entry, lang: item.lang })),
+      provider,
+      concurrency,
+    );
+    if (timedOut) {
+      ok = false;
+    }
+    items = await getPuzzleEntriesForSenseGeneration(puzzleId, baseForms);
+  }
+
+  const generated = await runWaves(items, concurrency, `${label} senses`, (item, requestLabel) =>
+    generateSensesForEntry(item, provider, promptTemplate, requestLabel),
+  );
+  return ok && generated;
+}
+
+async function matchClueChunk(
   clues: PuzzleClueForProcessing[],
   provider: IAiProvider,
   promptTemplate: string,
   requestLabel: string,
-  queueUnmatched: boolean,
 ): Promise<boolean> {
   const prompt = fillPrompt(promptTemplate, {
     '[[DATA]]': clues.map((clue) => buildClueGroup(clue)).join('\n\n'),
   });
   console.log(`${requestLabel}: sending crossword matching prompt for ${clues.length} clues`);
 
-  try {
-    const response = await provider.generateResultsAsync(prompt);
-    console.log(`${requestLabel}: received response (${response.length} characters)`);
-    const parsed = parseCrosswordMatchingResponse(response, clues);
-    console.log(`${requestLabel}: parsed ${parsed.size} of ${clues.length} clue matches`);
+  const response = await provider.generateResultsAsync(prompt);
+  console.log(`${requestLabel}: received response (${response.length} characters)`);
+  const parsed = parseCrosswordMatchingResponse(response, clues);
+  console.log(`${requestLabel}: parsed ${parsed.size} of ${clues.length} clue matches`);
 
-    const outcomes: MatchOutcome[] = clues.map((clue) => {
-      const result = parsed.get(clue.clueId);
-      if (!result) {
-        return { kind: 'unparsed', clue };
-      }
-      if (result.kind === 'unclear') {
-        return { kind: 'unclear', clue };
-      }
-      const sense = matchSenseFromPromptResult(clue.senses, result.summary, result.naturalForm, clue.entry);
-      if (!sense) {
-        return { kind: 'invented', clue, summary: result.summary };
-      }
-      return { kind: 'matched', clue, sense };
-    });
-
-    await persistMatchOutcomes(puzzleId, outcomes, queueUnmatched);
-    return outcomes.every((outcome) => outcome.kind !== 'unparsed');
-  } catch (error) {
-    if (isGeminiTimeoutError(error)) {
-      console.warn(`${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`);
-      return false;
+  const outcomes: MatchOutcome[] = clues.map((clue) => {
+    const result = parsed.get(clue.clueId);
+    if (!result) {
+      return { kind: 'unparsed', clue };
     }
-    throw error;
+    if (result.kind === 'unclear') {
+      return { kind: 'unclear', clue };
+    }
+    const sense = matchSenseFromPromptResult(clue.senses, result.summary, result.naturalForm, clue.entry);
+    return sense ? { kind: 'matched', clue, sense } : { kind: 'unmatched', clue, summary: result.summary };
+  });
+
+  const updates: ClueSenseMatchUpdate[] = [];
+  for (const outcome of outcomes) {
+    const { clue } = outcome;
+    switch (outcome.kind) {
+      case 'unparsed':
+        console.warn(`${requestLabel}: no parseable match for clue ${clue.clueId} (${clue.entry}); leaving for retry`);
+        continue;
+      case 'unclear':
+        console.log(`${requestLabel}: ${clue.entry}: Unclear`);
+        updates.push({ clueId: clue.clueId, senseId: null, matchAttempted: true });
+        continue;
+      case 'unmatched':
+        console.log(`${requestLabel}: ${clue.entry}: no existing sense for "${outcome.summary}"; leaving sense_id null`);
+        updates.push({ clueId: clue.clueId, senseId: null, matchAttempted: true });
+        continue;
+      case 'matched':
+        console.log(
+          `${requestLabel}: ${clue.entry}: matched sense ${outcome.sense.id} "${outcome.sense.summary}"` +
+            `${outcome.sense.entry !== clue.entry ? ` on ${outcome.sense.entry}` : ''}`,
+        );
+        updates.push({ clueId: clue.clueId, senseId: outcome.sense.id, matchAttempted: true });
+    }
   }
+
+  await updateClueSenseMatches(updates);
+  return outcomes.every((outcome) => outcome.kind !== 'unparsed');
 }
 
 async function matchClues(
   puzzleId: string,
-  clues: PuzzleClueForProcessing[],
   provider: IAiProvider,
   promptTemplate: string,
   concurrency: number,
-  queueUnmatched: boolean,
-  label: string,
 ): Promise<boolean> {
-  if (clues.length === 0) {
-    console.log(`${label}: no clues to match`);
+  const clues = await getPuzzleCluesForProcessing(puzzleId);
+  const pending = clues.filter((clue) => !clue.matchAttempted);
+  console.log(`Step 3: ${pending.length} of ${clues.length} clues need matching`);
+
+  const withoutSenses = pending.filter((clue) => !clue.entryExists || clue.senses.length === 0);
+  if (withoutSenses.length > 0) {
+    await updateClueSenseMatches(withoutSenses.map((clue) => ({
+      clueId: clue.clueId,
+      senseId: null,
+      matchAttempted: true,
+    })));
+    console.log(`Step 3: ${withoutSenses.length} clues have no senses to match; leaving sense_id null`);
+  }
+
+  const matchable = pending.filter((clue) => clue.entryExists && clue.senses.length > 0);
+  if (matchable.length === 0) {
     return true;
   }
-
-  const chunks = batchArray(clues, CLUES_PER_MATCH_PROMPT);
-  console.log(`${label}: ${clues.length} clues in ${chunks.length} prompts`);
-  return runWaves(chunks, concurrency, label, (chunk, requestLabel) =>
-    matchClueChunk(puzzleId, chunk, provider, promptTemplate, requestLabel, queueUnmatched),
+  const chunks = batchArray(matchable, CLUES_PER_MATCH_PROMPT);
+  console.log(`Step 3: ${matchable.length} clues in ${chunks.length} prompts`);
+  return runWaves(chunks, concurrency, 'Step 3 matching', (chunk, requestLabel) =>
+    matchClueChunk(chunk, provider, promptTemplate, requestLabel),
   );
-}
-
-function resolveGeneratedSenseId(
-  parsed: ParsedSense,
-  existing: Array<{ id: string; summary: string }>,
-): string {
-  const corresponding = parsed.correspondingExistingSense?.trim() ?? '';
-  const normalized = corresponding.toLowerCase();
-  if (corresponding && normalized !== 'none' && normalized !== '(none)') {
-    const match = existing.find((sense) => sense.summary.trim() === corresponding)
-      ?? existing.find((sense) => sense.summary.trim().toLowerCase() === normalized);
-    if (match) {
-      return match.id;
-    }
-  }
-  return generateId();
-}
-
-function dedupeGeneratedSenses(rows: GeneratedSenseInsert[]): GeneratedSenseInsert[] {
-  const byId = new Map<string, GeneratedSenseInsert>();
-  for (const row of rows) {
-    if (!byId.has(row.id)) {
-      byId.set(row.id, row);
-    }
-  }
-  return [...byId.values()];
-}
-
-function generatedSenseRows(
-  parsedSenses: ParsedSense[],
-  item: SenseGeneratorQueueItem,
-): GeneratedSenseInsert[] {
-  const translationLang = item.lang === 'en' ? 'es' : 'en';
-  return parsedSenses.map((parsed) => {
-    const isLiteral = parsed.summary.trim().toLowerCase() === 'literal';
-    const natural = parsed.naturalTranslations
-      .map(removeParenthesizedComments)
-      .filter((text) => text !== '');
-    const colloquial = parsed.colloquialTranslations
-      .map(removeParenthesizedComments)
-      .filter((text) => text !== '');
-    const alternatives = parsed.alternatives
-      .map(removeParenthesizedComments)
-      .filter((text) => text !== '');
-
-    return {
-      id: resolveGeneratedSenseId(parsed, item.existingSenses),
-      entry: item.entry,
-      lang: item.lang,
-      display_text: parsed.displayText,
-      summary: isLiteral ? 'Literal' : parsed.summary,
-      definition: isLiteral ? '' : parsed.definition,
-      part_of_speech: parsed.partOfSpeech,
-      classification: parsed.classification,
-      similar_entries: alternatives,
-      tags: parsed.regionality
-        ? [{ tag: 'regionality', value: parsed.regionality }]
-        : [],
-      translations: natural.length > 0 || colloquial.length > 0
-        ? [{
-            translation_lang: translationLang,
-            natural_translations: natural,
-            colloquial_translations: colloquial,
-          }]
-        : [],
-    };
-  });
-}
-
-async function processSenseGeneratorItem(
-  item: SenseGeneratorQueueItem,
-  provider: IAiProvider,
-  promptTemplate: string,
-  requestLabel: string,
-  processedEntryKeys: Set<string>,
-): Promise<boolean> {
-  const displayTexts = displayTextsForSensePrompt(item);
-  const translationLang = item.lang === 'en' ? 'es' : 'en';
-  const referenceSenses = item.existingSenses
-    .map((sense) => sense.summary.trim())
-    .filter((summary) => summary !== '');
-  const prompt = fillPrompt(promptTemplate, {
-    '[[ITEM]]': displayTexts.join('/'),
-    '[[SOURCE_LANGUAGE]]': LanguageNames[item.lang] ?? item.lang,
-    '[[TRANSLATION_LANGUAGE]]': LanguageNames[translationLang] ?? translationLang,
-    '[[REFERENCE SENSES]]': referenceSenses.length > 0 ? referenceSenses.join('\n') : '(None)',
-    '[[HINT]]': item.hint?.trim() || '(None)',
-  });
-
-  console.log(
-    `${requestLabel}: generating senses for ${item.entry} (${item.lang}) ` +
-      `forms=${displayTexts.join('/')} hint="${item.hint ?? ''}"`,
-  );
-
-  try {
-    const response = await provider.generateResultsAsync(prompt);
-    console.log(`${requestLabel}: received response (${response.length} characters)`);
-    const nonsense = response.replace(/```(?:\w+)?/g, '').trim().toLowerCase() === 'nonsense';
-    if (nonsense) {
-      processedEntryKeys.add(entryKey(item.entry, item.lang));
-      await deleteSenseGeneratorQueueItems([item.queueId]);
-      console.log(`${requestLabel}: ${item.entry} returned Nonsense`);
-      return true;
-    }
-
-    const parsed = parseSensesResponse(response);
-    console.log(`${requestLabel}: parsed ${parsed.length} senses for ${item.entry}`);
-    if (parsed.length === 0) {
-      console.warn(`${requestLabel}: no senses parsed for ${item.entry}; leaving queue item`);
-      return false;
-    }
-
-    const rows = dedupeGeneratedSenses(generatedSenseRows(parsed, item));
-    await insertGeneratedSenses(rows);
-    await deleteSenseGeneratorQueueItems([item.queueId]);
-    processedEntryKeys.add(entryKey(item.entry, item.lang));
-    console.log(
-      `${requestLabel}: inserted ${rows.length} senses for ${item.entry}: ` +
-        rows.map((row) => {
-          const regionality = row.tags?.find((tag) => tag.tag === 'regionality')?.value;
-          return regionality ? `${row.summary} [regionality=${regionality}]` : row.summary;
-        }).join('; '),
-    );
-    return true;
-  } catch (error) {
-    if (isGeminiTimeoutError(error)) {
-      console.warn(`${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`);
-      return false;
-    }
-    throw error;
-  }
 }
 
 type ScoringState = {
   senseId: string;
-  entry: string;
   displayText: string;
   summary: string;
   classification: string;
@@ -815,7 +980,6 @@ type ScoringState = {
 function scoringState(item: PuzzleSenseScoringItem): ScoringState {
   return {
     senseId: item.senseId,
-    entry: item.entry,
     displayText: item.displayText?.trim() || item.entry,
     summary: item.summary?.trim() || item.displayText?.trim() || item.entry,
     classification: item.classification?.trim() || 'Word',
@@ -823,24 +987,6 @@ function scoringState(item: PuzzleSenseScoringItem): ScoringState {
     familiarityBucket: item.familiarityBucket,
     qualityBucket: item.qualityBucket,
     reviewedStatus: item.reviewedStatus,
-  };
-}
-
-function entryFillFromScoredSense(state: ScoringState): ScoredSenseEntryFill | null {
-  if (
-    state.reviewedStatus !== '234'
-    || !state.unityBucket
-    || !state.familiarityBucket
-    || !state.qualityBucket
-  ) {
-    return null;
-  }
-
-  return {
-    senseId: state.senseId,
-    unityScore: UNITY_SCORES[state.unityBucket],
-    familiarityScore: FAMILIARITY_SCORES[state.familiarityBucket],
-    qualityScore: QUALITY_SCORES[state.qualityBucket],
   };
 }
 
@@ -858,31 +1004,25 @@ function qualityLine(state: ScoringState): string {
 
 async function requestBucketRatings(
   template: string,
-  lines: string[],
+  states: ScoringState[],
+  lineFor: (state: ScoringState) => string,
   allowed: Set<string>,
   provider: IAiProvider,
   requestLabel: string,
-): Promise<BucketRating[]> {
-  const prompt = fillPrompt(template, { '[[DATA]]': lines.join('\n') });
-  console.log(`${requestLabel}: sending prompt for ${lines.length} senses`);
-  const response = await provider.generateResultsAsync(prompt);
-  console.log(`${requestLabel}: received response (${response.length} characters)`);
-  const parsed = parseSenseBucketResponse(response, allowed);
-  console.log(`${requestLabel}: parsed ${parsed.length} ratings`);
-  return parsed;
-}
-
-function applyBucketRatings(
-  states: ScoringState[],
-  ratings: BucketRating[],
-  lineFor: (state: ScoringState) => string,
-): Map<string, BucketRating> {
+): Promise<Map<string, BucketRating>> {
   const inputs = states.map((state) => ({
     state,
     promptLine: lineFor(state),
     displayText: state.displayText,
     summary: state.summary,
   }));
+  const prompt = fillPrompt(template, { '[[DATA]]': inputs.map((input) => input.promptLine).join('\n') });
+  console.log(`${requestLabel}: sending prompt for ${states.length} senses`);
+  const response = await provider.generateResultsAsync(prompt);
+  console.log(`${requestLabel}: received response (${response.length} characters)`);
+  const ratings = parseSenseBucketResponse(response, allowed);
+  console.log(`${requestLabel}: parsed ${ratings.length} ratings`);
+
   const matches = matchParsedResultsByIdentity(
     inputs,
     ratings,
@@ -891,10 +1031,9 @@ function applyBucketRatings(
   );
   const buckets = new Map<string, BucketRating>();
   for (const match of matches) {
-    if (!match) {
-      continue;
+    if (match) {
+      buckets.set(match.input.state.senseId, match.parsed);
     }
-    buckets.set(match.input.state.senseId, match.parsed);
   }
   return buckets;
 }
@@ -905,126 +1044,120 @@ async function scoreSenseBatch(
   prompts: { unity: string; familiarity: string; quality: string },
   requestLabel: string,
 ): Promise<boolean> {
-  const states = items.map(scoringState);
+  let states = items.map(scoringState);
 
-  try {
-    const active = states.filter((state) => state.reviewedStatus !== '234');
-
-    const needUnity = active.filter((state) => state.reviewedStatus == null);
-    if (needUnity.length > 0) {
-      const ratings = await requestBucketRatings(
-        prompts.unity,
-        needUnity.map(unityLine),
-        SENSE_UNITY_BUCKETS,
-        provider,
-        `${requestLabel} unity`,
-      );
-      const buckets = applyBucketRatings(needUnity, ratings, unityLine);
-      const updates = [];
-      for (const state of needUnity) {
-        const bucket = buckets.get(state.senseId)?.bucket;
-        if (!bucket) {
-          console.warn(`${requestLabel}: no unity rating for ${state.displayText} (${state.senseId})`);
-          continue;
-        }
-        state.unityBucket = bucket;
-        state.reviewedStatus = '2';
-        updates.push({ senseId: state.senseId, unityBucket: bucket, reviewedStatus: '2' });
-        console.log(`${requestLabel}: ${state.displayText} unity=${bucket}, reviewed_status=2`);
-      }
-      await updateSenseScoringResults(updates);
-    }
-
-    const needFamiliarity = active.filter(
-      (state) => state.reviewedStatus === '2' && Boolean(state.unityBucket),
+  const needUnity = states.filter((state) => state.reviewedStatus == null);
+  if (needUnity.length > 0) {
+    const buckets = await requestBucketRatings(
+      prompts.unity,
+      needUnity,
+      unityLine,
+      SENSE_UNITY_BUCKETS,
+      provider,
+      `${requestLabel} unity`,
     );
-    if (needFamiliarity.length > 0) {
-      const ratings = await requestBucketRatings(
-        prompts.familiarity,
-        needFamiliarity.map(familiarityLine),
-        SENSE_FAMILIARITY_BUCKETS,
-        provider,
-        `${requestLabel} familiarity`,
-      );
-      const buckets = applyBucketRatings(needFamiliarity, ratings, familiarityLine);
-      const updates = [];
-      for (const state of needFamiliarity) {
-        const rating = buckets.get(state.senseId);
-        if (!rating) {
-          console.warn(`${requestLabel}: no familiarity rating for ${state.displayText} (${state.senseId})`);
-          continue;
-        }
-        state.familiarityBucket = rating.bucket;
-        state.reviewedStatus = '23';
-        updates.push({
-          senseId: state.senseId,
-          familiarityBucket: rating.bucket,
-          reviewedStatus: '23',
-          domain: rating.domain ?? '',
-        });
-        console.log(
-          `${requestLabel}: ${state.displayText} familiarity=${rating.bucket}` +
-            `${rating.domain ? `, domain=${rating.domain}` : ''}, reviewed_status=23`,
-        );
+    const updates = [];
+    const rejected: string[] = [];
+    for (const state of needUnity) {
+      const bucket = buckets.get(state.senseId)?.bucket;
+      if (!bucket) {
+        console.warn(`${requestLabel}: no unity rating for ${state.displayText} (${state.senseId})`);
+        continue;
       }
-      await updateSenseScoringResults(updates);
-    }
-
-    const needQuality = active.filter(
-      (state) => state.reviewedStatus === '23' && Boolean(state.unityBucket) && Boolean(state.familiarityBucket),
-    );
-    if (needQuality.length > 0) {
-      const ratings = await requestBucketRatings(
-        prompts.quality,
-        needQuality.map(qualityLine),
-        SENSE_QUALITY_BUCKETS,
-        provider,
-        `${requestLabel} quality`,
-      );
-      const buckets = applyBucketRatings(needQuality, ratings, qualityLine);
-      const updates = [];
-      for (const state of needQuality) {
-        const rating = buckets.get(state.senseId);
-        if (!rating) {
-          console.warn(`${requestLabel}: no quality rating for ${state.displayText} (${state.senseId})`);
-          continue;
-        }
-        state.qualityBucket = rating.bucket;
-        state.reviewedStatus = '234';
-        updates.push({
-          senseId: state.senseId,
-          qualityBucket: rating.bucket,
-          reviewedStatus: '234',
-          flags: rating.flags,
-        });
-        console.log(
-          `${requestLabel}: ${state.displayText} quality=${rating.bucket}, reviewed_status=234` +
-            `${rating.flags.length > 0 ? `, tags=${rating.flags.join(',')}` : ''}`,
-        );
+      state.unityBucket = bucket;
+      if (REJECTED_UNITY_BUCKETS.has(bucket)) {
+        rejected.push(state.senseId);
+        console.log(`${requestLabel}: ${state.displayText} unity=${bucket}; deleting sense and clearing clue sense_id`);
+        continue;
       }
-      await updateSenseScoringResults(updates);
+      state.reviewedStatus = '2';
+      updates.push({ senseId: state.senseId, unityBucket: bucket, reviewedStatus: '2' });
+      console.log(`${requestLabel}: ${state.displayText} unity=${bucket}, reviewed_status=2`);
     }
-
-    const entryFills = states
-      .map(entryFillFromScoredSense)
-      .filter((fill): fill is ScoredSenseEntryFill => fill != null);
-    if (entryFills.length > 0) {
-      await fillEntryFieldsFromScoredSenses(entryFills);
-      console.log(`${requestLabel}: filled missing entry fields from ${entryFills.length} scored senses`);
-    }
-
-    const unfinished = active.filter((state) => state.reviewedStatus !== '234').length;
-    if (unfinished > 0) {
-      console.warn(`${requestLabel}: ${unfinished} senses still need scoring`);
-    }
-    return unfinished === 0;
-  } catch (error) {
-    if (isGeminiTimeoutError(error)) {
-      console.warn(`${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`);
-      return false;
-    }
-    throw error;
+    await updateSenseScoringResults(updates);
+    await deleteSensesAndClearClueMatches(rejected);
+    states = states.filter((state) => !rejected.includes(state.senseId));
   }
+
+  const needFamiliarity = states.filter((state) => state.reviewedStatus === '2' && Boolean(state.unityBucket));
+  if (needFamiliarity.length > 0) {
+    const buckets = await requestBucketRatings(
+      prompts.familiarity,
+      needFamiliarity,
+      familiarityLine,
+      SENSE_FAMILIARITY_BUCKETS,
+      provider,
+      `${requestLabel} familiarity`,
+    );
+    const updates = [];
+    for (const state of needFamiliarity) {
+      const rating = buckets.get(state.senseId);
+      if (!rating) {
+        console.warn(`${requestLabel}: no familiarity rating for ${state.displayText} (${state.senseId})`);
+        continue;
+      }
+      state.familiarityBucket = rating.bucket;
+      state.reviewedStatus = '23';
+      updates.push({
+        senseId: state.senseId,
+        familiarityBucket: rating.bucket,
+        reviewedStatus: '23',
+        domain: rating.domain ?? '',
+      });
+      console.log(
+        `${requestLabel}: ${state.displayText} familiarity=${rating.bucket}` +
+          `${rating.domain ? `, domain=${rating.domain}` : ''}, reviewed_status=23`,
+      );
+    }
+    await updateSenseScoringResults(updates);
+  }
+
+  const needQuality = states.filter(
+    (state) => state.reviewedStatus === '23' && Boolean(state.unityBucket) && Boolean(state.familiarityBucket),
+  );
+  if (needQuality.length > 0) {
+    const buckets = await requestBucketRatings(
+      prompts.quality,
+      needQuality,
+      qualityLine,
+      SENSE_QUALITY_BUCKETS,
+      provider,
+      `${requestLabel} quality`,
+    );
+    const updates = [];
+    for (const state of needQuality) {
+      const rating = buckets.get(state.senseId);
+      if (!rating) {
+        console.warn(`${requestLabel}: no quality rating for ${state.displayText} (${state.senseId})`);
+        continue;
+      }
+      state.qualityBucket = rating.bucket;
+      state.reviewedStatus = '234';
+      updates.push({
+        senseId: state.senseId,
+        qualityBucket: rating.bucket,
+        reviewedStatus: '234',
+        flags: rating.flags,
+      });
+      console.log(
+        `${requestLabel}: ${state.displayText} quality=${rating.bucket}, reviewed_status=234` +
+          `${rating.flags.length > 0 ? `, tags=${rating.flags.join(',')}` : ''}`,
+      );
+    }
+    await updateSenseScoringResults(updates);
+  }
+
+  const scored = states.filter((state) => state.reviewedStatus === '234');
+  if (scored.length > 0) {
+    await fillEntryFieldsFromScoredSenses(scored.map((state) => ({ senseId: state.senseId })));
+    console.log(`${requestLabel}: updated entry records from ${scored.length} scored senses where eligible`);
+  }
+
+  const unfinished = states.length - scored.length;
+  if (unfinished > 0) {
+    console.warn(`${requestLabel}: ${unfinished} senses still need scoring`);
+  }
+  return unfinished === 0;
 }
 
 async function processReferenceBatch(
@@ -1044,54 +1177,48 @@ async function processReferenceBatch(
   });
   console.log(`${requestLabel}: sending sense reference prompt for ${items.length} senses`);
 
-  try {
-    const response = await provider.generateResultsAsync(prompt);
-    console.log(`${requestLabel}: received response (${response.length} characters)`);
-    const parsed = parseSenseReferenceResponse(response);
-    console.log(`${requestLabel}: parsed ${parsed.length} reference blocks`);
-    const matches = matchParsedResultsByIdentity(
-      inputs,
-      parsed,
-      (input) => [input.line, input.displayText, `${input.displayText} : ${input.summary}`],
-      (block) => [block.item, `${block.item} : ${block.summary}`],
+  const response = await provider.generateResultsAsync(prompt);
+  console.log(`${requestLabel}: received response (${response.length} characters)`);
+  const parsed = parseSenseReferenceResponse(response);
+  console.log(`${requestLabel}: parsed ${parsed.length} reference blocks`);
+  const matches = matchParsedResultsByIdentity(
+    inputs,
+    parsed,
+    (input) => [input.line, input.displayText, `${input.displayText} : ${input.summary}`],
+    (block) => [block.item, `${block.item} : ${block.summary}`],
+  );
+
+  const references = [];
+  const processedSenseIds: string[] = [];
+  for (const match of matches) {
+    if (!match) {
+      continue;
+    }
+    processedSenseIds.push(match.input.item.senseId);
+    for (const reference of match.parsed.references) {
+      references.push({
+        id: generateId(),
+        senseId: match.input.item.senseId,
+        referenceType: reference.type,
+        referenceText: reference.text,
+        referenceSource: reference.source,
+        referenceUrl: reference.url,
+      });
+    }
+    console.log(
+      `${requestLabel}: ${match.input.displayText} "${match.input.summary}" ` +
+        `-> ${match.parsed.references.length} references`,
     );
-
-    const references = [];
-    const matchedCount = matches.filter((match) => match != null).length;
-    for (const match of matches) {
-      if (!match) {
-        continue;
-      }
-      for (const reference of match.parsed.references) {
-        references.push({
-          id: generateId(),
-          senseId: match.input.item.senseId,
-          referenceType: reference.type,
-          referenceText: reference.text,
-          referenceSource: reference.source,
-          referenceUrl: reference.url,
-        });
-      }
-      console.log(
-        `${requestLabel}: ${match.input.displayText} "${match.input.summary}" ` +
-          `-> ${match.parsed.references.length} references`,
-      );
-    }
-
-    const unmatched = inputs.length - matchedCount;
-    if (unmatched > 0) {
-      console.warn(`${requestLabel}: ${unmatched} senses had no reference block`);
-    }
-
-    await insertSenseReferences(references);
-    return unmatched === 0;
-  } catch (error) {
-    if (isGeminiTimeoutError(error)) {
-      console.warn(`${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`);
-      return false;
-    }
-    throw error;
   }
+
+  const unmatched = inputs.length - processedSenseIds.length;
+  if (unmatched > 0) {
+    console.warn(`${requestLabel}: ${unmatched} senses had no reference block`);
+  }
+
+  await insertSenseReferences(references);
+  await markSensesReferencesAttempted(items.map((item) => item.senseId));
+  return true;
 }
 
 async function processPuzzle(
@@ -1099,138 +1226,57 @@ async function processPuzzle(
   provider: IAiProvider,
   concurrency: number,
 ): Promise<boolean> {
-  const matchingPrompt = await readPrompt('./src/ai/crossword_matching_prompt.txt');
+  const inflectionsPrompt = await readPrompt('./src/ai/inflections_prompt.txt');
   const sensesPrompt = await readPrompt('./src/ai/senses_prompt.txt');
+  const matchingPrompt = await readPrompt('./src/ai/crossword_matching_prompt.txt');
   const unityPrompt = await readPrompt('./src/ai/sense_unity_prompt.txt');
   const familiarityPrompt = await readPrompt('./src/ai/sense_familiarity_prompt.txt');
   const qualityPrompt = await readPrompt('./src/ai/sense_quality_prompt.txt');
   const referencePrompt = await readPrompt('./src/ai/sense_reference_prompt.txt');
 
-  console.log(`Step 1: loading clues for puzzle ${puzzleId}`);
-  let clues = await getPuzzleCluesForProcessing(puzzleId);
-  console.log(`Step 1: loaded ${clues.length} clues`);
+  const steps: Array<[string, () => Promise<boolean>]> = [
+    ['Step 1: generating inflections', () =>
+      processInflections(puzzleId, provider, inflectionsPrompt, concurrency)],
+    ['Step 2: generating senses for base forms', () =>
+      generateSenses(puzzleId, true, provider, sensesPrompt, concurrency)],
+    ['Step 2: generating senses for puzzle entries', () =>
+      generateSenses(puzzleId, false, provider, sensesPrompt, concurrency)],
+    ['Step 3: matching clues to senses', () =>
+      matchClues(puzzleId, provider, matchingPrompt, concurrency)],
+    ['Step 4: scoring matched senses', () =>
+      drainQueue<PuzzleSenseScoringItem, string>(
+        (limit, excludeIds) => getMatchedSensesForScoring(puzzleId, limit, excludeIds),
+        (item) => item.senseId,
+        SCORING_BATCH_SIZE,
+        concurrency,
+        'Step 4 sense scoring',
+        (batch, requestLabel) => scoreSenseBatch(batch, provider, {
+          unity: unityPrompt,
+          familiarity: familiarityPrompt,
+          quality: qualityPrompt,
+        }, requestLabel),
+      )],
+    ['Step 5: finding sense references', () =>
+      drainQueue<PuzzleSenseReferenceItem, string>(
+        (limit, excludeIds) => getMatchedSensesWithoutReferences(puzzleId, limit, excludeIds),
+        (item) => item.senseId,
+        REFERENCES_PER_PROMPT,
+        concurrency,
+        'Step 5 sense references',
+        (batch, requestLabel) => processReferenceBatch(batch, provider, referencePrompt, requestLabel),
+      )],
+  ];
 
-  const missingDisplay = uniqueInOrder(
-    clues
-      .filter((clue) => clue.entryExists && (clue.displayText == null || clue.displayText.trim() === ''))
-      .map((clue) => entryKey(clue.entry, clue.lang)),
-  ).map((key) => {
-    const separator = key.indexOf('\0');
-    return { lang: key.slice(0, separator), entry: key.slice(separator + 1) };
-  });
-
-  let needsRetry = false;
-  if (missingDisplay.length > 0) {
-    console.log(`Step 1: parsing display text for ${missingDisplay.length} entries`);
-    const timedOut = await parseProvidedEntries(missingDisplay, provider, concurrency);
-    if (timedOut) {
-      needsRetry = true;
-    }
-    clues = await getPuzzleCluesForProcessing(puzzleId);
-    console.log('Step 1: reloaded clues after entry parsing');
-  }
-
-  const pending = clues.filter((clue) => !clue.matchAttempted);
-  const missingEntries = pending.filter((clue) => !clue.entryExists);
-  for (const clue of missingEntries) {
-    console.warn(`Step 1: clue ${clue.clueId} entry ${clue.entry} (${clue.lang}) has no entry row; skipping`);
-  }
-
-  const withoutSenses = pending.filter((clue) => clue.entryExists && clue.senses.length === 0);
-  if (withoutSenses.length > 0) {
-    console.log(`Step 1: queueing ${withoutSenses.length} clues that have no senses`);
-    await enqueueSenseGeneratorItems(withoutSenses.map((clue) => ({
-      puzzleId,
-      entry: clue.entry,
-      lang: clue.lang,
-      hint: cluePromptText(clue.customClue) || null,
-    })));
-  }
-
-  const matchable = pending.filter((clue) => clue.entryExists && clue.senses.length > 0);
-  const matchingOk = await matchClues(
-    puzzleId,
-    matchable,
-    provider,
-    matchingPrompt,
-    concurrency,
-    true,
-    'Step 1 matching',
-  );
-  if (!matchingOk) {
-    needsRetry = true;
-  }
-
-  console.log(`Step 2: generating senses for puzzle ${puzzleId}`);
-  const processedEntryKeys = new Set<string>();
-  const generation = await drainQueue<SenseGeneratorQueueItem, number>(
-    (limit, excludeIds) => getSenseGeneratorQueueForPuzzle(puzzleId, limit, excludeIds),
-    (item) => item.queueId,
-    1,
-    concurrency,
-    'Step 2 sense generation',
-    (batch, requestLabel) => processSenseGeneratorItem(
-      batch[0],
-      provider,
-      sensesPrompt,
-      requestLabel,
-      processedEntryKeys,
-    ),
-  );
-  if (!generation.ok) {
-    needsRetry = true;
-  }
-
-  console.log(`Step 3: rematching ${processedEntryKeys.size} entries processed by sense generation`);
-  if (processedEntryKeys.size > 0) {
-    const refreshed = await getPuzzleCluesForProcessing(puzzleId);
-    const rematch = refreshed.filter(
-      (clue) => clue.entryExists
-        && !clue.matchAttempted
-        && processedEntryKeys.has(entryKey(clue.entry, clue.lang)),
-    );
-    const rematchOk = await matchClues(
-      puzzleId,
-      rematch,
-      provider,
-      matchingPrompt,
-      concurrency,
-      false,
-      'Step 3 matching',
-    );
-    if (!rematchOk) {
-      needsRetry = true;
+  for (const [description, run] of steps) {
+    console.log(`${description} for puzzle ${puzzleId}`);
+    if (!(await run())) {
+      console.warn(`${description} did not complete for puzzle ${puzzleId}; stopping before later steps`);
+      return true;
     }
   }
 
-  console.log(`Step 4: scoring matched senses for puzzle ${puzzleId}`);
-  const scoring = await drainQueue<PuzzleSenseScoringItem, string>(
-    (limit, excludeIds) => getMatchedSensesForScoring(puzzleId, limit, excludeIds),
-    (item) => item.senseId,
-    SCORING_BATCH_SIZE,
-    concurrency,
-    'Step 4 sense scoring',
-    (batch, requestLabel) => scoreSenseBatch(batch, provider, {
-      unity: unityPrompt,
-      familiarity: familiarityPrompt,
-      quality: qualityPrompt,
-    }, requestLabel),
-  );
-  if (!scoring.ok) {
-    needsRetry = true;
-  }
-
-  console.log(`Step 5: finding references for matched senses without references for puzzle ${puzzleId}`);
-  const references = await drainQueue<PuzzleSenseReferenceItem, string>(
-    (limit, excludeIds) => getMatchedSensesWithoutReferences(puzzleId, limit, excludeIds),
-    (item) => item.senseId,
-    REFERENCES_PER_PROMPT,
-    concurrency,
-    'Step 5 sense references',
-    (batch, requestLabel) => processReferenceBatch(batch, provider, referencePrompt, requestLabel),
-  );
-  console.log(`Finished steps for puzzle ${puzzleId}`);
-  return needsRetry || !references.ok;
+  console.log(`Finished all steps for puzzle ${puzzleId}`);
+  return false;
 }
 
 export async function crosswordProcessor(
@@ -1265,4 +1311,3 @@ export async function crosswordProcessor(
     }
   }
 }
-

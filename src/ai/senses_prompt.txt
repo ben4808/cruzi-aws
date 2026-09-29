@@ -2,7 +2,7 @@ Analyze the distinct senses of the following word or phrase: [[ITEM]]
 Language of the item: [[SOURCE_LANGUAGE]]
 Language of translations: [[TRANSLATION_LANGUAGE]]
 
-EXISTING SENSES
+EXISTING SENSES (format is one per line: <natural form> : <sense summary>)
 [[REFERENCE SENSES]]
 
 HINT
@@ -15,23 +15,32 @@ TASKS
 1. If the item is uninterpretable gibberish, reply ONLY with the word "Nonsense".
 
 2. Generate senses from the item alone. Ignore Existing Senses until step 3.
-  - The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation.
-  - Generate senses of all presented forms or even forms not presented, as long as the sequence of alphanumeric characters is preserved.
+  - The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation. Generate senses 
+     of all presented forms or even forms not presented, as long as the sequence of alphanumeric characters is preserved.
      - e.g. for the word "edge", generate senses for edge, Edge, and EDGE, but not for "on edge" or "The Edge"
-     - e.g. for the phrase "blue sky/BLueSky", generate senses for "blue sky" and "BlueSky" but not "blue sky law"
-  - Take extra care to generate the sense that is described or hinted at by the HINT, if one is given.
+     - e.g. for the phrase "blue sky | BLueSky", generate senses for "blue sky" and "BlueSky" but not "blue sky law"
+  - Make an extra effort to generate the sense that is described or hinted at by the HINT, if one is given.
   - Different part of speech → different sense.
   - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
      - Only output a sense when that classification is actually used.
-  - Each generated sense has its own display text: the usual way that reading is written. Do not expand an acronym into its full phrase as display text.
+     - Also consider plural acronyms. (e.g. DMs)
+  - Each generated sense has its own display text i.e. the usual way that reading is written. 
+     - Do not expand an acronym into its full phrase as display text.
   - One meaning per sense. If you would write "A or B", split into two senses.
+  - If the item is a phrase and is used to mean literally what it says, use as both the sense summary and the definition "Literal".
+    - Includes descriptive phrases and conversational formulas.
+    - Items can have both a literal sense and a non-literal sense(s). (e.g. blue sky is descriptive, BlueSky is a company)
 
 3. Then match. For each generated sense, look at Existing Senses.
   - Same meaning → in "Corresponding existing sense", paste that existing short description character-for-character. 
-     Leave your own short description as you wrote it; do not rewrite it to match.
+     - Leave your own short description as you wrote it; do not rewrite it to match.
+     - Existing senses may correspond to a base form of the item rather than the item itself. Always prefer matching the clue against 
+       a sense of a base form when possible. Only match against a sense of the item itself when there is no base form, or when the 
+       sense does not refer to the base form.
+       Example: "advanced" as an adjective does not apply to any sense of the base form "advance".
   - No match → None
 
-4. Regionality. Classify into one of these buckets:
+4. Regionality. Classify each sense into one of these buckets:
   - Widespread: Prevalent throughout the language
   - Regional: Specific to or closely associated with a specific region, country, or dialect. 
       (specify which in parenthesis).

@@ -1,0 +1,67 @@
+Identify all the inflected forms of a list of words and phrases, and/or identify the base form.
+
+Limit yourself to the following list of inflected forms.
+Each form is given with a two-letter tag which will label it in the output.
+
+For nouns: Plural (PL)
+For verbs: Third-person singular present (3P), Past Tense (PT), Past Participle (PP), Gerund/Present Participle (GR)
+For adjectives and adverbs: Comparative (CP), Superlative (SP)
+
+GUIDELINES
+- If the item is already an inflected form, identify all base forms. It's not important to provide a type label in this case.
+  - Note that an item can have both a base form and inflections. In this case output both.
+- If the item can be interpreted as multiple parts of speech, return the inflections for each part of speech.
+- Give all inflections written with natural English capitalization, spacing, and punctuation.
+- Don't include comparative forms with "more" or superlative forms with "most".
+- Consider the item exactly as it is written. For example, if it's capitalized, interpret it as a proper
+   name. If it's ALLCAPS, interpret it as an acronym or abbreviation.
+- Do not generate plurals of proper names.
+- Do not invent synthetic inflection that aren't actually used. E.g. beautifuler
+- If there are variant inflections, list them all (can be multiple with the same tag).
+- If the item has no inflections, output "(None)".
+
+OUTPUT
+Output results in the following format. Don't include any explanatory or auxiliary text.
+
+<input as given>
+base form | <base form>
+<part of speech> | tag : <inflection 1> | tag : <inflection 2> : ...
+
+Examples:
+does
+base form | doe
+base form | do
+
+calling
+base form | call
+noun | PL : callings
+
+cactus
+noun | PL : cactuses | PL : cacti
+
+ram
+noun | PL : rams
+verb | 3P : rams | PT : rammed | PP : rammed | GR : ramming
+
+Ram
+noun | PL : Rams
+
+blue sky
+noun | PL : blue skies
+
+BlueSky
+(None)
+
+make hay
+verb | 3P : makes hay | PT : made hay | PP : made hay | GR : making hay
+
+fast
+noun | PL : fasts
+verb | 3P : fasts | PT : fasted | PP : fasted | GR : fasting
+adjective | CP : faster | SP : fastest
+adverb | CP : faster | SP : fastest
+
+
+ITEMS TO PROCESS
+
+[[DATA]]

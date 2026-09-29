@@ -12,18 +12,18 @@ Keep looping through the following steps until maxItems queue items have been pr
       Populate the banned list with the display_text from the results from step a.
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
-   e. Run the phrases through entry_parser_prompt_3.txt as entryParser does: display_text, entry_type, inflected_entry
+   e. Run the phrases through entry_parser_prompt_3.txt as entryParser does: display_text, classification, inflected_entry
       mappings from parsed base forms, secondary classes (when secondary_display differs from primary), and the display-key match check (Failed parse).
    f. Run successful parses through unity_prompt_3.txt as unityGenerator does (primary + secondaries, promote a good secondary
       when the primary is Partial/Variant/Formulaic/Non-unit/Nonsense, delete Non-unit/Nonsense secondaries, keep Partial/Variant/Formulaic secondaries).
    g. Run remaining items through familiarity_prompt_3.txt as familiarityGenerator does (include class and unity bucket, secondaries
       with their own class/unity, Obscure→Partial/Niche inference via get_partial_phrase_items, delete Obscure/Barely Exists/Nonsense
-      secondaries, promote the highest-familiarity class). Skip Nonsense entry_type/unity_bucket.
-   h. For each phrase from step d, insert a phrase_generator_result row with all fields (base_form, entry_type,
+      secondaries, promote the highest-familiarity class). Skip Nonsense classification/unity_bucket.
+   h. For each phrase from step d, insert a phrase_generator_result row with all fields (base_form, classification,
       display_text, unity_bucket, familiarity_bucket). Persist remaining secondaries to entry_secondary_class for keys that are
       not already in entry (same table/keys as entry).
    i. Insert vetted phrases into the entry table (not Nonsense type; unity not Partial/Variant/Non-unit/Nonsense; familiarity not
-      Obscure/Barely Exists/Nonsense; not Failed parse), including display_text, entry_type, inflected_entry
+      Obscure/Barely Exists/Nonsense; not Failed parse), including display_text, classification, inflected_entry
       mappings from parsed base forms, unity
       bucket/score, familiarity bucket/score, and reviewed_status "123". Do not overwrite existing entry fields with non-null
       values; only insert new rows or populate null fields on existing rows. For entries that were not already in the entry table,
@@ -94,7 +94,7 @@ interface PipelineItem {
   entryKey: string;
   lang: string;
   displayText: string;
-  entryType?: string;
+  classification?: string;
   baseForm?: string;
   isVulgar?: boolean;
   parseFailed: boolean;
@@ -213,8 +213,8 @@ function isVettablePipelineItem(item: PipelineItem): boolean {
   return (
     !item.parseFailed &&
     !!item.displayText &&
-    !!item.entryType &&
-    item.entryType !== 'Nonsense' &&
+    !!item.classification &&
+    item.classification !== 'Nonsense' &&
     !!item.unityBucket &&
     !REJECTED_UNITY_BUCKETS.has(item.unityBucket) &&
     item.unityScore != null &&
@@ -246,7 +246,7 @@ async function parsePhrasesForPipeline(
 
     item.parseFailed = parsed.reviewedStatus === 'Failed parse';
     item.displayText = parsed.displayText || item.displayText;
-    item.entryType = parsed.entryType;
+    item.classification = parsed.classification;
     item.baseForm = parsed.baseForm;
     item.secondaries = (parsed.secondaryClasses ?? []).map((secondary) => ({
       secondaryClass: secondary.secondaryClass,
@@ -265,12 +265,12 @@ function applyUnityResultToItem(
   if (result.displayText) {
     const promoted = item.secondaries.find(
       (secondary) =>
-        secondary.secondaryClass === result.entryType &&
+        secondary.secondaryClass === result.classification &&
         secondary.secondaryDisplay === result.displayText,
     );
     item.displayText = result.displayText;
-    if (result.entryType) {
-      item.entryType = result.entryType;
+    if (result.classification) {
+      item.classification = result.classification;
     }
     if (promoted) {
       item.baseForm = promoted.secondaryBaseForm;
@@ -299,7 +299,7 @@ async function scoreUnityForPipeline(
   const eligible = items.filter(
     (item) =>
       !item.parseFailed &&
-      item.entryType !== 'Nonsense' &&
+      item.classification !== 'Nonsense' &&
       item.displayText.trim() !== '',
   );
   if (eligible.length === 0) {
@@ -311,7 +311,7 @@ async function scoreUnityForPipeline(
       entry: item.entryKey,
       lang: item.lang,
       displayText: item.displayText,
-      entryType: item.entryType ?? null,
+      classification: item.classification ?? null,
       secondaryClasses: item.secondaries.map((secondary) => ({
         secondaryClass: secondary.secondaryClass,
         secondaryDisplay: secondary.secondaryDisplay,
@@ -353,8 +353,8 @@ function applyFamiliarityResultToItem(
   if (result.displayText) {
     item.displayText = result.displayText;
   }
-  if (result.entryType) {
-    item.entryType = result.entryType;
+  if (result.classification) {
+    item.classification = result.classification;
   }
   if (result.displayText) {
     item.baseForm = result.baseForm;
@@ -402,7 +402,7 @@ async function scoreFamiliarityForPipeline(
   const eligible = items.filter(
     (item) =>
       !item.parseFailed &&
-      item.entryType !== 'Nonsense' &&
+      item.classification !== 'Nonsense' &&
       item.unityBucket !== 'Nonsense' &&
       item.displayText.trim() !== '' &&
       !!item.unityBucket,
@@ -416,7 +416,7 @@ async function scoreFamiliarityForPipeline(
       entry: item.entryKey,
       lang: item.lang,
       displayText: item.displayText,
-      entryType: item.entryType ?? null,
+      classification: item.classification ?? null,
       baseForm: item.baseForm,
       unityBucket: item.unityBucket ?? null,
       secondaryClasses: item.secondaries.map((secondary) => ({
@@ -534,7 +534,7 @@ async function processQueueItem(
       lang,
       baseForm: reviewed?.baseForm,
       isVulgar: reviewed?.isVulgar,
-      entryType: reviewed?.entryType,
+      classification: reviewed?.classification,
       displayText: reviewed?.displayText ?? phrase,
       unityBucket: reviewed?.unityBucket,
       familiarityBucket: reviewed?.familiarityBucket,
@@ -565,7 +565,7 @@ async function processQueueItem(
       entry: item.entryKey,
       lang,
       displayText: item.displayText,
-      entryType: item.entryType,
+      classification: item.classification,
       baseForm: item.baseForm,
       isVulgar: item.isVulgar,
       unityBucket: item.unityBucket,

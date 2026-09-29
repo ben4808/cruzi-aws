@@ -46,7 +46,7 @@ export async function getFamiliarityResults(
           lang: lang,
           baseForm: parsed[i].baseForm,
           displayText: parsed[i].displayText,
-          entryType: parsed[i].entryType,
+          classification: parsed[i].classification,
           familiarityScore: parsed[i].familiarityScore,
           sourceAI: provider.sourceAI,
         }) as FamiliarityResult);
@@ -140,10 +140,10 @@ export const parseFamiliarityResponse = (response: string): any[] => {
     }
 
     let baseForm = undefined;
-    let entryType = parts[2];
-    const categoryMatch = entryType.match(/^(.+?)\s+\((.+)\)$/);
+    let classification = parts[2];
+    const categoryMatch = classification.match(/^(.+?)\s+\((.+)\)$/);
     if (categoryMatch) {
-      entryType = categoryMatch[1].trim();
+      classification = categoryMatch[1].trim();
       baseForm = categoryMatch[2].trim();
     }
 
@@ -151,7 +151,7 @@ export const parseFamiliarityResponse = (response: string): any[] => {
       entry: parts[0],
       baseForm: baseForm,
       displayText: parts[1],
-      entryType: entryType,
+      classification: classification,
       familiarityScore: Math.round(score * 10),
     });
   }

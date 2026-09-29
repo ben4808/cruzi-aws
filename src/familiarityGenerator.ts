@@ -2,9 +2,9 @@
 Keep looping through the following steps until maxItems AI requests have been sent (default 100), then stop:
 1. Select enough entries for parallelRequests concurrent executions via get_entries_for_familiarity_generator_top_50
    (each request uses ENTRIES_PER_REQUEST entries). Entries have a reviewed_status of "12", along with all of their secondary classes.
-   Skip entries whose unity_bucket or entry_type is Nonsense.
+   Skip entries whose unity_bucket or classification is Nonsense.
 2. Split the selected entries into chunks of ENTRIES_PER_REQUEST and process up to parallelRequests chunks in parallel:
-   a. For each chunk, generate a prompt using the familiarity_prompt_3.txt file. Include the classification (entry_type)
+   a. For each chunk, generate a prompt using the familiarity_prompt_3.txt file. Include the classification
       and the unity bucket with each entry in the prompt.
       Also check if there are any secondary classes for that entry. If so, include them in the prompt (each on a new line),
       using that secondary's own classification and unity bucket rather than the main entry's.
@@ -22,7 +22,7 @@ Keep looping through the following steps until maxItems AI requests have been se
       - reviewed_status = "123"
    c. If any secondary classes get rated as Obscure, Barely Exists, or Nonsense, delete them from the entry_secondary_class table.
       For secondaries that are rated and kept, set their familiarity_bucket (and unity_bucket when inferred Partial) on the entry_secondary_class row.
-      Among the primary class and secondary classes, replace the entry_type and display_text of the entry row with the one that got
+      Among the primary class and secondary classes, replace the classification and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
 3. maxItems is the total number of AI requests to send before quitting (not the number of entries
    processed, and not the number of DB cycles).
@@ -83,20 +83,20 @@ function isDeletableFamiliarityBucket(bucket: string): boolean {
 
 export function collectPromptPhrases(
   entries: EntryForFamiliarityGenerator[],
-): Array<{ phrase: string; entryType: string; unityBucket: string }> {
-  const phrases: Array<{ phrase: string; entryType: string; unityBucket: string }> = [];
+): Array<{ phrase: string; classification: string; unityBucket: string }> {
+  const phrases: Array<{ phrase: string; classification: string; unityBucket: string }> = [];
   const seen = new Set<string>();
 
   for (const entryItem of entries) {
     const candidates = [
       {
         phrase: entryItem.displayText,
-        entryType: entryItem.entryType,
+        classification: entryItem.classification,
         unityBucket: entryItem.unityBucket,
       },
       ...entryItem.secondaryClasses.map((secondary) => ({
         phrase: secondary.secondaryDisplay,
-        entryType: secondary.secondaryClass,
+        classification: secondary.secondaryClass,
         unityBucket: secondary.unityBucket,
       })),
     ];
@@ -109,7 +109,7 @@ export function collectPromptPhrases(
       seen.add(trimmed);
       phrases.push({
         phrase: trimmed,
-        entryType: candidate.entryType?.trim() || 'Word',
+        classification: candidate.classification?.trim() || 'Word',
         unityBucket: candidate.unityBucket?.trim() || 'Nonsense',
       });
     }
@@ -261,7 +261,7 @@ export function buildResultsToPersist(
     let unityBucket = primaryParsed.unityBucket;
     let domain = primaryParsed.domain;
     let displayText: string | undefined;
-    let entryType: string | undefined;
+    let classification: string | undefined;
     let baseForm: string | undefined;
     const secondaryClassesToInsert: FamiliarityGeneratorResult['secondaryClassesToInsert'] = [];
 
@@ -272,7 +272,7 @@ export function buildResultsToPersist(
       unityBucket = promotedParsed?.unityBucket;
       domain = promotedParsed?.domain;
       displayText = winner.secondary.secondaryDisplay;
-      entryType = winner.secondary.secondaryClass;
+      classification = winner.secondary.secondaryClass;
       baseForm = winner.secondary.secondaryBaseForm;
       secondaryClassesToDelete.push(winner.secondary.secondaryClass);
       const promotedIndex = secondaryClassesToUpdate.findIndex(
@@ -282,9 +282,9 @@ export function buildResultsToPersist(
         secondaryClassesToUpdate.splice(promotedIndex, 1);
       }
 
-      if (entryItem.entryType && !isDeletableFamiliarityBucket(primaryParsed.bucket)) {
+      if (entryItem.classification && !isDeletableFamiliarityBucket(primaryParsed.bucket)) {
         secondaryClassesToInsert.push({
-          secondaryClass: entryItem.entryType,
+          secondaryClass: entryItem.classification,
           secondaryDisplay: entryItem.displayText,
           secondaryBaseForm: entryItem.baseForm,
           familiarityBucket: primaryParsed.bucket,
@@ -309,7 +309,7 @@ export function buildResultsToPersist(
       unityScore: unityBucket === 'Partial' ? PARTIAL_UNITY_SCORE : undefined,
       domain,
       displayText,
-      entryType,
+      classification,
       baseForm,
       secondaryClassesToDelete,
       secondaryClassesToUpdate,

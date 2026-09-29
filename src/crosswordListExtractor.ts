@@ -30,7 +30,7 @@ This measures how desirable an entry is for a crossword solver. Levels of desira
    Entry has a quality bucket of Non-unit, Uncommon Inflection, or Clunky.
    AND/OR Entry has an entry_tags row with tag 'breakfast_test' or 'vulgar'.
 
-Go through the entry table and pull out all entries that don't have entry_type Nonsense or unity_bucket one of [Non-unit, Nonsense].
+Go through the entry table and pull out all entries that don't have classification Nonsense or unity_bucket one of [Non-unit, Nonsense].
 Exclude entries with is_vulgar = true or an entry_tags row with tag 'breakfast_test'.
 Also include parameters for max length and min length of the entries to include. Default min length 3 and max length 5.
 Include a parameter to exclude obscure entries which would also exclude familiarity bucket of Obscure or Barely Exists. Default is true.

@@ -15,7 +15,7 @@ const ENTRY_PARSER_CLASS_ALIASES: Record<string, string> = {
 const CLASSES_WITHOUT_BASE_FORM = new Set(['Prefix/Suffix', 'Nonsense']);
 
 export interface ParsedEntryClass {
-  entryType: string;
+  classification: string;
   displayText: string;
   baseForm?: string;
 }
@@ -56,9 +56,9 @@ export function canonicalizeEntryParserType(raw: string): string | null {
   return mapped;
 }
 
-export function parseEntryClass(entryTypeRaw: string, displayRaw: string): ParsedEntryClass | null {
-  const entryType = canonicalizeEntryParserType(entryTypeRaw);
-  if (!entryType || !displayRaw) {
+export function parseEntryClass(classificationRaw: string, displayRaw: string): ParsedEntryClass | null {
+  const classification = canonicalizeEntryParserType(classificationRaw);
+  if (!classification || !displayRaw) {
     return null;
   }
 
@@ -67,11 +67,11 @@ export function parseEntryClass(entryTypeRaw: string, displayRaw: string): Parse
     return null;
   }
 
-  if (!baseForm || CLASSES_WITHOUT_BASE_FORM.has(entryType)) {
-    return { entryType, displayText };
+  if (!baseForm || CLASSES_WITHOUT_BASE_FORM.has(classification)) {
+    return { classification, displayText };
   }
 
-  return { entryType, displayText, baseForm };
+  return { classification, displayText, baseForm };
 }
 
 function parseSecondaryClasses(parts: string[], startIndex: number): ParsedEntryClass[] {

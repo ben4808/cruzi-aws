@@ -14,16 +14,10 @@ export interface ParsedUnityBucketResult {
 
 export interface ParsedEntryParserResult {
   entry: string;
-  entryType: string;
+  classification: string;
   displayText: string;
   baseForm?: string;
   isVulgar?: boolean;
-}
-
-export interface ParsedStrictDomainNamesResult {
-  entry: string;
-  step2NaturalForm: string;
-  displayText: string;
 }
 
 const ENTRY_PARSER_CATEGORIES = new Set([
@@ -40,7 +34,7 @@ const ENTRY_PARSER_CATEGORIES = new Set([
 export interface ParsedFamiliarityResult {
   entry: string;
   displayText: string;
-  entryType: string;
+  classification: string;
   baseForm?: string;
   familiarityScore: number;
 }
@@ -48,11 +42,6 @@ export interface ParsedFamiliarityResult {
 export interface ParsedAvailabilityResult {
   phrase: string;
   tier: string;
-  familiarityScore: number;
-}
-
-export interface ParsedSpokenFamiliarityResult {
-  phrase: string;
   familiarityScore: number;
 }
 
@@ -138,32 +127,12 @@ export async function loadEntryParserPrompt3Async(): Promise<string> {
   }
 }
 
-export async function loadStrictDomainNamesPromptAsync(): Promise<string> {
-  try {
-    const promptPath = './src/ai/strict_domain_names.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
-  } catch (err) {
-    console.error('Error reading strict domain names prompt file:', err);
-    throw err;
-  }
-}
-
 export async function loadAvailabilityPromptAsync(): Promise<string> {
   try {
     const promptPath = './src/ai/availability_prompt.txt';
     return await fs.promises.readFile(promptPath, 'utf-8');
   } catch (err) {
     console.error('Error reading availability prompt file:', err);
-    throw err;
-  }
-}
-
-export async function loadSpokenFamiliarityPromptAsync(): Promise<string> {
-  try {
-    const promptPath = './src/ai/familiarity_prompt_updated.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
-  } catch (err) {
-    console.error('Error reading spoken familiarity prompt file:', err);
     throw err;
   }
 }
@@ -471,7 +440,7 @@ export async function scorePhrasesForQualityBucket(
 }
 
 export async function scorePhrasesForFamiliarityBucket(
-  phrases: Array<{ phrase: string; entryType: string; unityBucket: string }>,
+  phrases: Array<{ phrase: string; classification: string; unityBucket: string }>,
   provider: IAiProvider,
 ): Promise<Map<string, ParsedFamiliarityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedFamiliarityBucketResult>();
@@ -481,7 +450,7 @@ export async function scorePhrasesForFamiliarityBucket(
 
   const promptTemplate = await loadFamiliarityBucketPrompt3Async();
   const promptData = phrases
-    .map((item) => `${item.phrase} (${item.entryType}) (${item.unityBucket})`)
+    .map((item) => `${item.phrase} (${item.classification}) (${item.unityBucket})`)
     .join('\n');
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
@@ -522,8 +491,8 @@ export function parseEntryParserResponse(response: string): ParsedEntryParserRes
     }
 
     const entry = parts[0];
-    const entryType = parts[1];
-    if (!entry || !ENTRY_PARSER_CATEGORIES.has(entryType)) {
+    const classification = parts[1];
+    if (!entry || !ENTRY_PARSER_CATEGORIES.has(classification)) {
       continue;
     }
 
@@ -542,7 +511,7 @@ export function parseEntryParserResponse(response: string): ParsedEntryParserRes
 
     results.push({
       entry,
-      entryType,
+      classification,
       displayText,
       baseForm,
     });
@@ -594,7 +563,7 @@ export async function parseEntriesWithEntryParser(
 export function parseEntryParser3PrimaryResponse(response: string): ParsedEntryParserResult[] {
   return parseEntryParser3Response(response).map((parsed) => ({
     entry: parsed.entry,
-    entryType: parsed.primary.entryType,
+    classification: parsed.primary.classification,
     displayText: parsed.primary.displayText,
     baseForm: parsed.primary.baseForm,
   }));
@@ -632,7 +601,7 @@ export async function parseEntriesWithEntryParser3(
   const parsedFull = await parseEntriesWithEntryParser3Full(entries, provider);
   const parsedResults = parsedFull.map((parsed) => ({
     entry: parsed.entry,
-    entryType: parsed.primary.entryType,
+    classification: parsed.primary.classification,
     displayText: parsed.primary.displayText,
     baseForm: parsed.primary.baseForm,
   }));
@@ -645,75 +614,6 @@ export async function parseEntriesWithEntryParser3(
         (unmatched.length > 0 ? `; unmatched: ${unmatched.slice(0, 8).join(', ')}` : ''),
     );
   }
-
-  for (const match of matches) {
-    if (!match) {
-      continue;
-    }
-    resultsByEntry.set(match.entry, match.parsed);
-  }
-
-  return resultsByEntry;
-}
-
-export function parseStrictDomainNamesResponse(response: string): ParsedStrictDomainNamesResult[] {
-  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
-
-  const results: ParsedStrictDomainNamesResult[] = [];
-  for (const line of lines) {
-    const firstSep = line.indexOf(' : ');
-    const lastSep = line.lastIndexOf(' : ');
-    if (firstSep === -1 || lastSep === -1 || firstSep === lastSep) {
-      continue;
-    }
-
-    const entry = line.slice(0, firstSep).trim();
-    const step2NaturalForm = line.slice(firstSep + 3, lastSep).trim();
-    const displayText = line.slice(lastSep + 3).trim();
-    if (!entry || !displayText) {
-      continue;
-    }
-
-    results.push({
-      entry,
-      step2NaturalForm,
-      displayText,
-    });
-  }
-
-  return results;
-}
-
-export function matchStrictDomainNamesResultsToEntries(
-  entries: string[],
-  parsedResults: ParsedStrictDomainNamesResult[],
-): Array<{ entry: string; parsed: ParsedStrictDomainNamesResult } | null> {
-  return matchPhrasesToParsed(entries, parsedResults, (parsed) => [
-    parsed.entry,
-    parsed.displayText,
-    parsed.step2NaturalForm,
-  ]).map((match) => (match ? { entry: match.phrase, parsed: match.parsed } : null));
-}
-
-export async function parseEntriesWithStrictDomainNames(
-  entries: string[],
-  provider: GeminiWebAiProvider,
-): Promise<Map<string, ParsedStrictDomainNamesResult>> {
-  const resultsByEntry = new Map<string, ParsedStrictDomainNamesResult>();
-  if (entries.length === 0) {
-    return resultsByEntry;
-  }
-
-  const promptTemplate = await loadStrictDomainNamesPromptAsync();
-  const promptData = entries.join('\n');
-  const prompt = promptTemplate.replace('[[DATA]]', promptData);
-
-  console.log(`Sending strict domain names prompt for ${entries.length} entries`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
-  console.log(`Received strict domain names response (${aiResponse.length} characters)`);
-
-  const parsedResults = parseStrictDomainNamesResponse(aiResponse);
-  const matches = matchStrictDomainNamesResultsToEntries(entries, parsedResults);
 
   for (const match of matches) {
     if (!match) {
@@ -825,86 +725,4 @@ export async function scorePhrasesForAvailability(
   }
 
   return resultsByPhrase;
-}
-
-export function parseSpokenFamiliarityResponse(response: string): ParsedSpokenFamiliarityResult[] {
-  const lines = response.split('\n').map((line) => line.trim()).filter((line) => line !== '');
-
-  const results: ParsedSpokenFamiliarityResult[] = [];
-  for (const line of lines) {
-    const separatorIndex = line.lastIndexOf(' : ');
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const phrase = line.slice(0, separatorIndex).trim();
-    const score = parseFloat(line.slice(separatorIndex + 3).trim());
-    if (!phrase || Number.isNaN(score)) {
-      continue;
-    }
-
-    results.push({
-      phrase,
-      familiarityScore: Math.round(score * 10),
-    });
-  }
-
-  return results;
-}
-
-export function matchSpokenFamiliarityResultsToPhrases(
-  phrases: string[],
-  parsedResults: ParsedSpokenFamiliarityResult[],
-): Array<{ phrase: string; parsed: ParsedSpokenFamiliarityResult } | null> {
-  return matchPhrasesToParsed(phrases, parsedResults, (parsed) => [parsed.phrase]);
-}
-
-export async function scorePhrasesForSpokenFamiliarity(
-  phrases: string[],
-  lang: string,
-  provider: IAiProvider,
-): Promise<Map<string, ParsedSpokenFamiliarityResult>> {
-  const resultsByPhrase = new Map<string, ParsedSpokenFamiliarityResult>();
-  if (phrases.length === 0) {
-    return resultsByPhrase;
-  }
-
-  const promptTemplate = await loadSpokenFamiliarityPromptAsync();
-  const langName = LanguageNames[lang] ?? lang;
-  const promptData = phrases.join('\n');
-  const prompt = promptTemplate
-    .replace(/\[\[LANG\]\]/g, langName)
-    .replace('[[DATA]]', promptData);
-
-  console.log(`Sending spoken familiarity prompt for ${phrases.length} ${lang} phrases`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
-  console.log(`Received spoken familiarity response for ${lang} (${aiResponse.length} characters)`);
-
-  const parsedResults = parseSpokenFamiliarityResponse(aiResponse);
-  const matches = matchSpokenFamiliarityResultsToPhrases(phrases, parsedResults);
-
-  for (const match of matches) {
-    if (!match) {
-      continue;
-    }
-    resultsByPhrase.set(match.phrase, match.parsed);
-  }
-
-  return resultsByPhrase;
-}
-
-export function computeSpokenFamiliarityScore(
-  aiFamiliarityScore: number | null | undefined,
-  unityBucket: string | null | undefined,
-): number | null {
-  if (aiFamiliarityScore == null) {
-    return null;
-  }
-
-  const isSpokenEligible = unityBucket === 'Concept' || unityBucket === 'Formula';
-  if (!isSpokenEligible) {
-    return Math.min(aiFamiliarityScore, 35);
-  }
-
-  return aiFamiliarityScore;
 }
