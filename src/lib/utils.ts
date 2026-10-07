@@ -1,3 +1,5 @@
+import type { IAiProvider } from '../ai/IAiProvider';
+
 // https://stackoverflow.com/questions/38416020/deep-copy-in-es6-using-the-spread-syntax
 export function deepClone(obj: any): any {
     if(typeof obj !== 'object' || obj === null) {
@@ -244,6 +246,9 @@ export function displayTextToEntry(text: string): string {
 
 export const AI_REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
 
+/** Timeout for the entry parser, unity, familiarity, and quality generators. */
+export const GENERATOR_AI_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
+
 export class AiRequestTimeoutError extends Error {
     constructor(timeoutMs: number = AI_REQUEST_TIMEOUT_MS) {
         super(`AI request timed out after ${timeoutMs / 1000}s`);
@@ -278,4 +283,95 @@ export function isGeminiTimeoutError(error: unknown): boolean {
     }
     const message = error instanceof Error ? error.message : String(error);
     return /timed out/i.test(message);
+}
+
+/** Thrown when an AI provider request fails for any reason other than a timeout (HTTP error, etc.). */
+export class AiRequestFailedError extends Error {
+    constructor(cause: unknown) {
+        const causeMessage = cause instanceof Error ? cause.message : String(cause);
+        super(`AI request failed: ${causeMessage}`);
+        this.name = 'AiRequestFailedError';
+        (this as { cause?: unknown }).cause = cause;
+    }
+}
+
+/**
+ * True for errors that mean "this AI request should be abandoned and the script should
+ * move on": timeouts and any other failure of the AI provider request itself.
+ */
+export function isAbandonableAiError(error: unknown): boolean {
+    return error instanceof AiRequestFailedError || isGeminiTimeoutError(error);
+}
+
+/** How long the generators wait before sending the next batch after an unauthorized AI error. */
+export const UNAUTHORIZED_AI_WAIT_MS = 15 * 60 * 1000;
+
+/**
+ * True if the error (or anything in its cause chain) looks like an unauthorized /
+ * authentication failure from the AI provider (HTTP 401/403, AuthenticationError, etc.).
+ */
+export function isUnauthorizedAiError(error: unknown): boolean {
+    const seen = new Set<unknown>();
+    let current: unknown = error;
+    while (current && !seen.has(current)) {
+        seen.add(current);
+        const err = current as { name?: unknown; status?: unknown; message?: unknown; cause?: unknown };
+        if (err.status === 401 || err.status === 403 || err.name === 'AuthenticationError') {
+            return true;
+        }
+        const message = current instanceof Error ? current.message : String(err.message ?? current);
+        if (/unauthori[sz]ed|\b(401|403)\b|authentication (failed|error)|invalid api key|forbidden/i.test(message)) {
+            return true;
+        }
+        current = err.cause;
+    }
+    return false;
+}
+
+export async function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Waits UNAUTHORIZED_AI_WAIT_MS if any of the errors is an unauthorized AI error.
+ * Returns true if it waited.
+ */
+export async function waitIfUnauthorized(errors: unknown[], label: string): Promise<boolean> {
+    if (!errors.some(isUnauthorizedAiError)) {
+        return false;
+    }
+    console.warn(
+        `${label}: unauthorized error from AI provider; waiting ${UNAUTHORIZED_AI_WAIT_MS / 60000} minutes ` +
+            `before sending the next batch of requests...`,
+    );
+    await sleep(UNAUTHORIZED_AI_WAIT_MS);
+    console.log(`${label}: resuming after unauthorized wait`);
+    return true;
+}
+
+/**
+ * Wraps a provider so any error from generateResultsAsync (other than a timeout, which is
+ * passed through unchanged) is rethrown as an AiRequestFailedError. This lets callers tell
+ * AI request failures apart from unrelated errors such as database failures.
+ */
+export function withAiFailureHandling(provider: IAiProvider): IAiProvider {
+    return new Proxy(provider, {
+        get(target, prop) {
+            if (prop === 'generateResultsAsync') {
+                return async (...args: Parameters<IAiProvider['generateResultsAsync']>) => {
+                    try {
+                        return await target.generateResultsAsync(...args);
+                    } catch (error) {
+                        if (isGeminiTimeoutError(error)) {
+                            throw error;
+                        }
+                        throw new AiRequestFailedError(error);
+                    }
+                };
+            }
+
+            const value = Reflect.get(target, prop, target);
+            return typeof value === 'function' ? value.bind(target) : value;
+        },
+    });
 }

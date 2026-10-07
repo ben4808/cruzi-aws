@@ -1,0 +1,48 @@
+- Consider the EXACT string given and not a similar one.
+- Judge the language as it is used in real life. Many items come from crossword puzzles; appearing in crosswords is not evidence of unity.
+- Compositional numbers/ordinals, including Roman numerals, are Non-unit unless they have other meanings ("fifty-six" is Non-unit, "eighty-six" is Concept).
+- Non-canonical forms of an otherwise unified term → NOT Concept, Collocation, or Formula.
+   Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
+- Plural surnames, and names of foreign dishes, drinks, and cultural items (carne al piatto), are Concept.
+- A few scattered search hits do not make something a unit. These are Nonsense:
+   - Plurals of acronyms that name a single organization or can't really be pluralized (AAUWs, CVaRs).
+   - Laughs and interjections spelled with a nonstandard letter count (bwaha, psssh, aaahs).
+   - Crossword-theme gimmicks where a letter stands in for a word or part of a phrase (up the A, lift the V).
+
+IMPORTANT: Evaluate first Concept, Collocation, and Formula buckets, and if the item doesn't fit in any of those, evaluate the rest
+  in numerical order.
+
+BUCKETS
+1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain.
+    Includes idioms, conventionalized metaphors, standard inflections, and standard prefixes/suffixes that attach to many words (tri-, mega-, hard-).
+    Includes phrases where some word departs from its ordinary meaning (stay put, kick off).
+      If every word keeps its ordinary meaning (act as, at war, by mouth, low dose) → Collocation.
+    Ask: "Would a native speaker treat this exact string as one stored unit,
+      or just a description built on the fly?" Description → not Concept.
+    Standalone replies/reactions → Formula. Template-built names and derivations → Formulaic.
+2. Collocation: A transparent phrase whose exact wording is the preferred locked frame in its register.
+    Includes light-verb constructions / locked V+N frames. Don't penalize for inflections.
+    Ask: "Among near-paraphrases, is this the tightest conventional frame (e.g. app idea ≫ app concept; email body ≫ body of the email)?"
+    Reject padded or truncated variants of a better-locked frame.
+    Examples: off-duty cops, sci-fi series, mountain peaks, abstract artist, death metal band, cat person
+3. Formula: A fixed conversational habit — a pre-packaged social/speech reflex, the kind of thing written in quotes as something someone said.
+    Includes self-contained replies, reactions, interjections, and short first-person clauses (I'm set, I fold, ain't I?, up top),
+      discourse markers (as an aside, by the way, that said), and colloquial, slangy, or sarcastic habits.
+    Ask: "Is this exact string itself the preferred locked reflex, or just one fill of an open pattern / a padded version of a shorter habit?"
+      Open pattern or padding → not Formula.
+4. Partial: A fragment that only works with a companion word.
+    Includes words essentially only used bound to a companion word (sippy → sippy cup, ahold → get ahold, Kart → Mario Kart, het → het up),
+      clippings used only inside a compound (res → hi-res, pedi → mani-pedi), and fragments missing a needed word (a snap → it's a snap, she's).
+    If the string is also used on its own → Concept (lac, crawl in). Includes neither standalone shortenings (fridge) nor standard prefixes/suffixes.
+5. Variant: Variant spelling that is valid but non-dominant (red up → redd up, Otelo → Otello).
+6. Formulaic: Built on the fly from a productive template rather than stored as its own unit. Unrelated to Formula.
+    Formulaic names (act III, Mac OSX, Psalm 25) and productive derivations (baldish, greenish).
+    Never ordinary words or fixed phrases (more, you are here → Concept).
+7. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories.
+    Does not include single words, except where a guideline above says otherwise.
+8. Nonsense: Everything else.
+
+OUTPUT
+Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name>

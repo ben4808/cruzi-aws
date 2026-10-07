@@ -82,6 +82,10 @@ const REVIEWED_STATUS_AFTER_FAMILIARITY = '123';
 const REJECTED_UNITY_BUCKETS = new Set(['Variant', 'Non-unit', 'Nonsense']);
 const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Barely Exists', 'Nonsense']);
 
+function secondaryIdentityKey(secondaryClass: string, secondaryDisplay: string): string {
+  return `${secondaryClass}\0${secondaryDisplay}`;
+}
+
 interface PipelineSecondary {
   secondaryClass: string;
   secondaryDisplay: string;
@@ -170,7 +174,16 @@ export function parsePhraseGeneratorResponse(response: string): string[] {
   }
 
   const summaryText = response.slice(markerIndex + marker.length);
-  const lines = summaryText.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+  const lines = summaryText
+    .split('\n')
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^(?:[-*•]|\d+[.)])\s+/, '')
+        .replace(/\*\*/g, '')
+        .trim(),
+    )
+    .filter((line) => line !== '' && !line.startsWith('```'));
   const phrases: string[] = [];
 
   for (const line of lines) {
@@ -277,18 +290,27 @@ function applyUnityResultToItem(
     }
   }
 
-  const deleted = new Set(result.secondaryClassesToDelete ?? []);
-  const unityByClass = new Map(
+  const deleted = new Set(
+    (result.secondaryClassesToDelete ?? []).map((secondary) =>
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+    ),
+  );
+  const unityByIdentity = new Map(
     (result.secondaryClassesToUpdate ?? []).map((secondary) => [
-      secondary.secondaryClass,
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
       secondary.unityBucket,
     ]),
   );
   item.secondaries = item.secondaries
-    .filter((secondary) => !deleted.has(secondary.secondaryClass))
+    .filter(
+      (secondary) =>
+        !deleted.has(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)),
+    )
     .map((secondary) => ({
       ...secondary,
-      unityBucket: unityByClass.get(secondary.secondaryClass) ?? secondary.unityBucket,
+      unityBucket:
+        unityByIdentity.get(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)) ??
+        secondary.unityBucket,
     }));
 }
 
@@ -360,17 +382,26 @@ function applyFamiliarityResultToItem(
     item.baseForm = result.baseForm;
   }
 
-  const deleted = new Set(result.secondaryClassesToDelete ?? []);
+  const deleted = new Set(
+    (result.secondaryClassesToDelete ?? []).map((secondary) =>
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+    ),
+  );
   const updates = new Map(
     (result.secondaryClassesToUpdate ?? []).map((secondary) => [
-      secondary.secondaryClass,
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
       secondary,
     ]),
   );
   item.secondaries = item.secondaries
-    .filter((secondary) => !deleted.has(secondary.secondaryClass))
+    .filter(
+      (secondary) =>
+        !deleted.has(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)),
+    )
     .map((secondary) => {
-      const update = updates.get(secondary.secondaryClass);
+      const update = updates.get(
+        secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+      );
       return {
         ...secondary,
         familiarityBucket: update?.familiarityBucket ?? secondary.familiarityBucket,
@@ -382,7 +413,13 @@ function applyFamiliarityResultToItem(
     if (!inserted.secondaryClass || !inserted.secondaryDisplay) {
       continue;
     }
-    if (item.secondaries.some((secondary) => secondary.secondaryClass === inserted.secondaryClass)) {
+    if (
+      item.secondaries.some(
+        (secondary) =>
+          secondary.secondaryClass === inserted.secondaryClass &&
+          secondary.secondaryDisplay === inserted.secondaryDisplay,
+      )
+    ) {
       continue;
     }
     item.secondaries.push({

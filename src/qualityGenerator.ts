@@ -12,7 +12,7 @@ Keep looping through the following steps until maxItems AI requests have been se
       - quality_bucket
       - quality_score (Pass 1 buckets = 20, Pass 2 buckets = 40, Normal = 30).
         Pass 1: Non-unit, Uncommon Inflection, Clunky.
-        Pass 2: Idiomatic, Interesting, Appealing, Positive, Trendy.
+        Pass 2: Idiomatic, Interesting, Feel-Good, Trendy.
         Vulgar and Sensitive are parenthetical flags, not buckets. Replace the entry's
         entry_tags rows for 'vulgar' and 'sensitive' with the flags on this result.
       - reviewed_status = "1234"
@@ -38,7 +38,13 @@ import {
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { scorePhrasesForQualityBucket } from './ai/phraseScoring';
-import { batchArray, isGeminiTimeoutError } from './lib/utils';
+import {
+  batchArray,
+  GENERATOR_AI_REQUEST_TIMEOUT_MS,
+  isAbandonableAiError,
+  waitIfUnauthorized,
+  withAiFailureHandling,
+} from './lib/utils';
 
 const ENTRIES_PER_REQUEST = 50;
 const DEFAULT_MAX_ITEMS = 100;
@@ -50,8 +56,7 @@ export const QUALITY_SCORES: Record<string, number> = {
   Clunky: 20,
   Idiomatic: 40,
   Interesting: 40,
-  Appealing: 40,
-  Positive: 40,
+  'Feel-Good': 40,
   Trendy: 40,
   Normal: 30,
 };
@@ -133,7 +138,11 @@ async function processBatch(
     `${requestLabel}: sending quality prompt for ${entries.length} entries (${phrases.length} phrases)`,
   );
 
-  const resultsByPhrase = await scorePhrasesForQualityBucket(phrases, provider);
+  const resultsByPhrase = await scorePhrasesForQualityBucket(
+    phrases,
+    withAiFailureHandling(provider),
+    { timeoutMs: GENERATOR_AI_REQUEST_TIMEOUT_MS },
+  );
   console.log(`${requestLabel}: received ${resultsByPhrase.size} quality ratings`);
 
   const resultsToPersist = buildResultsToPersist(entries, resultsByPhrase);
@@ -189,6 +198,7 @@ export async function qualityGenerator(
           `${requestsCompleted}/${maxItems} requests completed so far`,
       );
 
+      const cycleAiErrors: unknown[] = [];
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const requestNumber = requestsCompleted + index + 1;
@@ -197,9 +207,11 @@ export async function qualityGenerator(
           try {
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
-            if (isGeminiTimeoutError(error)) {
+            if (isAbandonableAiError(error)) {
+              cycleAiErrors.push(error);
               console.warn(
-                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+                `${requestLabel}: AI request timed out or failed; abandoning and continuing:`,
+                error instanceof Error ? error.message : error,
               );
               return 0;
             }
@@ -212,6 +224,10 @@ export async function qualityGenerator(
       );
 
       requestsCompleted += chunks.length;
+
+      if (!shouldStop && requestsCompleted < maxItems) {
+        await waitIfUnauthorized(cycleAiErrors, `Cycle ${cycleNumber}`);
+      }
 
       if (persistedCounts.every((count) => count === 0)) {
         console.warn(

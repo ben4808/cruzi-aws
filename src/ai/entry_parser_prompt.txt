@@ -20,6 +20,8 @@ Inflected Phrase: Multi-word expression that contains an inflection (as defined 
   e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
 Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
 Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.). Prefer this over Proper Name when both could apply.
+  Also consider plural and/or inflected acronyms. (e.g. DMs, DQed)
+  Don't be afraid to write abbreviations with a period where natural. (e.g, Dr.)
 Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
 Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
   Before resorting to the Nonsense category, try a few different parsings. Sometimes a phrase makes more sense when parsed differently.

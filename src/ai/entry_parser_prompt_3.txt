@@ -13,17 +13,24 @@ Guidelines:
   comparatives/superlatives. Derivational forms (agent nouns, possessives, deverbal nouns, etc.) should
   not be considered inflections. Applies to all classifications except Prefix/Suffix and Nonsense.
 - Do not consider partial contractions, for example "he's good" is a Phrase, "'ve had" is not.
+- Always consider parsing the item as a phrasal verb (verb + particle such as in, on, up, out, off, over, down, away),
+  including inflected phrasal verbs (CRAWLIN → crawl in, LOGSON → logs on, GAVEUP → gave up).
+- Don't use dropped-g or other eye-dialect spellings (crawlin', fixin', nothin') when a natural standard parsing exists.
+  e.g. CRAWLIN is the phrasal verb "crawl in", not the Word "crawlin'".
+  Only use them when they are the most natural reading of the item (FIXINTO → fixin' to).
 - Consider foreign words if they are extremely common in their native language or have adopted meaning
   as a loanword.
-- Before rating an item Nonsense, perform a mandatory search to verify that there isn't actually
-  a way to parse it that might have been overlooked.
+- Before rating an item Nonsense, verify that there isn't actually a way to parse it that might have been overlooked.
 
 1. Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
 2. Phrase: Multi-word expression. Note that there can be multiple phrase interpretations (e.g. "it's a go" and "it's ago")
-    Only consider it an inflection of a base form when that base still refers to the same thing. 
+  Only consider it an inflection of a base form when that base still refers to the same thing. 
       e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
 3. Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
 4. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+  There can be multiple parsings in this classification. See IDS example.
+  Also consider plural and/or inflected acronyms. (e.g. DMs, DQed)
+  Don't be afraid to write abbreviations with a period where natural. (e.g, Dr.)
 5. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
 6. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
 
@@ -55,12 +62,14 @@ AANDW : Proper Name : A&W
 VEIGHT : Phrase : V-eight
 CROCS : Word : crocs (croc) : Proper Name : Crocs
 ORDERSFOOD : Phrase : orders food (order food)
+CRAWLIN : Phrase : crawl in
+LOGSON : Phrase : logs on (log on)
 RAM : Word : ram : Proper Name : Ram : Acronym/Abbreviation : RAM
 CANDIES : Word : candies (candy)
 DALLASTEXAS : Proper Name : Dallas, Texas
 TRI : Prefix/Suffix : tri-
 NASA : Acronym/Abbreviation : NASA
-IDS : Acronym/Abbreviation : IDs (ID) 
+IDS : Acronym/Abbreviation : IDS : Acronym/Abbreviation : IDs (ID) 
 HKJLJ : Nonsense : HKJLJ
 
 WORDS/PHRASES

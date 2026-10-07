@@ -5,11 +5,23 @@ GUIDELINES
 - Each given existing sense will appear together with its classification, part of speech, and natural English written form (with
     appropriate casing and punctuation for that sense).
 - If you cannot interpret the clue as relating to any sense of the answer, simply output "Unclear" in lieu.
-- If the answer is an inflected form, the existing senses may be from one or more base forms. Prefer matching the
-    clue to a sense of a base form. Only match a sense of the inflected answer itself when there is no base form or 
-    the clue does not refer to the base form (e.g. "advanced" as an adjective vs. verb "advance").
-    Note than an item can have multiple base forms (e.g. DOES -> doe or do).
+- If the answer is an inflected form, the existing senses may be from one or more base forms. Inflected forms include
+    plurals, verb conjugations, comparatives, and superlatives (e.g. TALLER -> tall, NICEST -> nice).
+    - Prefer matching the clue to a sense of a base form, even though the clue itself is inflected to match the answer
+      (e.g. "Made headway" : ADVANCED matches the base form verb "advance"; "More lofty" : TALLER matches "tall").
+    - Only match a sense of the inflected answer itself when there is no base form, or when the sense referred to by the
+      clue doesn't make sense for the base form (e.g. "advanced" as an adjective meaning "high in level" is not a meaning
+      of the verb "advance").
+    - Note that an item can have multiple base forms (e.g. DOES -> doe or do).
 - Multi-word phrases may have a literal sense, where they mean exactly what they say. These will have summary "Literal" (capitalized).
+- Single given names and surnames may have a general sense with summary "Personal Name" (capitalized).
+  - When the clue refers to a person who has that name, match the "Personal Name" sense.
+  - Exception: match a sense for a specific person only when the name alone is very strongly affiliated with that person
+      (e.g. TIGER -> Tiger Woods, ADELE -> Adele Adkins), the clue refers to that person, and such a sense exists.
+  - Names that could refer to many people (e.g. MICHAEL, SMITH) always match "Personal Name" when the clue refers to a person,
+      even if a sense for a specific person with that name is listed.
+  - If the clue refers to a person by that name but there is no "Personal Name" sense (and no strongly affiliated person
+      sense that fits), output "Unclear".
 - Keep in mind the general guidelines for interpreting crossword clues.
   - Clues in quotes indicate the answer will be a spoken formula.
   - Clues with a question mark at the end indicate indirection or wordplay.
@@ -29,6 +41,10 @@ Made headway : ADVANCED
 high in level, complexity, or difficulty : advanced : Word : adjective
 move forward physically : advance : Word : verb
 
+Like upper-level courses : ADVANCED
+high in level, complexity, or difficulty : advanced : Word : adjective
+move forward physically : advance : Word : verb
+
 Wine china? : GLASSES
 lenses for eyes : glasses : Word : noun
 
@@ -39,6 +55,16 @@ social media site : BlueSky : Proper Name : noun
 First part of a quote : LASTCHRISTMAS
 Wham! song : Last Christmas : Proper Name : noun
 
+Jordan of the Bulls : MICHAEL
+Personal Name : Michael : Proper Name : noun
+
+"Hello" singer : ADELE
+Personal Name : Adele : Proper Name : noun
+British singer Adele Adkins : Adele : Proper Name : noun
+
+Actress Kidman : NICOLE
+Personal Name : Nicole : Proper Name : noun
+
 OUTPUT
 List the items in the following format, one per line. N clue blocks in -> N output lines
 Don't include any explanatory or auxiliary text.
@@ -47,9 +73,13 @@ Don't include any explanatory or auxiliary text.
 
 Output examples:
 Made headway : ADVANCED : move forward physically : advance : Word : verb
+Like upper-level courses : ADVANCED : high in level, complexity, or difficulty : advanced : Word : adjective
 Wine china? : GLASSES : Unclear
 Sunny day feature : BLUESKY : Literal : blue sky : Phrase : noun
 First part of a quote : LASTCHRISTMAS : Unclear
+Jordan of the Bulls : MICHAEL : Personal Name : Michael : Proper Name : noun
+"Hello" singer : ADELE : British singer Adele Adkins : Adele : Proper Name : noun
+Actress Kidman : NICOLE : Personal Name : Nicole : Proper Name : noun
 
 
 ITEMS TO MATCH

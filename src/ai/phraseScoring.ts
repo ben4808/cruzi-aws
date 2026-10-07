@@ -4,7 +4,7 @@ import { entryToAllCaps } from '../lib/utils';
 import { ParsedEntryParser3Result, parseEntryParser3Response } from './entryParserFormat';
 import { GeminiWebAiProvider } from './geminiWebProvider';
 import { IAiProvider } from './IAiProvider';
-import { loadFamiliarityPromptAsync, parseFamiliarityResponse } from './common';
+import { loadFamiliarityPromptAsync, parseFamiliarityResponse, readPromptFile } from './common';
 import { matchPhrasesToParsed } from '../lib/resultMatching';
 
 export interface ParsedUnityBucketResult {
@@ -100,7 +100,7 @@ export async function loadUnityBucketPromptAsync(): Promise<string> {
 export async function loadUnityBucketPrompt3Async(): Promise<string> {
   try {
     const promptPath = './src/ai/unity_prompt_3.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
+    return await readPromptFile(promptPath);
   } catch (err) {
     console.error('Error reading unity bucket prompt 3 file:', err);
     throw err;
@@ -169,7 +169,7 @@ export function matchUnityBucketResultsToPhrases(
 export async function scorePhrasesForUnityBucket(
   phrases: string[],
   provider: IAiProvider,
-  options: { promptVersion?: 2 | 3 } = {},
+  options: { promptVersion?: 2 | 3; timeoutMs?: number } = {},
 ): Promise<Map<string, ParsedUnityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedUnityBucketResult>();
   if (phrases.length === 0) {
@@ -187,7 +187,7 @@ export async function scorePhrasesForUnityBucket(
   console.log(
     `Sending unity bucket prompt (v${promptVersion}) for ${phrases.length} phrases`,
   );
-  const aiResponse = await provider.generateResultsAsync(prompt);
+  const aiResponse = await provider.generateResultsAsync(prompt, options.timeoutMs);
   console.log(`Received unity bucket response (${aiResponse.length} characters)`);
 
   const parsedResults = parseUnityBucketResponse(aiResponse);
@@ -214,7 +214,7 @@ export async function scorePhrasesForUnityBucket(
 export async function loadFamiliarityBucketPrompt3Async(): Promise<string> {
   try {
     const promptPath = './src/ai/familiarity_prompt_3.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
+    return await readPromptFile(promptPath);
   } catch (err) {
     console.error('Error reading familiarity bucket prompt 3 file:', err);
     throw err;
@@ -295,8 +295,7 @@ const QUALITY_BUCKETS = new Set([
   'Clunky',
   'Idiomatic',
   'Interesting',
-  'Appealing',
-  'Positive',
+  'Feel-Good',
   'Trendy',
   'Normal',
 ]);
@@ -359,7 +358,7 @@ export interface ParsedQualityBucketResult {
 export async function loadQualityBucketPrompt3Async(): Promise<string> {
   try {
     const promptPath = './src/ai/quality_prompt_3.txt';
-    return await fs.promises.readFile(promptPath, 'utf-8');
+    return await readPromptFile(promptPath);
   } catch (err) {
     console.error('Error reading quality bucket prompt 3 file:', err);
     throw err;
@@ -402,6 +401,7 @@ export function matchQualityBucketResultsToPhrases(
 export async function scorePhrasesForQualityBucket(
   phrases: Array<{ phrase: string; unityBucket: string; familiarityBucket: string }>,
   provider: IAiProvider,
+  options: { timeoutMs?: number } = {},
 ): Promise<Map<string, ParsedQualityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedQualityBucketResult>();
   if (phrases.length === 0) {
@@ -415,7 +415,7 @@ export async function scorePhrasesForQualityBucket(
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
   console.log(`Sending quality bucket prompt for ${phrases.length} phrases`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
+  const aiResponse = await provider.generateResultsAsync(prompt, options.timeoutMs);
   console.log(`Received quality bucket response (${aiResponse.length} characters)`);
 
   const parsedResults = parseQualityBucketResponse(aiResponse);
@@ -442,6 +442,7 @@ export async function scorePhrasesForQualityBucket(
 export async function scorePhrasesForFamiliarityBucket(
   phrases: Array<{ phrase: string; classification: string; unityBucket: string }>,
   provider: IAiProvider,
+  options: { timeoutMs?: number } = {},
 ): Promise<Map<string, ParsedFamiliarityBucketResult>> {
   const resultsByPhrase = new Map<string, ParsedFamiliarityBucketResult>();
   if (phrases.length === 0) {
@@ -455,7 +456,7 @@ export async function scorePhrasesForFamiliarityBucket(
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
   console.log(`Sending familiarity bucket prompt for ${phrases.length} phrases`);
-  const aiResponse = await provider.generateResultsAsync(prompt);
+  const aiResponse = await provider.generateResultsAsync(prompt, options.timeoutMs);
   console.log(`Received familiarity bucket response (${aiResponse.length} characters)`);
 
   const parsedResults = parseFamiliarityBucketResponse(aiResponse);

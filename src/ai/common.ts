@@ -2,6 +2,19 @@ import { arrayToMap, batchArray, entryToAllCaps } from "../lib/utils";
 import { Entry, FamiliarityResult, LanguageNames, QualityResult } from 'cruzi-models';
 import { IAiProvider } from "./IAiProvider";
 import fs from 'fs';
+import path from 'path';
+
+const PROMPT_INCLUDE_REGEX = /\[\[INCLUDE ([^\]]+)\]\]/g;
+
+// Expands [[INCLUDE <path>]] directives, with paths relative to the including file.
+export async function readPromptFile(promptPath: string): Promise<string> {
+  let content = await fs.promises.readFile(promptPath, 'utf-8');
+  for (const match of [...content.matchAll(PROMPT_INCLUDE_REGEX)]) {
+    const included = await readPromptFile(path.join(path.dirname(promptPath), match[1].trim()));
+    content = content.replace(match[0], () => included.trimEnd());
+  }
+  return content;
+}
 
 export async function getFamiliarityResults(
   provider: IAiProvider, 
@@ -83,7 +96,7 @@ export async function loadFamiliarityPromptAsync(): Promise<string> {
 
 export async function loadSenseFamiliarityPromptAsync(): Promise<string> {
   try {
-    const content: string = await fs.promises.readFile('./src/ai/sense_familiarity_prompt.txt', 'utf-8');
+    const content: string = await readPromptFile('./src/ai/sense_familiarity_prompt.txt');
     return content;
   } catch (err) {
     console.error('Error reading file:', err);

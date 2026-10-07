@@ -18,36 +18,37 @@ import { crosswordProcessor } from './crosswordProcessor';
 
 const aiProvider = new CursorAiProvider(
   'grok-4.6',
+  //'claude-sonnet-5-5',
   //'gemini-3.8-flash',
 );
 
-// (async () => {
-//   const steps = [
-//     //{ name: "Entry parser", run: () => entryParser(aiProvider, 1000, 10) },
-//     //{ name: "Unity generator", run: () => unityGenerator(aiProvider, 1000, 10) },
-//     //{ name: "Familiarity generator", run: () => familiarityGenerator(aiProvider, 1000, 10) },
-//     { name: "Quality generator", run: () => qualityGenerator(aiProvider, 1000, 10) },
-//   ];
+(async () => {
+  const steps = [
+    //{ name: "Entry parser", run: () => entryParser(aiProvider, 1000, 10) },
+    //{ name: "Unity generator", run: () => unityGenerator(aiProvider, 2000, 10) },
+    { name: "Familiarity generator", run: () => familiarityGenerator(aiProvider, 2000, 10) },
+    //{ name: "Quality generator", run: () => qualityGenerator(aiProvider, 1000, 10) },
+  ];
 
-//   for (const step of steps) {
-//     try {
-//       await step.run();
-//       console.log(`${step.name} completed successfully.`);
-//     } catch (error) {
-//       console.error(`Error in ${step.name.toLowerCase()}: `, error);
-//     }
-//   }
-// })();
+  for (const step of steps) {
+    try {
+      await step.run();
+      console.log(`${step.name} completed successfully.`);
+    } catch (error) {
+      console.error(`Error in ${step.name.toLowerCase()}: `, error);
+    }
+  }
+})();
 
-crosswordProcessor(aiProvider, 10)
-  .then(() => console.log("Crossword processor completed successfully."))
-  .catch(error => console.error("Error in crossword processor: ", error));
+// crosswordProcessor(aiProvider, 10)
+//   .then(() => console.log("Crossword processor completed successfully."))
+//   .catch(error => console.error("Error in crossword processor: ", error));
 
-// crosswordListExtractor(3, 5, true)
+// crosswordListExtractor(3, 6, true)
 //   .then(() => console.log("Crossword list extractor completed successfully."))
 //   .catch(error => console.error("Error in crossword list extractor: ", error));
 
-// entryParser(aiProvider, 600, 10)
+// entryParser(aiProvider, 100, 5)
 //   .then(() => console.log("Entry parser completed successfully."))
 //   .catch(error => console.error("Error in entry parser: ", error));
 
@@ -55,7 +56,7 @@ crosswordProcessor(aiProvider, 10)
 //   .then(() => console.log("Phrase generator completed successfully."))
 //   .catch(error => console.error("Error in phrase generator: ", error));
 
-// shortPhraseGenerator(aiProvider, 5, 500, 10, "VI___")
+// shortPhraseGenerator(aiProvider, 6, 500, 1, "VI____")
 //   .then(() => console.log("Short phrase generator completed successfully."))
 //   .catch(error => console.error("Error in short phrase generator: ", error));
 

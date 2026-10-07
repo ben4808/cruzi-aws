@@ -48,9 +48,15 @@ import {
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { scorePhrasesForFamiliarityBucket } from './ai/phraseScoring';
-import { batchArray, isGeminiTimeoutError } from './lib/utils';
+import {
+  batchArray,
+  GENERATOR_AI_REQUEST_TIMEOUT_MS,
+  isAbandonableAiError,
+  waitIfUnauthorized,
+  withAiFailureHandling,
+} from './lib/utils';
 
-const ENTRIES_PER_REQUEST = 50;
+const ENTRIES_PER_REQUEST = 25;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
@@ -225,7 +231,7 @@ export function buildResultsToPersist(
       continue;
     }
 
-    const secondaryClassesToDelete: string[] = [];
+    const secondaryClassesToDelete: NonNullable<FamiliarityGeneratorResult['secondaryClassesToDelete']> = [];
     const secondaryClassesToUpdate: NonNullable<FamiliarityGeneratorResult['secondaryClassesToUpdate']> = [];
     for (const secondary of entryItem.secondaryClasses) {
       const secondaryParsed = resultsByPhrase.get(secondary.secondaryDisplay);
@@ -233,7 +239,10 @@ export function buildResultsToPersist(
         continue;
       }
       if (isDeletableFamiliarityBucket(secondaryParsed.bucket)) {
-        secondaryClassesToDelete.push(secondary.secondaryClass);
+        secondaryClassesToDelete.push({
+          secondaryClass: secondary.secondaryClass,
+          secondaryDisplay: secondary.secondaryDisplay,
+        });
         console.log(
           `  deleting secondary ${entryItem.entry}: class=${secondary.secondaryClass}, ` +
             `form=${secondary.secondaryDisplay}, familiarity=${secondaryParsed.bucket}`,
@@ -242,13 +251,19 @@ export function buildResultsToPersist(
       }
       secondaryClassesToUpdate.push({
         secondaryClass: secondary.secondaryClass,
+        secondaryDisplay: secondary.secondaryDisplay,
         familiarityBucket: secondaryParsed.bucket,
         unityBucket: secondaryParsed.unityBucket,
       });
     }
 
     const remainingSecondaries = entryItem.secondaryClasses.filter(
-      (secondary) => !secondaryClassesToDelete.includes(secondary.secondaryClass),
+      (secondary) =>
+        !secondaryClassesToDelete.some(
+          (item) =>
+            item.secondaryClass === secondary.secondaryClass &&
+            item.secondaryDisplay === secondary.secondaryDisplay,
+        ),
     );
     const winner = pickHighestFamiliarityCandidate(
       remainingSecondaries,
@@ -274,9 +289,14 @@ export function buildResultsToPersist(
       displayText = winner.secondary.secondaryDisplay;
       classification = winner.secondary.secondaryClass;
       baseForm = winner.secondary.secondaryBaseForm;
-      secondaryClassesToDelete.push(winner.secondary.secondaryClass);
+      secondaryClassesToDelete.push({
+        secondaryClass: winner.secondary.secondaryClass,
+        secondaryDisplay: winner.secondary.secondaryDisplay,
+      });
       const promotedIndex = secondaryClassesToUpdate.findIndex(
-        (item) => item.secondaryClass === winner.secondary.secondaryClass,
+        (item) =>
+          item.secondaryClass === winner.secondary.secondaryClass &&
+          item.secondaryDisplay === winner.secondary.secondaryDisplay,
       );
       if (promotedIndex >= 0) {
         secondaryClassesToUpdate.splice(promotedIndex, 1);
@@ -340,7 +360,11 @@ async function processBatch(
     `${requestLabel}: sending familiarity prompt for ${entries.length} entries (${phrases.length} phrases)`,
   );
 
-  const resultsByPhrase = await scorePhrasesForFamiliarityBucket(phrases, provider);
+  const resultsByPhrase = await scorePhrasesForFamiliarityBucket(
+    phrases,
+    withAiFailureHandling(provider),
+    { timeoutMs: GENERATOR_AI_REQUEST_TIMEOUT_MS },
+  );
   console.log(`${requestLabel}: received ${resultsByPhrase.size} familiarity ratings`);
 
   await applyPartialPhraseInference(entries, resultsByPhrase);
@@ -392,6 +416,7 @@ export async function familiarityGenerator(
           `${requestsCompleted}/${maxItems} requests completed so far`,
       );
 
+      const cycleAiErrors: unknown[] = [];
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const requestNumber = requestsCompleted + index + 1;
@@ -400,9 +425,11 @@ export async function familiarityGenerator(
           try {
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
-            if (isGeminiTimeoutError(error)) {
+            if (isAbandonableAiError(error)) {
+              cycleAiErrors.push(error);
               console.warn(
-                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+                `${requestLabel}: AI request timed out or failed; abandoning and continuing:`,
+                error instanceof Error ? error.message : error,
               );
               return 0;
             }
@@ -415,6 +442,10 @@ export async function familiarityGenerator(
       );
 
       requestsCompleted += chunks.length;
+
+      if (!shouldStop && requestsCompleted < maxItems) {
+        await waitIfUnauthorized(cycleAiErrors, `Cycle ${cycleNumber}`);
+      }
 
       if (persistedCounts.every((count) => count === 0)) {
         console.warn(

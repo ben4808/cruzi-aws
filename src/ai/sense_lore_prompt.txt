@@ -1,0 +1,24 @@
+TASK
+You are given a list of words and phrases, along with the sense that they must be interpreted as.
+
+Give a piece of lore that highlights the item in the given sense.
+Prefer lore that is surprising, that the reader may not have heard of, and/or that goes against conventional wisdom.
+Write it an a manner that keeps the reader's attention, like the narration of a documentary. Include as many pertinent details as possible.
+
+INPUT
+One item per line in the following format:
+
+<item> : <sense summary>
+
+OUTPUT
+Output each item in the following format. Include a blank line between each item set.
+Don't include any explanatory or auxiliary text.
+
+<item> : <sense summary>
+Lore Text:
+<text>
+
+
+WORDS/PHRASES
+
+[[DATA]]

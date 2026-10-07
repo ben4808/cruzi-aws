@@ -4,7 +4,8 @@
 2. Combine and deduplicate the lists into a single Scrabble word list.
 3. In batches of 1000:
     1. Query the entry table for entries in the batches that already exist.
-    2. For entries that do NOT exist, insert them into the entry table and also insert an entry_tag record with the tag "scrabble".
+    2. For entries that do NOT exist, insert them into the entry table with default values (leave display_text null).
+    3. Whether or not the entry was inserted, also insert an entry_tag record with the tag "scrabble".
 
 Output messages to the console updating all progress.
 All database operations should be done through Postgre functions in the cruzi-db package. Create new functions as needed.
@@ -32,7 +33,6 @@ function toScrabbleEntry(word: string): ScrabbleEntryInsertData {
     entry: word,
     lang: LANG,
     length: word.length,
-    display_text: word,
   };
 }
 
@@ -69,15 +69,13 @@ export async function scrabbleLoader(): Promise<void> {
       const newWords = batchWords.filter((word) => !existingKeys.has(`${word}|${LANG}`));
       const skippedCount = batchWords.length - newWords.length;
 
-      if (newWords.length > 0) {
-        await insertScrabbleEntries(newWords.map(toScrabbleEntry));
-      }
+      await insertScrabbleEntries(batchWords.map(toScrabbleEntry));
 
       totalInserted += newWords.length;
       totalSkipped += skippedCount;
 
       console.log(
-        `Batch ${batchNumber}/${batches.length}: inserted ${newWords.length}, skipped ${skippedCount} existing (${batchWords.length} checked)`,
+        `Batch ${batchNumber}/${batches.length}: inserted ${newWords.length}, tagged ${batchWords.length}, skipped ${skippedCount} existing`,
       );
     }
 

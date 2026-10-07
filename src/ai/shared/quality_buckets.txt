@@ -1,0 +1,63 @@
+PASS 1
+First, consider if the item belongs to any of these buckets, evaluating from top to bottom. 
+If it does, assign that bucket and immediately move on to the next item.
+
+Non-unit: Unity bucket is exactly Non-unit or Nonsense -> automatic Non-unit. No other unity bucket triggers this.
+Uncommon Inflection: An inflected form (plural, past tense, comparative, etc.) that is rarely used in modern natural speech, 
+  even if grammatically valid or present in specialized dictionaries (saner, Nates, SNRs).
+  Does NOT include rare base words or derivations (interlope, elate, toeless) — rarity is handled by familiarity.
+Clunky: A non-dominant formulation.
+  Ask: "If a native speaker wanted to express exactly this, would they use this exact string?"
+  If a different form is clearly standard (Levi → Levi's, PBJ → PB&J, C-cell → C battery, F-keys → function keys,
+  as do I → so do I, Macao → Macau), → Clunky.
+  Includes contrived or non-standard shortenings, fragments that only work with a companion word (het, res, I may),
+  productive on-the-fly derivations (baldish), all items with unity bucket Variant, and non-dominant spellings.
+  Standard prefixes/suffixes (tri-, hard-) are the standard form of themselves, not Clunky.
+
+PASS 2
+Again, choose the first bucket that applies, evaluating from top to bottom.
+
+Idiomatic: The meaning cannot be fully predicted from its literal constituent words, and there is a vivid image or metaphor behind it
+  (nip at, life or death, oh it's on).
+  Does NOT include dry functional phrases that are merely non-literal (at all, per se, log on).
+  Does NOT include single words.
+Interesting: The thing itself has a story or cultural phenomenon behind it that a curious person would enjoy learning about.
+  Good fodder for a movie, book, or trivia question because of that lore. A colorful etymology alone doesn't count (aloof).
+  Everyday brands/products whose main draw is enjoyment belong in Feel-Good (Coke).
+Feel-Good: Triggers an immediate pleasant reaction — the kind of reward people feel before thinking about it.
+  Includes indulgent foods and treats (pecan, Coke), delight (cute animals), celebration and honors (up top, atta boy, Best Picture),
+  enjoyable activities and outings (go on a date, estate sale, salad bar), beloved pastimes (avid reader), comfort, and nostalgia.
+  NOT plain staples or ingredients (pita, bao), or words that merely name a positive concept, virtue, or emotion (courage, glad, win).
+  Ask: "Does encountering it produce a pleasant reaction, or does it just describe something good?"
+Trendy: Using it signals fluency in spoken, colloquial culture — membership in a social or generational in-group.
+  Includes texting slang, generational sayings from any era, lifestyle lingo (cheat meal, vape pen, brews), and tech buzzwords.
+  Does NOT include terms that have become the standard name for something (app), regionalisms or loanwords (loo, passé),
+  field jargon (O-line), or words that are merely informal (yap).
+
+PASS 3
+Determine whether these attributes either apply to the item or they don't.
+
+Vulgar: Vulgar and inappropriate to use in formal settings or around children.
+Sensitive: A substantial share of people would feel offended, threatened, or uncomfortable — not just some people.
+  Includes provocative political figures and movements, and predatory or demeaning behavior (leers).
+  Sad or serious subject matter alone is not Sensitive (mourn, elegy, alone).
+
+DEFAULT
+An item that doesn't fit into any bucket from Pass 1 or Pass 2 should be classified as "Normal".
+
+OUTPUT
+Output according to the following format, one item per line.
+Do not re-output the unity or familiarity buckets.
+Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name> (Vulgar, Sensitive)
+
+Examples:
+crown : Normal
+George Foreman : Interesting
+funnest : Uncommon Inflection
+shit-faced : Idiomatic (Vulgar)
+obese : Normal (Sensitive)
+pecan : Feel-Good
+courage : Normal
+see ya : Trendy

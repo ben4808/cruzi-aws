@@ -9,6 +9,8 @@ For adjectives and adverbs: Comparative (CP), Superlative (SP)
 
 GUIDELINES
 - If the item is already an inflected form, identify all base forms. It's not important to provide a type label in this case.
+  - This includes plurals, verb conjugations, comparatives, and superlatives (taller -> tall, best -> good, nicest -> nice).
+  - Agent nouns and other derivations are not inflections (baker is not a comparative of bake).
   - Note that an item can have both a base form and inflections. In this case output both.
 - If the item can be interpreted as multiple parts of speech, return the inflections for each part of speech.
 - Give all inflections written with natural English capitalization, spacing, and punctuation.
@@ -35,6 +37,9 @@ base form | do
 calling
 base form | call
 noun | PL : callings
+
+taller
+base form | tall
 
 cactus
 noun | PL : cactuses | PL : cacti

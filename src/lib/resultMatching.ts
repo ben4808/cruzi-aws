@@ -21,26 +21,32 @@ export function matchParsedResultsByIdentity<TInput, TParsed>(
   getParsedTexts: (parsed: TParsed) => string[],
 ): Array<{ input: TInput; parsed: TParsed } | null> {
   const unmatched = [...parsedResults];
-  const matches: Array<{ input: TInput; parsed: TParsed } | null> = [];
+  const matches: Array<{ input: TInput; parsed: TParsed } | null> = inputs.map(() => null);
 
-  for (const input of inputs) {
-    const inputKeys = new Set(
-      getInputTexts(input).flatMap((text) => phraseIdentityKeys(text)),
-    );
+  // Exact matches are claimed first so that forms differing only by case or accents
+  // (IDS vs IDs, crocs vs Crocs) each keep their own result.
+  const passes: Array<(text: string) => string[]> = [
+    (text) => (text.trim() ? [text.trim()] : []),
+    phraseIdentityKeys,
+  ];
 
-    const matchIndex = unmatched.findIndex((parsed) =>
-      getParsedTexts(parsed).some((text) =>
-        phraseIdentityKeys(text).some((key) => inputKeys.has(key)),
-      ),
-    );
+  for (const toKeys of passes) {
+    inputs.forEach((input, inputIndex) => {
+      if (matches[inputIndex]) {
+        return;
+      }
 
-    if (matchIndex === -1) {
-      matches.push(null);
-      continue;
-    }
+      const inputKeys = new Set(getInputTexts(input).flatMap(toKeys));
+      const matchIndex = unmatched.findIndex((parsed) =>
+        getParsedTexts(parsed).some((text) => toKeys(text).some((key) => inputKeys.has(key))),
+      );
+      if (matchIndex === -1) {
+        return;
+      }
 
-    const [parsed] = unmatched.splice(matchIndex, 1);
-    matches.push({ input, parsed });
+      const [parsed] = unmatched.splice(matchIndex, 1);
+      matches[inputIndex] = { input, parsed };
+    });
   }
 
   return matches;

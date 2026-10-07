@@ -2,7 +2,10 @@ Analyze the distinct senses of the following word or phrase: [[ITEM]]
 Language of the item: [[SOURCE_LANGUAGE]]
 Language of translations: [[TRANSLATION_LANGUAGE]]
 
-EXISTING SENSES (format is one per line: <natural form> : <sense summary>)
+BASE FORMS (the item is an inflected form of each of these; (None) if the item is not an inflected form)
+[[BASE FORMS]]
+
+EXISTING SENSES (format is one per line: <part of speech> | <natural form> | <sense summary>)
 [[REFERENCE SENSES]]
 
 HINT
@@ -11,97 +14,155 @@ HINT
 LANGUAGE
 Write all output in the language of the item, with the exception of the Natural and Colloquial Translations.
 
-TASKS
+TASK DESCRIPTION
 1. If the item is uninterpretable gibberish, reply ONLY with the word "Nonsense".
 
-2. Generate senses from the item alone. Ignore Existing Senses until step 3.
-  - The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation. Generate senses 
-     of all presented forms or even forms not presented, as long as the sequence of alphanumeric characters is preserved.
-     - e.g. for the word "edge", generate senses for edge, Edge, and EDGE, but not for "on edge" or "The Edge"
-     - e.g. for the phrase "blue sky | BLueSky", generate senses for "blue sky" and "BlueSky" but not "blue sky law"
-  - Make an extra effort to generate the sense that is described or hinted at by the HINT, if one is given.
-  - Different part of speech → different sense.
-  - Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
-     - Only output a sense when that classification is actually used.
-     - Also consider plural acronyms. (e.g. DMs)
-  - Each generated sense has its own display text i.e. the usual way that reading is written. 
-     - Do not expand an acronym into its full phrase as display text.
-  - One meaning per sense. If you would write "A or B", split into two senses.
-  - If the item is a phrase and is used to mean literally what it says, use as both the sense summary and the definition "Literal".
-    - Includes descriptive phrases and conversational formulas.
-    - Items can have both a literal sense and a non-literal sense(s). (e.g. blue sky is descriptive, BlueSky is a company)
+2. Review and improve the given existing senses for the item. The results will be a list of updates of the following types:
+- ADD: Add a new sense that was missing from the existing list.
+- COMBINE: Combine two existing senses that were duplicating or nearly duplicating each other.
+- IMPROVE: Improve the wording of an existing sense summary.
 
-3. Then match. For each generated sense, look at Existing Senses.
-  - Same meaning → in "Corresponding existing sense", paste that existing short description character-for-character. 
-     - Leave your own short description as you wrote it; do not rewrite it to match.
-     - Existing senses may correspond to a base form of the item rather than the item itself. Always prefer matching the clue against 
-       a sense of a base form when possible. Only match against a sense of the item itself when there is no base form, or when the 
-       sense does not refer to the base form.
-       Example: "advanced" as an adjective does not apply to any sense of the base form "advance".
-  - No match → None
-
-4. Regionality. Classify each sense into one of these buckets:
+3. Regionality. Classify each sense into one of these buckets:
   - Widespread: Prevalent throughout the language
   - Regional: Specific to or closely associated with a specific region, country, or dialect. 
       (specify which in parenthesis).
 
-5. Translations and alternatives: 1–3 each. Empty → (None)
+4. Translations and alternatives: 1–3 each. Empty → (None)
   - Natural: default equivalents in the Translation Language.
-  - Colloquial: informal equivalents in the Translation Language.
+  - Colloquial: informal equivalents in the Translation Language. In particular make sure to include Mexican equivalents.
   - Alternatives: other ways to say this same sense in the language of the item.
+
+GUIDELINES
+- The item is potentially presented in multiple forms, with differences in capitalization and/or punctuation. Generate senses 
+    of all presented forms or even forms not presented, as long as the sequence of alphanumeric characters is preserved.
+    - e.g. for the word "edge", generate senses for edge, Edge, and EDGE, but not for "on edge" or "The Edge"
+    - e.g. for the phrase "blue sky | BLueSky", generate senses for "blue sky" and "BlueSky" but not "blue sky law"
+- STRICT RULE: The natural form of every sense must match the item letter for letter and digit for digit. It may only differ from
+    the item in spacing, capitalization, and punctuation. Never add, remove, or change a letter or digit.
+    - e.g. for the item "cluers", "Cluers" and "CLUERS" are fine. "clue-giver", "cluer", and "clue writers" are NOT allowed.
+    - e.g. for the item "aha", "Aha!" and "a-ha" are fine. "ah ha" is NOT allowed.
+    - The only exception is a sense of a base form (see the next guideline), whose natural form must match that base form
+      letter for letter instead.
+    - If a meaning can only be written with different letters, it is not a sense of this item. Leave it out.
+- Base forms: The BASE FORMS section lists the base forms of the item. Use exactly those; don't guess at other base forms.
+    - Inflected forms include plurals, verb conjugations (-s, -ed, -ing), comparatives (-er), and superlatives (-est).
+      e.g. "nails" -> nail, "rammed" -> ram, "taller" -> tall, "nicest" -> nice.
+    - Prefer the base form: whenever a sense makes sense for a base form, output it as a sense of that base form (its natural
+      form must match one of the listed base forms letter for letter). This applies even when the HINT itself uses the
+      inflected form (e.g. a past-tense or comparative clue).
+    - Only output a sense on the inflected item itself when that meaning doesn't make sense for the base form
+      (e.g. "advanced" as "high in level or difficulty" is not a meaning of "advance").
+    - If BASE FORMS is (None), only output senses of the item itself.
+    - See the NAILS example.
+- Make an extra effort to generate the sense that is described or hinted at by the HINT, if one is given.
+    (Exception: a HINT referring to a person by a single given name or surname is covered by "Personal Name"; see below.)
+    - The HINT is a crossword clue for the item. Keep in mind crossword conventions: wordplay (a question mark at the end),
+      quoted clues for spoken phrases, abbreviated clues for abbreviated answers.
+    - If you can't make sense of how the HINT relates to the item, think of similar crossword clue/answer pairs
+      that might provide some insight.
+    - Some HINTs can never be tied to a sense (e.g. "See 55-Down", "With 17-Across, ..."). Ignore those hints and don't
+      invent a sense for them.
+- Generate senses for every part of speech that the item (or its base form) is actually used as: noun, verb, adjective,
+    adverb, interjection, preposition, etc. Don't stop at the part of speech that the HINT points to.
+    (e.g. "ram" is both a noun and a verb; "fast" is a noun, verb, adjective, and adverb.)
+- Different part of speech → different sense.
+- Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+    - Only output a sense when the item is actually used in the language in that classification. 
+    - Also consider plural acronyms. (e.g. DMs)
+- Each generated sense has its own natural form i.e. the usual way that it is written in that specific sense. 
+    - Do not expand an acronym into its full phrase.
+    - Include periods after abbreviations when it is natural to do so.
+- Only One meaning per sense. Instead of writing "A or B", split into two senses.
+- If the item is a phrase and is used in the language to mean literally what it says, use the general sense "Literal". (Use for the summary and the definition)
+  - Includes descriptive phrases and conversational formulas.
+  - Items can have both a literal sense and a non-literal sense(s). (e.g. blue sky is descriptive, BlueSky is a company)
+- Personal names: When the item is a single given name or surname, it must have a general sense "Personal Name"
+    (Proper Name classification; use "Personal Name" for the summary and the definition). Add it if it isn't among the existing senses.
+  - The "Personal Name" sense covers every person who has that name. Don't generate a separate sense for an individual person,
+      even when the HINT refers to a specific person with that name. The HINT is then covered by "Personal Name".
+  - Exception: When the single name on its own is very strongly affiliated with one specific person, so that most people would
+      think of that person when hearing the name alone, also generate a separate sense for that person.
+      - e.g. "Tiger" -> Tiger Woods, "Adele" -> Adele Adkins, "Oprah" -> Oprah Winfrey: generate a sense for that person.
+      - e.g. "Michael", "Smith", "Ellen" (name alone could be many people): only "Personal Name".
+  - If an existing sense describes an individual person who is not strongly affiliated with the name, COMBINE it into
+      "Personal Name" rather than keeping it.
+- Don't generate a different sense for each movie, book, show, etc. that the item is associated with unless the item is strongly
+    associated with that specific reference.
 
 OUTPUT
 Format below, nothing else. One blank line between senses.
 Short description: as short as possible, only to tell this sense apart from the others.
 
-([Part of Speech], [Classification]) [Display Text]
+ADD ([Part of Speech], [Classification]) [Natural Form]
 [Short Description] : [Definition]
 Regionality: [Bucket] ([if Regional, which region/country/dialect])
 Natural: [Translation 1; Translation 2]
 Colloquial: [Translation 1; Translation 2]
 Alternatives: [Alternative 1; Alternative 2]
-Corresponding existing sense: [Exact existing short description, or None]
+
+COMBINE [summary 1] | [summary 2]
+
+IMPROVE [old summary] | [new summary]
 
 EXAMPLE (item: "ram/Ram/RAM")
 
-(Noun, Word) ram
+ADD (Noun, Word) ram
 Male sheep : A male sheep.
 Regionality: Widespread
 Natural: carnero; morueco
 Colloquial: macho
 Alternatives: (None)
-Corresponding existing sense: Male sheep
 
-(Verb, Word) ram
+ADD (Verb, Word) ram
 Strike with force : To crash into or drive something with great force.
 Regionality: Widespread
 Natural: embestir; arremeter
 Colloquial: darse contra
 Alternatives: slam; crash into
-Corresponding existing sense: None
 
-(Noun, Acronym/Abbreviation) RAM
-Working memory : Random-access memory, the working memory of a computer.
-Regionality: Widespread
-Natural: RAM; memoria RAM
-Colloquial: (None)
-Alternatives: memory; random-access memory
-Corresponding existing sense: Computer memory
+COMBINE working memory | random access memory
 
-(Noun, Proper Name) Ram
-Truck brand : A brand of pickup trucks.
-Regionality: Widespread
-Natural: Ram
-Colloquial: (None)
-Alternatives: Ram truck
-Corresponding existing sense: None
+IMPROVE truck | truck brand
 
 EXAMPLE (item: "fixin' to")
 
-(Phrasal Verb, Phrase) fixin' to
+ADD (Phrasal Verb, Phrase) fixin' to
 Preparing to : Preparing or intending to
 Regionality: Regional (Southern United States)
 Natural: estar a punto de, ir a
 Colloquial: ya mero, estoy por
 Alternatives: fixing to, thinking about, about to
-Corresponding existing sense: None
+
+EXAMPLE (item: "Adele", hint: "Singer Adkins")
+
+ADD (Noun, Proper Name) Adele
+Personal Name : Personal Name
+Regionality: Widespread
+Natural: Adela
+Colloquial: (None)
+Alternatives: (None)
+
+ADD (Noun, Proper Name) Adele
+British singer Adele Adkins : English singer-songwriter known for albums such as "21" and "25"
+Regionality: Widespread
+Natural: Adele
+Colloquial: (None)
+Alternatives: (None)
+
+EXAMPLE (item: "Michael", hint: "Jordan of the Bulls")
+
+ADD (Noun, Proper Name) Michael
+Personal Name : Personal Name
+Regionality: Widespread
+Natural: Miguel
+Colloquial: (None)
+Alternatives: Mike; Mikey
+
+EXAMPLE (item: "nails", base forms: "nail") There are more senses for "nails" than this one, but it's to illustrate the use of the base form.
+
+ADD (Noun, Word) nail
+Pointed fastener : A slender usually pointed and headed fastener designed to be pounded in
+Regionality: Widespread
+Natural: clavo
+Colloquial: puntilla
+Alternatives: brad, spike

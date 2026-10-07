@@ -40,9 +40,15 @@ import {
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { scorePhrasesForUnityBucket } from './ai/phraseScoring';
-import { batchArray, isGeminiTimeoutError } from './lib/utils';
+import {
+  batchArray,
+  GENERATOR_AI_REQUEST_TIMEOUT_MS,
+  isAbandonableAiError,
+  waitIfUnauthorized,
+  withAiFailureHandling,
+} from './lib/utils';
 
-const ENTRIES_PER_REQUEST = 50;
+const ENTRIES_PER_REQUEST = 25;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
@@ -127,7 +133,7 @@ export function buildResultsToPersist(
       continue;
     }
 
-    const secondaryClassesToDelete: string[] = [];
+    const secondaryClassesToDelete: NonNullable<UnityGeneratorResult['secondaryClassesToDelete']> = [];
     const secondaryClassesToUpdate: NonNullable<UnityGeneratorResult['secondaryClassesToUpdate']> = [];
     for (const secondary of entryItem.secondaryClasses) {
       const secondaryParsed = resultsByPhrase.get(secondary.secondaryDisplay);
@@ -135,7 +141,10 @@ export function buildResultsToPersist(
         continue;
       }
       if (isDeletableUnityBucket(secondaryParsed.bucket)) {
-        secondaryClassesToDelete.push(secondary.secondaryClass);
+        secondaryClassesToDelete.push({
+          secondaryClass: secondary.secondaryClass,
+          secondaryDisplay: secondary.secondaryDisplay,
+        });
         console.log(
           `  deleting secondary ${entryItem.entry}: class=${secondary.secondaryClass}, ` +
             `form=${secondary.secondaryDisplay}, unity=${secondaryParsed.bucket}`,
@@ -144,6 +153,7 @@ export function buildResultsToPersist(
       }
       secondaryClassesToUpdate.push({
         secondaryClass: secondary.secondaryClass,
+        secondaryDisplay: secondary.secondaryDisplay,
         unityBucket: secondaryParsed.bucket,
       });
     }
@@ -154,7 +164,12 @@ export function buildResultsToPersist(
 
     if (isBadUnityBucket(primaryParsed.bucket)) {
       const remainingSecondaries = entryItem.secondaryClasses.filter(
-        (secondary) => !secondaryClassesToDelete.includes(secondary.secondaryClass),
+        (secondary) =>
+          !secondaryClassesToDelete.some(
+            (item) =>
+              item.secondaryClass === secondary.secondaryClass &&
+              item.secondaryDisplay === secondary.secondaryDisplay,
+          ),
       );
       const promoted = pickPromotableSecondary(remainingSecondaries, resultsByPhrase);
       if (promoted) {
@@ -162,9 +177,14 @@ export function buildResultsToPersist(
         unityBucket = promotedParsed?.bucket ?? unityBucket;
         displayText = promoted.secondaryDisplay;
         classification = promoted.secondaryClass;
-        secondaryClassesToDelete.push(promoted.secondaryClass);
+        secondaryClassesToDelete.push({
+          secondaryClass: promoted.secondaryClass,
+          secondaryDisplay: promoted.secondaryDisplay,
+        });
         const promotedIndex = secondaryClassesToUpdate.findIndex(
-          (item) => item.secondaryClass === promoted.secondaryClass,
+          (item) =>
+            item.secondaryClass === promoted.secondaryClass &&
+            item.secondaryDisplay === promoted.secondaryDisplay,
         );
         if (promotedIndex >= 0) {
           secondaryClassesToUpdate.splice(promotedIndex, 1);
@@ -219,7 +239,10 @@ async function processBatch(
     `${requestLabel}: sending unity prompt for ${entries.length} entries (${phrases.length} phrases)`,
   );
 
-  const resultsByPhrase = await scorePhrasesForUnityBucket(phrases, provider, { promptVersion: 3 });
+  const resultsByPhrase = await scorePhrasesForUnityBucket(phrases, withAiFailureHandling(provider), {
+    promptVersion: 3,
+    timeoutMs: GENERATOR_AI_REQUEST_TIMEOUT_MS,
+  });
   console.log(`${requestLabel}: received ${resultsByPhrase.size} unity ratings`);
 
   const resultsToPersist = buildResultsToPersist(entries, resultsByPhrase);
@@ -269,6 +292,7 @@ export async function unityGenerator(
           `${itemsCompleted}/${maxItems} requests completed so far`,
       );
 
+      const cycleAiErrors: unknown[] = [];
       const persistedCounts = await Promise.all(
         chunks.map(async (chunk, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -277,9 +301,11 @@ export async function unityGenerator(
           try {
             return await processBatch(chunk, provider, requestLabel);
           } catch (error) {
-            if (isGeminiTimeoutError(error)) {
+            if (isAbandonableAiError(error)) {
+              cycleAiErrors.push(error);
               console.warn(
-                `${requestLabel}: AI request took more than 5 minutes; abandoning and continuing`,
+                `${requestLabel}: AI request timed out or failed; abandoning and continuing:`,
+                error instanceof Error ? error.message : error,
               );
               return 0;
             }
@@ -292,6 +318,10 @@ export async function unityGenerator(
       );
 
       itemsCompleted += chunks.length;
+
+      if (!shouldStop && itemsCompleted < maxItems) {
+        await waitIfUnauthorized(cycleAiErrors, `Cycle ${cycleNumber}`);
+      }
 
       if (persistedCounts.every((count) => count === 0)) {
         console.warn(

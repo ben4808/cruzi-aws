@@ -15,6 +15,7 @@ Keep looping through the following steps until maxItems AI requests have been se
         unity_bucket, unity_score, quality_bucket, and quality_score to NULL.
       For secondary classes, update the entry_secondary_class table with the results
         only if the secondary_display is different from the primary display text.
+        A secondary may reuse the primary or another secondary classification when its natural form differs.
         (secondary_class, secondary_display, and secondary_base_form optionally if there is a base form).
       Before sending the update, perform one final check: convert the display_text for each class to all caps, strip accents,
         and remove all spaces and punctuation (preserving numerals). Reversing the substitutions for &, @, and . is optional
@@ -48,12 +49,18 @@ import {
 } from './ai/entryParserFormat';
 import { IAiProvider } from './ai/IAiProvider';
 import { matchParsedResultsByIdentity } from './lib/resultMatching';
-import { batchArray, isGeminiTimeoutError, stripAccents } from './lib/utils';
+import {
+  batchArray,
+  GENERATOR_AI_REQUEST_TIMEOUT_MS,
+  isAbandonableAiError,
+  stripAccents,
+  withAiFailureHandling,
+} from './lib/utils';
 
-const ENTRIES_PER_REQUEST = 50;
+const ENTRIES_PER_REQUEST = 25;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
-const ENTRY_PARSER_AI_TIMEOUT_MS = 10 * 60 * 1000;
+const ENTRY_PARSER_AI_TIMEOUT_MS = GENERATOR_AI_REQUEST_TIMEOUT_MS;
 
 export { parseEntryParser3Response };
 
@@ -96,7 +103,7 @@ function collectNormalizedEntryKeys(text: string, index: number, prefix: string,
   collectNormalizedEntryKeys(text, index + 1, prefix, out);
 }
 
-function displayTextMatchesEntry(entryKey: string, displayText: string): boolean {
+export function displayTextMatchesEntry(entryKey: string, displayText: string): boolean {
   const keys = new Set<string>();
   collectNormalizedEntryKeys(stripAccents(displayText).toUpperCase(), 0, '', keys);
   return keys.has(entryKey);
@@ -160,10 +167,16 @@ export function buildResultsToPersist(
         continue;
       }
 
-      if (secondaryClasses.some((existing) => existing.secondaryClass === secondary.classification)) {
+      if (
+        secondaryClasses.some(
+          (existing) =>
+            existing.secondaryClass === secondary.classification &&
+            existing.secondaryDisplay === secondaryDisplay,
+        )
+      ) {
         console.log(
           `  skipping secondary ${entryItem.entry}: class=${secondary.classification}, ` +
-            `form=${secondaryDisplay} duplicate class, keeping first` +
+            `form=${secondaryDisplay} duplicate class and form, keeping first` +
             `${secondaryRejected ? ` [rejected AI form="${secondary.displayText}"]` : ''}`,
         );
         continue;
@@ -215,7 +228,10 @@ async function processBatch(
   const prompt = promptTemplate.replace('[[DATA]]', promptData);
 
   console.log(`${requestLabel}: sending entry parser prompt for ${entries.length} entries`);
-  const aiResponse = await provider.generateResultsAsync(prompt, ENTRY_PARSER_AI_TIMEOUT_MS);
+  const aiResponse = await withAiFailureHandling(provider).generateResultsAsync(
+    prompt,
+    ENTRY_PARSER_AI_TIMEOUT_MS,
+  );
   console.log(`${requestLabel}: received response (${aiResponse.length} characters)`);
 
   const parsedResults = parseEntryParser3Response(aiResponse);
@@ -267,10 +283,11 @@ export async function parseProvidedEntries(
         try {
           await processBatch(chunk, promptTemplate, provider, requestLabel);
         } catch (error) {
-          if (isGeminiTimeoutError(error)) {
+          if (isAbandonableAiError(error)) {
             timedOut = true;
             console.warn(
-              `${requestLabel}: AI request took more than 10 minutes; abandoning and continuing`,
+              `${requestLabel}: AI request timed out or failed; abandoning and continuing:`,
+              error instanceof Error ? error.message : error,
             );
             return;
           }
@@ -335,9 +352,10 @@ export async function entryParser(
           try {
             return await processBatch(chunk, promptTemplate, provider, requestLabel);
           } catch (error) {
-            if (isGeminiTimeoutError(error)) {
+            if (isAbandonableAiError(error)) {
               console.warn(
-                `${requestLabel}: AI request took more than 10 minutes; abandoning and continuing`,
+                `${requestLabel}: AI request timed out or failed; abandoning and continuing:`,
+                error instanceof Error ? error.message : error,
               );
               return 0;
             }

@@ -4,8 +4,7 @@ interpretation that comes to mind. Whoever can produce the most popular interpre
 
 Second, imagine you are a language usage expert tasked with finding the most canonical interpretation of the combination.
 
-Third, you are an expert in Googling things. Do a Google search for the combination and pick the most common interpretation 
-from the results.
+Third, pick the most common interpretation of the combination as it is actually used in English.
 
 Perform these exercises with every 3-letter combination starting with "BY".
 

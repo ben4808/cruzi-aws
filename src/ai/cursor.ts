@@ -11,7 +11,13 @@ import { AI_REQUEST_TIMEOUT_MS, AiRequestTimeoutError, withTimeout } from '../li
 dotenv.config();
 
 /** Supported Cursor plan models (non-fast variants only). */
-export type CursorSourceAi = 'composer-2.5' | 'grok-4.5' | 'grok-4.6' | 'grok-4.7' | 'gemini-3.8-flash';
+export type CursorSourceAi =
+  | 'composer-2.5'
+  | 'grok-4.5'
+  | 'grok-4.6'
+  | 'grok-4.7'
+  | 'gemini-3.8-flash'
+  | 'claude-sonnet-5-5';
 
 /**
  * Explicit SDK selections so we never fall through to Fast defaults.
@@ -19,6 +25,7 @@ export type CursorSourceAi = 'composer-2.5' | 'grok-4.5' | 'grok-4.6' | 'grok-4.
  * - Grok 4.5 / 4.6: Medium effort, non-fast
  * - Grok 4.7: Medium reasoning effort, 256k context, non-fast
  * - Gemini 3.8 Flash (high): High effort
+ * - Claude Sonnet 5.5 (high): High reasoning effort
  */
 const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
   'composer-2.5': {
@@ -50,6 +57,10 @@ const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
   'gemini-3.8-flash': {
     id: 'gemini-3.8-flash',
     params: [{ id: 'reasoning_effort', value: 'high' }],
+  },
+  'claude-sonnet-5-5': {
+    id: 'claude-sonnet-5-5',
+    params: [{ id: 'reasoning_effort', value: 'medium' }],
   },
 };
 
@@ -113,7 +124,7 @@ function getCursorWorkspaceCwd(): string {
 function buildTextOnlyPrompt(prompt: string): string {
   return [
     'You are a text-generation API. Reply with only the final answer text.',
-    'Do not use tools, edit files, run shell commands, or ask follow-up questions.',
+    'Do not use tools, web search, edit files, run shell commands, or ask follow-up questions.',
     '',
     prompt,
   ].join('\n');
@@ -186,7 +197,9 @@ export class CursorAiProvider implements IAiProvider {
         }
 
         console.error('Error calling Cursor API:', error);
-        throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const wrapped = new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        (wrapped as { cause?: unknown }).cause = error;
+        throw wrapped;
       }
     }
 

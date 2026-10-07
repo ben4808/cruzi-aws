@@ -1,0 +1,69 @@
+- Interpret the item strictly according to its given classification
+   - Word or Phrase classification cannot be interpreted as a proper name.
+   - Proper Name classification must be interpreted as a proper name.
+- Target audience: A well-rounded, educated adult native speaker from the US.
+- Judge the language as it is used in real life. Many items come from crossword puzzles; how often an item appears
+   in crosswords is not evidence of familiarity.
+- Rate the exact surface form, not its base word. An inflection or derivation of a common word (aping, recut, corer)
+   is only as familiar as that exact form is.
+- Bare abbreviations/acronyms are never Ubiquitous. They are Active only when they function as everyday spoken words (TV, OK, ID);
+   otherwise at most General Knowledge (R&B).
+- Bare prefixes/suffixes and items with unity bucket Partial are never Ubiquitous or Active.
+- Compositional numbers (e.g. "fifty-eight") and Roman numerals with unity bucket Non-unit should be rated Inferred.
+- Foreign words and phrases: rate them by how much they factor into US English-speaking culture.
+   Being foreign in origin is never by itself a reason for Obscure (siesta → General Knowledge, lac → Niche).
+   Foreign function words used mainly within their own language are at most Niche (los, der).
+- Verify before demoting to Barely Exists or Nonsense.
+   Check whether the exact string is indeed rare or non-existent in the language.
+
+IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
+
+BUCKETS
+1. Literal: Multi-word phrase in Collocation or Non-unit unity bucket and transparently understood from constituent words (act as, at war).
+    - Never single words (unless their unity bucket is Non-unit), acronyms, or prefixes/suffixes.
+2. Ubiquitous: Basic vocabulary an early learner knows and uses constantly — simple everyday nouns, verbs, adjectives,
+    and function words (rinse, ant, cage, toss, trim, nor).
+    - Longer, compound, or less basic everyday words are Active (lemonade, grasp, label).
+3. Common Name: Frequent single given name or surname, shared by a wide variety of people, that doesn't refer to anyone in particular
+    (Sarah, Mike, Smith, Garcia).
+    - A name mainly known through one famous person is rated by that person (Farr → Jamie Farr → Niche).
+    - Uncommon names don't qualify (Thaddeus, Ione). Rate them by how recognizable the name is: General Knowledge if nearly
+      anyone would recognize it as a name, Niche if recognized mostly within a specific culture or group, Obscure if rare.
+    - Possessive forms don't qualify.
+4. Active: Words a typical adult actually says, in this exact canonical form, whenever the topic comes up —
+    including everyday concrete nouns (pita, ore, rose, pistol, foe, par).
+    Ask: "Would this come out of an average person's mouth in normal daily life?"
+    If they would merely understand it, or would say a different form (bus station, not bus depot) → General Knowledge.
+5. General Knowledge: Nearly any US adult would recognize it immediately without context, but it isn't part of their active speech.
+    Ask: "If you said it to a random person in a grocery store, would they know what it is?"
+    - Includes literary/SAT vocabulary that people recognize but don't say (tress, lithe, irate), and things known by everyone
+      but rarely said (tart, lemur, uke).
+    - Being culturally important or a classic trivia answer is NOT enough — that's usually Niche.
+6. Inferred: Not commonly encountered, but an adult could work out the meaning from familiar parts — words, roots, or affixes
+    (astern, aero, impiety, bang on, corer, recut).
+    - If commonly encountered, use Active or General Knowledge instead. If the parts don't give the meaning away, use Niche.
+7. Niche: Well-known within a specific subculture, generational cohort, hobby area, trade, etc.
+    - Includes highbrow or trivia knowledge (mythology, opera, classic literature, foreign landmarks) and public figures
+      known mostly to older generations or trivia fans (Chaucer, Leto, Ed Asner, Gotti).
+    - Includes tech acronyms people see but couldn't explain (HTTPS, GFCI).
+    - Might make a good difficult trivia answer.
+8. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche (Ione, Bysshe).
+    - Only people specialized in the area are likely to know it.
+    - Might be a non-standard spelling or phrase formulation.
+    - Might only exist in another language, without factoring into English-speaking culture.
+9. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
+10. Nonsense: Everything else.
+
+For items in the buckets Literal, General Knowledge, Inferred, Niche, and Obscure:
+Include in parentheses the domain or area that the item belongs to.
+
+OUTPUT
+Output according to the following format, one item per line. Don't include any explanatory or auxiliary text.
+
+<input item> : <bucket name> (<domain or area>)
+
+Examples:
+bear : Ubiquitous
+Ursa Major : Niche (astronomy)
+Sarah : Common Name
+Sri Lanka : General Knowledge (geography)
