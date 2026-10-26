@@ -6,9 +6,11 @@
    in crosswords is not evidence of familiarity.
 - Rate the exact surface form, not its base word. An inflection or derivation of a common word (aping, recut, corer)
    is only as familiar as that exact form is.
-- Bare abbreviations/acronyms are never Ubiquitous. They are Active only when they function as everyday spoken words (TV, OK, ID);
-   otherwise at most General Knowledge (R&B).
-- Bare prefixes/suffixes and items with unity bucket Partial are never Ubiquitous or Active.
+- Bare abbreviations/acronyms are never Ubiquitous. They are Active when the acronym is how people normally say it aloud
+   when the topic comes up (TV, CEO, ATM, MRI, ASAP); otherwise at most General Knowledge (NDA, HEPA).
+   Short written abbreviations (Fla., Kan., BOS, PST, NYE) are Inferred, unless in common use (etc., Inc., Fri.).
+- Items with unity bucket Partial are rated by the familiarity of the full expression they belong to (utero → in utero, peters → peters out).
+- Bare prefixes/suffixes are rarely Ubiquitous or Active.
 - Compositional numbers (e.g. "fifty-eight") and Roman numerals with unity bucket Non-unit should be rated Inferred.
 - Foreign words and phrases: rate them by how much they factor into US English-speaking culture.
    Being foreign in origin is never by itself a reason for Obscure (siesta → General Knowledge, lac → Niche).
@@ -19,19 +21,21 @@
 IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
 
 BUCKETS
-1. Literal: Multi-word phrase in Collocation or Non-unit unity bucket and transparently understood from constituent words (act as, at war).
+1. Literal: Multi-word phrase (including contractions) in any unity bucket except Concept whose meaning is transparent from its
+    constituent words (act as, at war, as ice, I won't, side A, he'd).
+    - Non-literal or conventional phrases are rated normally (in case, a hair, I yield).
     - Never single words (unless their unity bucket is Non-unit), acronyms, or prefixes/suffixes.
-2. Ubiquitous: Basic vocabulary an early learner knows and uses constantly — simple everyday nouns, verbs, adjectives,
-    and function words (rinse, ant, cage, toss, trim, nor).
-    - Longer, compound, or less basic everyday words are Active (lemonade, grasp, label).
+2. Ubiquitous: Core everyday vocabulary that comes up in nearly anyone's daily life regardless of topic, including ordinary
+    inflections and longer everyday words (ant, toss, nor, because, freedom, tomato, islands, hoped).
+    - Words that come up mainly when a particular topic arises are Active (venue, panic, carbs, eager).
 3. Common Name: Frequent single given name or surname, shared by a wide variety of people, that doesn't refer to anyone in particular
-    (Sarah, Mike, Smith, Garcia).
+    (Sarah, Mike, Smith, Garcia). Includes moderately common modern names (Jalen, Carli, Alaina) and plurals (Ryans).
     - A name mainly known through one famous person is rated by that person (Farr → Jamie Farr → Niche).
     - Uncommon names don't qualify (Thaddeus, Ione). Rate them by how recognizable the name is: General Knowledge if nearly
       anyone would recognize it as a name, Niche if recognized mostly within a specific culture or group, Obscure if rare.
     - Possessive forms don't qualify.
 4. Active: Words a typical adult actually says, in this exact canonical form, whenever the topic comes up —
-    including everyday concrete nouns (pita, ore, rose, pistol, foe, par).
+    including everyday concrete nouns (pita, ore, rose, pistol, foe, par) and major places and brands people talk about (Japan, Texas, Honda, iPhone).
     Ask: "Would this come out of an average person's mouth in normal daily life?"
     If they would merely understand it, or would say a different form (bus station, not bus depot) → General Knowledge.
 5. General Knowledge: Nearly any US adult would recognize it immediately without context, but it isn't part of their active speech.

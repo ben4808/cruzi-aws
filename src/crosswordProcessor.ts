@@ -104,7 +104,7 @@ Loop through the steps until all eligible senses have been scored.
   2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal > Common Name >
      General Knowledge > Inferred > Niche > Obscure > Barely Exists > Nonsense.
   3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Feel-Good >
-     Trendy > Normal > Uncommon Inflection > Clunky > Non-unit.
+     Trendy > Normal > Uncommon Derivation > Clunky > Non-unit.
   4. Tiebreaker: pick one at random.
 
 STEP 6 (Sense References):
@@ -218,7 +218,7 @@ const SENSE_FAMILIARITY_BUCKETS = new Set([
 
 const SENSE_QUALITY_BUCKETS = new Set([
   'Non-unit',
-  'Uncommon Inflection',
+  'Uncommon Derivation',
   'Clunky',
   'Idiomatic',
   'Interesting',

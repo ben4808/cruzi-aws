@@ -56,7 +56,7 @@ import {
   withAiFailureHandling,
 } from './lib/utils';
 
-const ENTRIES_PER_REQUEST = 25;
+const ENTRIES_PER_REQUEST = 30;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 

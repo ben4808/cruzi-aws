@@ -17,7 +17,8 @@ export type CursorSourceAi =
   | 'grok-4.6'
   | 'grok-4.7'
   | 'gemini-3.8-flash'
-  | 'claude-sonnet-5-5';
+  | 'claude-sonnet-5-5'
+  | 'claude-haiku-5-5';
 
 /**
  * Explicit SDK selections so we never fall through to Fast defaults.
@@ -26,6 +27,7 @@ export type CursorSourceAi =
  * - Grok 4.7: Medium reasoning effort, 256k context, non-fast
  * - Gemini 3.8 Flash (high): High effort
  * - Claude Sonnet 5.5 (high): High reasoning effort
+ * - Claude Haiku 5.5 (high): High reasoning effort
  */
 const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
   'composer-2.5': {
@@ -61,6 +63,10 @@ const CURSOR_MODEL_SELECTION: Record<CursorSourceAi, ModelSelection> = {
   'claude-sonnet-5-5': {
     id: 'claude-sonnet-5-5',
     params: [{ id: 'reasoning_effort', value: 'medium' }],
+  },
+  'claude-haiku-5-5': {
+    id: 'claude-haiku-5-5',
+    params: [{ id: 'reasoning_effort', value: 'high' }],
   },
 };
 

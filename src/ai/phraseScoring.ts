@@ -291,7 +291,7 @@ export function matchFamiliarityBucketResultsToPhrases(
 
 const QUALITY_BUCKETS = new Set([
   'Non-unit',
-  'Uncommon Inflection',
+  'Uncommon Derivation',
   'Clunky',
   'Idiomatic',
   'Interesting',

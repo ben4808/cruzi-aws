@@ -11,7 +11,7 @@ Keep looping through the following steps until maxItems AI requests have been se
    b. Update a few fields in the entry table with the results:
       - quality_bucket
       - quality_score (Pass 1 buckets = 20, Pass 2 buckets = 40, Normal = 30).
-        Pass 1: Non-unit, Uncommon Inflection, Clunky.
+        Pass 1: Non-unit, Uncommon Derivation, Clunky.
         Pass 2: Idiomatic, Interesting, Feel-Good, Trendy.
         Vulgar and Sensitive are parenthetical flags, not buckets. Replace the entry's
         entry_tags rows for 'vulgar' and 'sensitive' with the flags on this result.
@@ -52,7 +52,7 @@ const DEFAULT_PARALLEL_REQUESTS = 1;
 
 export const QUALITY_SCORES: Record<string, number> = {
   'Non-unit': 20,
-  'Uncommon Inflection': 20,
+  'Uncommon Derivation': 20,
   Clunky: 20,
   Idiomatic: 40,
   Interesting: 40,
