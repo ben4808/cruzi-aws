@@ -51,9 +51,13 @@ const aiProvider = new CursorAiProvider(
 //   .then(() => console.log("Crossword processor completed successfully."))
 //   .catch(error => console.error("Error in crossword processor: ", error));
 
-crosswordListExtractor(3, 7)
+crosswordListExtractor(3, 9)
   .then(() => console.log("Crossword list extractor completed successfully."))
   .catch(error => console.error("Error in crossword list extractor: ", error));
+
+// crosswordListExtractor(3, 7, 'ExcludeNiche', true)
+//   .then(() => console.log("Crossword list extractor completed successfully."))
+//   .catch(error => console.error("Error in crossword list extractor: ", error));
 
 // entryParser(aiProvider, 100, 5)
 //   .then(() => console.log("Entry parser completed successfully."))

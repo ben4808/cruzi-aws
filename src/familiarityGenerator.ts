@@ -12,7 +12,7 @@ Keep looping through the following steps until maxItems AI requests have been se
     b. Update a few fields in the entry table with the results:
       - familiarity_bucket
       - familiarity_score (Ubiquitous = 45, Active = 40, Literal = 35,
-        Common Name = 30, General Knowledge = 30, Inferred = 25, Niche = 20,
+        Common Name = 30, Regionalism = 30, General Knowledge = 30, Inferred = 25, Niche = 20,
         Obscure = 15, Barely Exists = 10, Nonsense = 0).
         After AI results, collect items rated Obscure and run one bulk get_partial_phrase_items query
         per AI batch for phrases that start or end with those items (space-separated, e.g. "Velva"
@@ -65,6 +65,7 @@ export const FAMILIARITY_SCORES: Record<string, number> = {
   Active: 40,
   Literal: 35,
   'Common Name': 30,
+  Regionalism: 30,
   'General Knowledge': 30,
   Inferred: 25,
   Niche: 20,

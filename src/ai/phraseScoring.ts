@@ -72,6 +72,7 @@ const FAMILIARITY_BUCKETS = new Set([
   'Literal',
   'Ubiquitous',
   'Common Name',
+  'Regionalism',
   'Active',
   'General Knowledge',
   'Inferred',
@@ -322,7 +323,7 @@ function stripTrailingQualityPromptAnnotations(text: string): string {
         '',
       )
       .replace(
-        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
+        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Regionalism|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
         '',
       )
       .replace(/\s*\((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?\)\s*$/i, '')

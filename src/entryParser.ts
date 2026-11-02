@@ -7,6 +7,7 @@ Keep looping through the following steps until maxItems AI requests have been se
    a. For each chunk, generate a prompt using the entry_parser_prompt_3.txt file. Use the entry field as the input.
       Send the prompt to the AIProvider (make this a parameter).
    b. Update the display_text and classification in the entry table (from "display (base)" inflections; not separate Inflected Word/Phrase types).
+      Don't be afraid to output hyphenated display text where it is natural to do so (well-known, x-ray, catch-22).
       Write inflected forms to inflected_entry (base_entry, inflected_entry, lang) rather than entry.base_form.
       Inflected keys may still have their own entry row when they have senses that do not apply to the base form.
       Also set reviewed_status to "1".

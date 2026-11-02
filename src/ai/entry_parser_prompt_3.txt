@@ -44,7 +44,8 @@ Preserve the input sequence of letters and numbers exactly, in order. Only capit
 - Accents/diacritics may be added where conventional (e.g. JALAPENO → jalapeño). 
 - "AND" may be transformed to "&" where appropriate.
 - "DOT" may be transformed to "." where appropriate.
-- "AT" may be transformed to "@" where appropriate. 
+- "AT" may be transformed to "@" where appropriate.
+- Don't be afraid to output hyphenated display text where it is natural to do so (well-known, x-ray, catch-22).
 Don't automatically capitalize the first word. (except when conventional, e.g. a proper name)
 
 OUTPUT
@@ -60,6 +61,7 @@ SIGN : Word : sign
 DAMNIT : Phrase : damn it
 AANDW : Proper Name : A&W
 VEIGHT : Phrase : V-eight
+WELLKNOWN : Phrase : well-known
 CROCS : Word : crocs (croc) : Proper Name : Crocs
 ORDERSFOOD : Phrase : orders food (order food)
 CRAWLIN : Phrase : crawl in

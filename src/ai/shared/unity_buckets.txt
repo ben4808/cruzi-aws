@@ -3,6 +3,8 @@
 - Compositional numbers/ordinals, including Roman numerals, are Non-unit unless they have other meanings ("fifty-six" is Non-unit, "eighty-six" is Concept).
 - Non-canonical forms of an otherwise unified term → NOT Concept, Collocation, or Formula.
    Includes: wrong word order, nonstandard naming, scrambled variants, superfluous padding, and truncations.
+- A form that is standard in any region is canonical. Do not treat it as non-canonical or as Variant
+   just because another region uses a different form. Rate that familiarity as Regionalism.
 - Plural surnames, and names of foreign dishes, drinks, and cultural items (carne al piatto), are Concept.
 - Contractions: pronoun + verb contractions (he'd, they'd, here's, that'll) are Partial; negated auxiliaries (didn't, hasn't, aren't) are Collocation.
 - A few scattered search hits do not make something a unit. These are Nonsense:
@@ -43,7 +45,9 @@ BUCKETS
     Includes multi-word fragments of a specific fixed expression, quote, simile, title, or name (as a bone, Leo the, out on a, la carte, a part of).
       Ask: "Does this evoke one specific longer expression that completes it?" If yes → Partial; if no → Non-unit.
     If the string is commonly used on its own → Concept (lac, crawl in). Includes neither standalone shortenings (fridge) nor standard prefixes/suffixes.
-5. Variant: Variant spelling that is valid but non-dominant (red up → redd up, Otelo → Otello).
+5. Variant: A spelling or form that is valid but nonstandard in every region (nite → night, thru → through).
+    A form that is standard in any region is not Variant, even if it is uncommon in the US (lorry, colour, Otelo, redd up).
+    Those stay in Concept, Collocation, or Formula as appropriate; their familiarity bucket is Regionalism.
 6. Formulaic: Built on the fly from a productive template rather than stored as its own unit. Unrelated to Formula.
     Letter/number slot-fills in a template (plan A, side A, disc two, B-list, act III, x-axis, Psalm 25) and transparent re- verbs (retie, resift).
     If that fill has its own meaning → Concept (plan B, A-list, B-roll, A-frame).

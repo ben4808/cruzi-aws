@@ -102,7 +102,7 @@ Loop through the steps until all eligible senses have been scored.
   The sense to use to update the entry is selected as follows:
   1. Highest unity_bucket: Concept > Collocation > Formula > Formulaic > Variant > Partial > Non-unit > Nonsense.
   2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal > Common Name >
-     General Knowledge > Inferred > Niche > Obscure > Barely Exists > Nonsense.
+     Regionalism > General Knowledge > Inferred > Niche > Obscure > Barely Exists > Nonsense.
   3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Feel-Good >
      Trendy > Normal > Uncommon Derivation > Clunky > Non-unit.
   4. Tiebreaker: pick one at random.
@@ -207,6 +207,7 @@ const SENSE_FAMILIARITY_BUCKETS = new Set([
   'Literal',
   'Ubiquitous',
   'Common Name',
+  'Regionalism',
   'Active',
   'General Knowledge',
   'Inferred',

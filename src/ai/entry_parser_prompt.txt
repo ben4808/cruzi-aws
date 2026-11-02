@@ -3,6 +3,7 @@ For each word or phrase given,
 1. Assign the most natural/familiar category from the choices below for an educated adult native English speaker.
 2. Write it in its natural form, according to the chosen category. Don't automatically capitalize the first letter.
    Don't judge the obscurity or grammar of the word or phrase, just provide the most natural form possible.
+   Don't be afraid to output hyphenated display text where it is natural to do so (well-known, x-ray, catch-22).
 
 IMPORTANT: Preserve the input sequence of letters and numbers exactly, in order. Only capitalization, spacing, punctuation,
   and conventional accents/diacritics may change (e.g. JALAPENO → jalapeño).
@@ -36,6 +37,7 @@ ALLCAPS : Phrase : all caps
 BASEBALL : Word : baseball
 AANDW : Phrase : A and W
 VEIGHT : Phrase : V-eight
+WELLKNOWN : Phrase : well-known
 ORDERSFOOD : Inflected Phrase : orders food (order food)
 DIVING : Inflected Word : diving (dive)
 CANDIES : Inflected Word : candies (candy)
