@@ -6,24 +6,21 @@
 - A form that is standard in any region is canonical. Do not treat it as non-canonical or as Variant
    just because another region uses a different form. Rate that familiarity as Regionalism.
 - Plural surnames, and names of foreign dishes, drinks, and cultural items (carne al piatto), are Concept.
-- Contractions: pronoun + verb contractions (he'd, they'd, here's, that'll) are Partial; negated auxiliaries (didn't, hasn't, aren't) are Collocation.
 - A few scattered search hits do not make something a unit. These are Nonsense:
    - Plurals of acronyms that name a single organization or can't really be pluralized (AAUWs, CVaRs).
    - Laughs and interjections spelled with a nonstandard letter count (bwaha, psssh, aaahs).
    - Crossword-theme gimmicks where a letter stands in for a word or part of a phrase (up the A, lift the V).
 
-IMPORTANT: Evaluate first Concept, Collocation, and Formula buckets, and if the item doesn't fit in any of those, evaluate the rest
-  in numerical order.
+IMPORTANT: Evaluate the buckets in numerical order.
 
 BUCKETS
 1. Concept: A stored conceptual unit (lexicalized chunk), at the right grain.
-    Includes idioms, conventionalized metaphors, standard inflections, and standard prefixes/suffixes that attach to many words (tri-, mega-, hard-).
+    Includes idioms, conventionalized metaphors, and standard prefixes/suffixes that attach to many words (tri-, mega-, hard-).
     Includes phrases where some word departs from its ordinary meaning (stay put, kick off).
       If every word keeps its ordinary meaning (act as, at war, by mouth, low dose) → Collocation.
     Includes established compound nouns that name a recognized kind of thing, even if transparent (tea bag, black bear, ice age, baby wipes).
       If the phrase describes rather than names (car race, pant leg, USB fan) → Collocation.
     Includes single-word interjections, exclamations, and sounds (huh, brr, yep, ta-da, bravo).
-    Includes rare suffix forms (-er, -est, plurals) of real words (touter, eviler, biters).
     Ask: "Would a native speaker treat this exact string as one stored unit,
       or just a description built on the fly?" Description → not Concept.
     Standalone multi-word replies/reactions → Formula. Template slot-fills → Formulaic.
@@ -41,7 +38,7 @@ BUCKETS
 4. Partial: A fragment that only works with a companion word.
     Includes words mainly used bound to a companion word (sippy → sippy cup, ahold → get ahold, Kart → Mario Kart, het → het up,
       peters → peters out, utero → in utero), clippings used only inside a compound (res → hi-res, pedi → mani-pedi),
-      and fragments missing a needed word (a snap → it's a snap, she's).
+      and fragments missing a needed word (a snap → it's a snap).
     Includes multi-word fragments of a specific fixed expression, quote, simile, title, or name (as a bone, Leo the, out on a, la carte, a part of).
       Ask: "Does this evoke one specific longer expression that completes it?" If yes → Partial; if no → Non-unit.
     If the string is commonly used on its own → Concept (lac, crawl in). Includes neither standalone shortenings (fridge) nor standard prefixes/suffixes.
@@ -52,7 +49,7 @@ BUCKETS
     Letter/number slot-fills in a template (plan A, side A, disc two, B-list, act III, x-axis, Psalm 25) and transparent re- verbs (retie, resift).
     If that fill has its own meaning → Concept (plan B, A-list, B-roll, A-frame).
     Never ordinary words or fixed phrases (more, you are here → Concept).
-7. Non-unit: Grammatical phrase that doesn't fit in the first 4 categories and doesn't evoke a specific longer expression (are here, cat meat, eat less).
+7. Non-unit: Grammatical phrase that doesn't fit Concept, Collocation, Formula, or Partial and doesn't evoke a specific longer expression (are here, cat meat, eat less).
     Does not include single words, except where a guideline above says otherwise.
 8. Nonsense: Everything else.
 

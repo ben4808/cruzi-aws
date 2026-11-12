@@ -2,22 +2,6 @@ PASS 1
 First, consider if the item belongs to any of these buckets, evaluating from top to bottom. 
 If it does, assign that bucket and immediately move on to the next item.
 
-Non-unit: Unity bucket is exactly Non-unit or Nonsense -> automatic Non-unit. No other unity bucket triggers this.
-Uncommon Derivation: An inflected or derived form that is rarely used in modern natural speech, 
-  even if grammatically valid or present in specialized dictionaries (saner, Nates, SNRs, wellnesses, liaises).
-  Transparent re-/de- verb forms are not Uncommon Derivations (retyped, reseed, deseed).
-Clunky: A non-dominant formulation.
-  Ask: "If a native speaker wanted to express exactly this, would they use this exact string?"
-  If a different form is clearly standard (Levi → Levi's, PBJ → PB&J, C-cell → C battery, F-keys → function keys,
-  as do I → so do I, Macao → Macau), → Clunky.
-  Includes contrived or non-standard shortenings (systs, qual), contrived archaic forms (ashine, adance),
-  misspellings and contrived variants (schtik, ID'd), and multi-word fragments that dangle or are padded (as ice, is for, a must, the UK).
-  Valid alternate or British spellings (analyse, spelt) are not Clunky.
-  Single bound words, contractions, and prefixes/suffixes (utero, he'd, osteo-, tri-) are not Clunky.
-
-PASS 2
-Again, choose the first bucket that applies, evaluating from top to bottom.
-
 Idiomatic: Non-literal multi-word phrase with a colloquial, informal, or figurative flavor
   (nip at, life or death, oh it's on, act up, did in, a ton, went to pot).
   Does NOT include neutral-register phrasal verbs or functional phrases (end up, take up, at all, per se, log on).
@@ -39,7 +23,7 @@ Trendy: Using it signals fluency in spoken, colloquial culture — membership in
   Does NOT include terms that have become the standard name for something (app), regionalisms or loanwords (loo, passé),
   field jargon (O-line), or words that are merely informal (yap).
 
-PASS 3
+PASS 2
 Determine whether these attributes either apply to the item or they don't.
 
 Vulgar: Vulgar and inappropriate to use in formal settings or around children. Includes bodily-function slang (rip one, peepee).
@@ -48,23 +32,24 @@ Sensitive: Touches a topic many people would find uncomfortable in polite or mix
   hatred or evil (hate, demon, Satan), gender/sexuality/race identity (he/him, racism), partisan politics (RNC, neocon),
   and predatory or demeaning behavior (leers, sneers, hitman).
   Sad or serious subject matter alone is not Sensitive (mourn, elegy, alone, deaths, arson).
+Gross: Produces disgust or an unappetizing reaction when read (urine, bowel, excrement).
 
 DEFAULT
-An item that doesn't fit into any bucket from Pass 1 or Pass 2 should be classified as "Normal".
+An item that doesn't fit into any bucket from Pass 1 should be classified as "Normal".
 
 OUTPUT
 Output according to the following format, one item per line.
 Do not re-output the unity or familiarity buckets.
 Don't include any explanatory or auxiliary text.
 
-<input item> : <bucket name> (Vulgar, Sensitive)
+<input item> : <bucket name> (Vulgar, Sensitive, Gross)
 
 Examples:
 crown : Normal
 George Foreman : Interesting
-funnest : Uncommon Derivation
 shit-faced : Idiomatic (Vulgar)
 obese : Normal (Sensitive)
+urine : Normal (Gross)
 pecan : Feel-Good
 courage : Normal
 see ya : Trendy

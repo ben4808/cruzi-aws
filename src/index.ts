@@ -8,6 +8,7 @@ import { senseFamiliarityGenerator } from './senseFamiliarityGenerator';
 import { exampleSentenceImprover } from './exampleSentenceImprover';
 import { unityGenerator } from './unityGenerator';
 import { entryParser } from './entryParser';
+import { entrySentenceGenerator } from './entrySentenceGenerator';
 import { entryImprover } from './entryImprover';
 import { CursorAiProvider } from './ai/cursor';
 import { GeminiWebAiProvider } from './ai/geminiWebProvider';
@@ -51,11 +52,11 @@ const aiProvider = new CursorAiProvider(
 //   .then(() => console.log("Crossword processor completed successfully."))
 //   .catch(error => console.error("Error in crossword processor: ", error));
 
-crosswordListExtractor(3, 9)
-  .then(() => console.log("Crossword list extractor completed successfully."))
-  .catch(error => console.error("Error in crossword list extractor: ", error));
+// crosswordListExtractor(3, 9)
+//   .then(() => console.log("Crossword list extractor completed successfully."))
+//   .catch(error => console.error("Error in crossword list extractor: ", error));
 
-// crosswordListExtractor(3, 7, 'ExcludeNiche', true)
+// crosswordListExtractor(3, 7, 'ExcludeMaybeGettable', true)
 //   .then(() => console.log("Crossword list extractor completed successfully."))
 //   .catch(error => console.error("Error in crossword list extractor: ", error));
 
@@ -67,7 +68,7 @@ crosswordListExtractor(3, 9)
 //   .then(() => console.log("Phrase generator completed successfully."))
 //   .catch(error => console.error("Error in phrase generator: ", error));
 
-// shortPhraseGenerator(aiProvider, 6, 500, 1, "VI____")
+// shortPhraseGenerator(aiProvider, 7, 1000, 10)
 //   .then(() => console.log("Short phrase generator completed successfully."))
 //   .catch(error => console.error("Error in short phrase generator: ", error));
 
@@ -78,6 +79,10 @@ crosswordListExtractor(3, 9)
 // exampleSentenceGenerator()
 //  .then(() => console.log("Example sentence generator completed successfully."))
 //  .catch(error => console.error("Error in example sentence generator: ", error));
+
+// entrySentenceGenerator(aiProvider, 8)
+//   .then(() => console.log("Entry sentence generator completed successfully."))
+//   .catch(error => console.error("Error in entry sentence generator: ", error));
 
 // scrabbleLoader()
 //   .then(() => console.log("Scrabble loader completed successfully."))

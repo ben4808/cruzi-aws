@@ -8,8 +8,6 @@ Your task is to classify each item into one of the buckets specified below.
 Judge every bucket by the given sense, not by other senses of the word.
 Exception to the Idiomatic rule below: a single word qualifies when the given sense is a figurative extension of its
 literal meaning (boil as "be hopping mad").
-Exception to the Clunky rule below: a person's given name or surname is never Clunky, whether a generic "Personal Name" sense
-or a specific person. A name is the standard form of itself, even if it is rare or has other spellings (Jon, Ione, Kyl).
 
 [[INCLUDE shared/quality_buckets.txt]]
 

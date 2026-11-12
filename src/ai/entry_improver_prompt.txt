@@ -65,7 +65,6 @@ Choose the first bucket that applies.
 - Inferred: The meaning is easily inferred from the words even if it's not known directly.
 - Niche: Known by specific subcultures, generational cohorts, hobbyists, or trivia fans.
 - Obscure: Rarely encountered. The information that exists on it is archaic, fragmented, or hyper-niche.
-- Barely Exists: Almost non-existent in the language.
 - Nonsense: Everything else.
 
 Step 5: Quality Bucket

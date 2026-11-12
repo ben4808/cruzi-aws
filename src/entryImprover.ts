@@ -12,7 +12,7 @@ Keep looping through the following steps until maxBatches AI requests have been 
     - unity_score (Concept = 5, Collocation = 4, Formula = 3, Non-unit = 2, Nonsense = 1)
     - familiarity_bucket
     - familiarity_score (Beginner Core = 50, Fundamental = 45, Active = 40, Easy Collocation = 35, 
-        Well-Known = 30, Inferred = 25, Niche = 20, Obscure = 15, Barely Exists = 10, Nonsense = 0)
+        Well-Known = 30, Inferred = 25, Niche = 20, Obscure = 15, Nonsense = 0)
     - quality_bucket
     - quality_score (Warm = 40, Fun = 35, Interesting = 35, Normal = 30, Non-Dominant = 25, 
         Awkward = 20, Clunky = 15, Barely Coherent = 10, Nonsense = 0)
@@ -58,7 +58,6 @@ const FAMILIARITY_SCORES: Record<string, number> = {
   Inferred: 25,
   Niche: 20,
   Obscure: 15,
-  'Barely Exists': 10,
   Nonsense: 0,
 };
 

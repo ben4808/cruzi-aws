@@ -13,14 +13,14 @@ Keep looping through the following steps until maxItems AI requests have been se
       - familiarity_bucket
       - familiarity_score (Ubiquitous = 45, Active = 40, Literal = 35,
         Common Name = 30, Regionalism = 30, General Knowledge = 30, Inferred = 25, Niche = 20,
-        Obscure = 15, Barely Exists = 10, Nonsense = 0).
+        Obscure = 15, Nonsense = 0).
         After AI results, collect items rated Obscure and run one bulk get_partial_phrase_items query
         per AI batch for phrases that start or end with those items (space-separated, e.g. "Velva"
         matches "Aqua Velva" but not "AqueVelva"). If any such phrase has familiarity_score >= 20,
         overwrite the item's unity bucket to Partial (unity_score 2) and familiarity bucket to Niche.
       - domain, when the prompt includes a parenthetical domain/area
       - reviewed_status = "123"
-   c. If any secondary classes get rated as Obscure, Barely Exists, or Nonsense, delete them from the entry_secondary_class table.
+   c. If any secondary classes get rated as Obscure or Nonsense, delete them from the entry_secondary_class table.
       For secondaries that are rated and kept, set their familiarity_bucket (and unity_bucket when inferred Partial) on the entry_secondary_class row.
       Among the primary class and secondary classes, replace the classification and display_text of the entry row with the one that got
       the highest familiarity score and move any others into the entry_secondary_class table.
@@ -70,7 +70,6 @@ export const FAMILIARITY_SCORES: Record<string, number> = {
   Inferred: 25,
   Niche: 20,
   Obscure: 15,
-  'Barely Exists': 10,
   Nonsense: 0,
 };
 
@@ -85,7 +84,7 @@ type FamiliarityRating = {
 const cursorProvider = new CursorAiProvider();
 
 function isDeletableFamiliarityBucket(bucket: string): boolean {
-  return bucket === 'Obscure' || bucket === 'Barely Exists' || bucket === 'Nonsense';
+  return bucket === 'Obscure' || bucket === 'Nonsense';
 }
 
 export function collectPromptPhrases(

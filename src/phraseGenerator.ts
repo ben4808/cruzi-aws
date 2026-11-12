@@ -17,13 +17,13 @@ Keep looping through the following steps until maxItems queue items have been pr
    f. Run successful parses through unity_prompt_3.txt as unityGenerator does (primary + secondaries, promote a good secondary
       when the primary is Partial/Variant/Formulaic/Non-unit/Nonsense, delete Non-unit/Nonsense secondaries, keep Partial/Variant/Formulaic secondaries).
    g. Run remaining items through familiarity_prompt_3.txt as familiarityGenerator does (include class and unity bucket, secondaries
-      with their own class/unity, Obscure→Partial/Niche inference via get_partial_phrase_items, delete Obscure/Barely Exists/Nonsense
+      with their own class/unity, Obscure→Partial/Niche inference via get_partial_phrase_items, delete Obscure/Nonsense
       secondaries, promote the highest-familiarity class). Skip Nonsense classification/unity_bucket.
    h. For each phrase from step d, insert a phrase_generator_result row with all fields (base_form, classification,
       display_text, unity_bucket, familiarity_bucket). Persist remaining secondaries to entry_secondary_class for keys that are
       not already in entry (same table/keys as entry).
    i. Insert vetted phrases into the entry table (not Nonsense type; unity not Partial/Variant/Non-unit/Nonsense; familiarity not
-      Obscure/Barely Exists/Nonsense; not Failed parse), including display_text, classification, inflected_entry
+      Obscure/Nonsense; not Failed parse), including display_text, classification, inflected_entry
       mappings from parsed base forms, unity
       bucket/score, familiarity bucket/score, and reviewed_status "123". Do not overwrite existing entry fields with non-null
       values; only insert new rows or populate null fields on existing rows. For entries that were not already in the entry table,
@@ -80,7 +80,7 @@ const ENTRIES_PER_REQUEST = 100;
 const BLANK_PLACEHOLDER = '____';
 const REVIEWED_STATUS_AFTER_FAMILIARITY = '123';
 const REJECTED_UNITY_BUCKETS = new Set(['Variant', 'Non-unit', 'Nonsense']);
-const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Barely Exists', 'Nonsense']);
+const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Nonsense']);
 
 function secondaryIdentityKey(secondaryClass: string, secondaryDisplay: string): string {
   return `${secondaryClass}\0${secondaryDisplay}`;

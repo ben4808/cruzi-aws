@@ -3,7 +3,9 @@ Keep looping through the following steps until maxItems queue items have been pr
 1. Select enough queue items for parallelRequests concurrent executions via get_short_phrase_queue
    (ordered by added_at), filtered to the given length parameter.
 2. For each selected queue item (up to parallelRequests in parallel):
+   If processing throws, abandon that item (leave it in the queue) and continue the rest of the batch.
    a. Select all rows from the entry table that match the prompt from the queue item.
+      Exclude entries whose classification or unity_bucket is Nonsense.
    b. If there are more than 200 existing entries that match the prompt, delete the queue item and add new queue items for each letter
       of the alphabet tacked on to the end of the prompt. For example, if the prompt is "AP___", add new queue items for "APA__", "APB__", etc.
       Then finish this item and continue.
@@ -12,21 +14,24 @@ Keep looping through the following steps until maxItems queue items have been pr
       [[START/END]], and [[BASE_LETTERS]] placeholders. [[PATTERN]] is the query with explicit letter positions (e.g. "A P _ _ _"). Populate the banned list with the display_text from the results from step a.
       Send the prompt to the AIProvider (make this a parameter).
    d. After "All Full Words/Phrases Utilized:" in the response will be a list of phrases with related phrases separated by a colon.
-   e. Normalize those phrases to ALLCAPS and run them through entry_parser_prompt_3.txt. Parse classification, display_text,
-      and base_form. Match parser/unity/familiarity results by identity only (never shift leftover rows).
-      Treat a parse whose display_text does not normalize back to the entry key as a failed parse (same check as entryParser).
-   f. Run the successfully parsed, non-Nonsense phrases through unity_prompt_3.txt, then the ones whose unity_bucket is not Nonsense
-      through familiarity_prompt_3.txt (with classification and unity bucket).
-   g. For each phrase returned in step c, insert a row into the short_phrase_result table. Include classification, display_text,
-      base_form, unity_bucket, and familiarity_bucket where possible.
-   h. Insert into the entry table the phrases whose classification is not Nonsense, unity_bucket is not Variant, Formulaic, Non-unit, or Nonsense,
-      and familiarity_bucket is not Obscure, Barely Exists, or Nonsense. Include classification, display_text, base_form,
+   e. Run the phrases through entry_parser_prompt_3.txt as entryParser does: display_text, classification, inflected_entry
+      mappings from parsed base forms, secondary classes (when secondary_display differs from primary), and the display-key match check (Failed parse).
+   f. Run successful parses through unity_prompt_3.txt as unityGenerator does (primary + secondaries, promote a good secondary
+      when the primary is Partial/Variant/Formulaic/Non-unit/Nonsense, delete Non-unit/Nonsense secondaries, keep Partial/Variant/Formulaic secondaries).
+   g. Run remaining items through familiarity_prompt_3.txt as familiarityGenerator does (include classification and unity bucket, secondaries
+      with their own classification/unity, Obscure→Partial/Niche inference via get_partial_phrase_items, delete Obscure/Nonsense
+      secondaries, promote the highest-familiarity class). Skip Nonsense classification/unity_bucket.
+   h. For each phrase from step d, insert a short_phrase_result row with all fields (classification, display_text, base_form,
+      unity_bucket, familiarity_bucket). Persist remaining secondaries to entry_secondary_class for keys that are
+      not already in entry (same table/keys as entry).
+   i. Insert into the entry table the phrases whose classification is not Nonsense, unity_bucket is not Non-unit or Nonsense,
+      familiarity_bucket is not Obscure or Nonsense, and that are not Failed parse. Include classification, display_text, base_form,
       unity bucket/score (UNITY_SCORES from unityGenerator), familiarity bucket/score (FAMILIARITY_SCORES from familiarityGenerator),
       domain, and reviewed_status "123". Do not overwrite entry fields with non-null values; only insert new rows
       or populate null fields on existing rows. For entries that were not already in the entry table, insert an entry_tag record
       with the tag "short_phrase_generator".
-   i. Delete the queue item from the short_phrase_queue table.
-   j. Count the number of phrases that were inserted into the entry table AND that actually match the prompt of the original queue item.
+   j. Delete the queue item from the short_phrase_queue table.
+   k. Count the number of phrases that were inserted into the entry table AND that actually match the prompt of the original queue item.
       If it is 5 or more, reinsert the original row into the short_phrase_queue table.
 3. maxItems is the total number of queue items to process before quitting (not the number of DB cycles).
 4. length is required in queue mode: only process short_phrase_queue rows whose length column matches.
@@ -46,6 +51,8 @@ import {
   addShortPhraseQueueEntries,
   addShortPhraseResults,
   deleteShortPhraseQueueItem,
+  EntryForFamiliarityGenerator,
+  EntryForUnityGenerator,
   getEntries,
   getEntriesMatchingShortPhrasePrompt,
   getShortPhraseQueue,
@@ -54,26 +61,70 @@ import {
 import { Entry } from 'cruzi-models';
 import { IAiProvider } from './ai/IAiProvider';
 import {
-  parseEntriesWithEntryParser3,
+  parseEntriesWithEntryParser3Full,
   scorePhrasesForFamiliarityBucket,
   scorePhrasesForUnityBucket,
 } from './ai/phraseScoring';
-import { displayTextMatchesEntry } from './entryParser';
-import { FAMILIARITY_SCORES } from './familiarityGenerator';
-import { entryToAllCaps, isGeminiTimeoutError } from './lib/utils';
+import { buildResultsToPersist as buildEntryParserResultsToPersist } from './entryParser';
+import {
+  applyPartialPhraseInference,
+  buildResultsToPersist as buildFamiliarityGeneratorResultsToPersist,
+  collectPromptPhrases as collectFamiliarityPromptPhrases,
+} from './familiarityGenerator';
+import {
+  entryToAllCaps,
+  batchArray,
+  isAbandonableAiError,
+  isGeminiTimeoutError,
+  waitIfUnauthorized,
+  withAiFailureHandling,
+} from './lib/utils';
 import { parsePhraseGeneratorResponse } from './phraseGenerator';
-import { UNITY_SCORES } from './unityGenerator';
+import {
+  buildResultsToPersist as buildUnityGeneratorResultsToPersist,
+  collectPromptPhrases as collectUnityPromptPhrases,
+  UNITY_SCORES,
+} from './unityGenerator';
 
 const SHORT_PHRASE_AI_TIMEOUT_MS = 10 * 60 * 1000;
 const REQUEUE_THRESHOLD = 5;
 const MATCH_SPLIT_THRESHOLD = 200;
 const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
+const ENTRIES_PER_REQUEST = 100;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const REVIEWED_STATUS_AFTER_FAMILIARITY = '123';
-const REJECTED_ENTRY_TYPES = new Set(['Nonsense']);
-const REJECTED_UNITY_BUCKETS = new Set(['Variant', 'Formulaic', 'Non-unit', 'Nonsense']);
-const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Barely Exists', 'Nonsense']);
+const REJECTED_CLASSIFICATIONS = new Set(['Nonsense']);
+const REJECTED_UNITY_BUCKETS = new Set(['Non-unit', 'Nonsense']);
+const REJECTED_FAMILIARITY_BUCKETS = new Set(['Obscure', 'Nonsense']);
+
+function secondaryIdentityKey(secondaryClass: string, secondaryDisplay: string): string {
+  return `${secondaryClass}\0${secondaryDisplay}`;
+}
+
+interface PipelineSecondary {
+  secondaryClass: string;
+  secondaryDisplay: string;
+  secondaryBaseForm?: string;
+  unityBucket?: string;
+  familiarityBucket?: string;
+}
+
+interface PipelineItem {
+  entryKey: string;
+  lang: string;
+  displayText: string;
+  classification?: string;
+  baseForm?: string;
+  isVulgar?: boolean;
+  parseFailed: boolean;
+  secondaries: PipelineSecondary[];
+  unityBucket?: string;
+  unityScore?: number;
+  familiarityBucket?: string;
+  familiarityScore?: number;
+  domain?: string;
+}
 
 export interface ParsedShortPhrasePrompt {
   query: string;
@@ -187,6 +238,297 @@ export function phraseMatchesShortPrompt(
   return entryKey.endsWith(baseKey);
 }
 
+function isVettablePipelineItem(item: PipelineItem): boolean {
+  return (
+    !item.parseFailed &&
+    !!item.displayText &&
+    !!item.classification &&
+    !REJECTED_CLASSIFICATIONS.has(item.classification) &&
+    !!item.unityBucket &&
+    !REJECTED_UNITY_BUCKETS.has(item.unityBucket) &&
+    item.unityScore != null &&
+    !!item.familiarityBucket &&
+    !REJECTED_FAMILIARITY_BUCKETS.has(item.familiarityBucket) &&
+    item.familiarityScore != null
+  );
+}
+
+async function parsePhrasesForPipeline(
+  items: PipelineItem[],
+  provider: IAiProvider,
+): Promise<void> {
+  const entryKeys = items.map((item) => item.entryKey);
+  const parsedResults = [];
+  for (const chunk of batchArray(entryKeys, ENTRIES_PER_REQUEST)) {
+    parsedResults.push(...await parseEntriesWithEntryParser3Full(chunk, provider));
+  }
+
+  const parserInputs = items.map((item) => ({ entry: item.entryKey, lang: item.lang }));
+  const parserResults = buildEntryParserResultsToPersist(parserInputs, parsedResults);
+  const parserByEntry = new Map(parserResults.map((result) => [`${result.entry}\0${result.lang}`, result]));
+
+  for (const item of items) {
+    const parsed = parserByEntry.get(`${item.entryKey}\0${item.lang}`);
+    if (!parsed) {
+      continue;
+    }
+
+    item.parseFailed = parsed.reviewedStatus === 'Failed parse';
+    item.displayText = parsed.displayText || item.displayText;
+    item.classification = parsed.classification;
+    item.baseForm = parsed.baseForm;
+    item.secondaries = (parsed.secondaryClasses ?? []).map((secondary) => ({
+      secondaryClass: secondary.secondaryClass,
+      secondaryDisplay: secondary.secondaryDisplay,
+      secondaryBaseForm: secondary.secondaryBaseForm,
+    }));
+  }
+}
+
+function applyUnityResultToItem(
+  item: PipelineItem,
+  result: ReturnType<typeof buildUnityGeneratorResultsToPersist>[number],
+): void {
+  item.unityBucket = result.unityBucket;
+  item.unityScore = result.unityScore;
+  if (result.displayText) {
+    const promoted = item.secondaries.find(
+      (secondary) =>
+        secondary.secondaryClass === result.classification &&
+        secondary.secondaryDisplay === result.displayText,
+    );
+    item.displayText = result.displayText;
+    if (result.classification) {
+      item.classification = result.classification;
+    }
+    if (promoted) {
+      item.baseForm = promoted.secondaryBaseForm;
+    }
+  }
+
+  const deleted = new Set(
+    (result.secondaryClassesToDelete ?? []).map((secondary) =>
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+    ),
+  );
+  const unityByIdentity = new Map(
+    (result.secondaryClassesToUpdate ?? []).map((secondary) => [
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+      secondary.unityBucket,
+    ]),
+  );
+  item.secondaries = item.secondaries
+    .filter(
+      (secondary) =>
+        !deleted.has(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)),
+    )
+    .map((secondary) => ({
+      ...secondary,
+      unityBucket:
+        unityByIdentity.get(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)) ??
+        secondary.unityBucket,
+    }));
+}
+
+async function scoreUnityForPipeline(
+  items: PipelineItem[],
+  provider: IAiProvider,
+): Promise<void> {
+  const eligible = items.filter(
+    (item) =>
+      !item.parseFailed &&
+      item.classification !== 'Nonsense' &&
+      item.displayText.trim() !== '',
+  );
+  if (eligible.length === 0) {
+    return;
+  }
+
+  for (const chunk of batchArray(eligible, ENTRIES_PER_REQUEST)) {
+    const unityInputs: EntryForUnityGenerator[] = chunk.map((item) => ({
+      entry: item.entryKey,
+      lang: item.lang,
+      displayText: item.displayText,
+      classification: item.classification ?? null,
+      secondaryClasses: item.secondaries.map((secondary) => ({
+        secondaryClass: secondary.secondaryClass,
+        secondaryDisplay: secondary.secondaryDisplay,
+        secondaryBaseForm: secondary.secondaryBaseForm,
+      })),
+    }));
+    const phrases = collectUnityPromptPhrases(unityInputs);
+    const resultsByPhrase = await scorePhrasesForUnityBucket(phrases, provider, {
+      promptVersion: 3,
+    });
+    const persistResults = buildUnityGeneratorResultsToPersist(unityInputs, resultsByPhrase);
+    const persistByKey = new Map(
+      persistResults.map((result) => [`${result.entry}\0${result.lang}`, result]),
+    );
+
+    for (const item of chunk) {
+      const result = persistByKey.get(`${item.entryKey}\0${item.lang}`);
+      if (result) {
+        applyUnityResultToItem(item, result);
+      }
+    }
+  }
+}
+
+function applyFamiliarityResultToItem(
+  item: PipelineItem,
+  result: ReturnType<typeof buildFamiliarityGeneratorResultsToPersist>[number],
+): void {
+  item.familiarityBucket = result.familiarityBucket;
+  item.familiarityScore = result.familiarityScore;
+  if (result.unityBucket) {
+    item.unityBucket = result.unityBucket;
+  }
+  if (result.unityScore != null) {
+    item.unityScore = result.unityScore;
+  } else if (item.unityBucket) {
+    item.unityScore = UNITY_SCORES[item.unityBucket] ?? item.unityScore;
+  }
+  if (result.displayText) {
+    item.displayText = result.displayText;
+  }
+  if (result.classification) {
+    item.classification = result.classification;
+  }
+  if (result.displayText) {
+    item.baseForm = result.baseForm;
+  }
+  if (result.domain) {
+    item.domain = result.domain;
+  }
+
+  const deleted = new Set(
+    (result.secondaryClassesToDelete ?? []).map((secondary) =>
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+    ),
+  );
+  const updates = new Map(
+    (result.secondaryClassesToUpdate ?? []).map((secondary) => [
+      secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+      secondary,
+    ]),
+  );
+  item.secondaries = item.secondaries
+    .filter(
+      (secondary) =>
+        !deleted.has(secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay)),
+    )
+    .map((secondary) => {
+      const update = updates.get(
+        secondaryIdentityKey(secondary.secondaryClass, secondary.secondaryDisplay),
+      );
+      return {
+        ...secondary,
+        familiarityBucket: update?.familiarityBucket ?? secondary.familiarityBucket,
+        unityBucket: update?.unityBucket ?? secondary.unityBucket,
+      };
+    });
+
+  for (const inserted of result.secondaryClassesToInsert ?? []) {
+    if (!inserted.secondaryClass || !inserted.secondaryDisplay) {
+      continue;
+    }
+    if (
+      item.secondaries.some(
+        (secondary) =>
+          secondary.secondaryClass === inserted.secondaryClass &&
+          secondary.secondaryDisplay === inserted.secondaryDisplay,
+      )
+    ) {
+      continue;
+    }
+    item.secondaries.push({
+      secondaryClass: inserted.secondaryClass,
+      secondaryDisplay: inserted.secondaryDisplay,
+      secondaryBaseForm: inserted.secondaryBaseForm,
+      familiarityBucket: inserted.familiarityBucket,
+      unityBucket: inserted.unityBucket,
+    });
+  }
+}
+
+async function scoreFamiliarityForPipeline(
+  items: PipelineItem[],
+  provider: IAiProvider,
+): Promise<void> {
+  const eligible = items.filter(
+    (item) =>
+      !item.parseFailed &&
+      item.classification !== 'Nonsense' &&
+      item.unityBucket !== 'Nonsense' &&
+      item.displayText.trim() !== '' &&
+      !!item.unityBucket,
+  );
+  if (eligible.length === 0) {
+    return;
+  }
+
+  for (const chunk of batchArray(eligible, ENTRIES_PER_REQUEST)) {
+    const familiarityInputs: EntryForFamiliarityGenerator[] = chunk.map((item) => ({
+      entry: item.entryKey,
+      lang: item.lang,
+      displayText: item.displayText,
+      classification: item.classification ?? null,
+      baseForm: item.baseForm,
+      unityBucket: item.unityBucket ?? null,
+      secondaryClasses: item.secondaries.map((secondary) => ({
+        secondaryClass: secondary.secondaryClass,
+        secondaryDisplay: secondary.secondaryDisplay,
+        secondaryBaseForm: secondary.secondaryBaseForm,
+        unityBucket: secondary.unityBucket,
+      })),
+    }));
+    const phrases = collectFamiliarityPromptPhrases(familiarityInputs);
+    const resultsByPhrase = await scorePhrasesForFamiliarityBucket(phrases, provider);
+    await applyPartialPhraseInference(familiarityInputs, resultsByPhrase);
+    const persistResults = buildFamiliarityGeneratorResultsToPersist(
+      familiarityInputs,
+      resultsByPhrase,
+    );
+    const persistByKey = new Map(
+      persistResults.map((result) => [`${result.entry}\0${result.lang}`, result]),
+    );
+
+    for (const item of chunk) {
+      const result = persistByKey.get(`${item.entryKey}\0${item.lang}`);
+      if (result) {
+        applyFamiliarityResultToItem(item, result);
+      }
+    }
+  }
+}
+
+async function reviewGeneratedPhrases(
+  phrases: string[],
+  lang: string,
+  provider: IAiProvider,
+): Promise<Map<string, PipelineItem>> {
+  const itemsByKey = new Map<string, PipelineItem>();
+  for (const phrase of phrases) {
+    const entryKey = entryToAllCaps(phrase);
+    if (!entryKey || itemsByKey.has(entryKey)) {
+      continue;
+    }
+    itemsByKey.set(entryKey, {
+      entryKey,
+      lang,
+      displayText: phrase,
+      parseFailed: false,
+      secondaries: [],
+    });
+  }
+
+  const items = [...itemsByKey.values()];
+  await parsePhrasesForPipeline(items, provider);
+  await scoreUnityForPipeline(items, provider);
+  await scoreFamiliarityForPipeline(items, provider);
+  return itemsByKey;
+}
+
 async function splitOversizedQueueItem(
   parsedPrompt: ParsedShortPhrasePrompt,
   lang: string,
@@ -223,6 +565,21 @@ async function splitOversizedQueueItem(
   );
 
   return true;
+}
+
+function isUnrecognizedPromptError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.startsWith('Unrecognized short phrase queue prompt format:');
+}
+
+/** Move a failed prompt to the back of the queue so the next cycle can take other items. */
+async function deferShortPhraseQueueItem(
+  prompt: string,
+  lang: string,
+  length: number,
+): Promise<void> {
+  await deleteShortPhraseQueueItem(prompt, lang);
+  await addShortPhraseQueueEntries([{ prompt, lang, length }]);
 }
 
 async function processQueueItem(
@@ -276,175 +633,53 @@ async function processQueueItem(
     return;
   }
 
-  const uniqueByEntryKey = new Map<string, string>();
-  for (const phrase of phrases) {
+  const reviewedByKey = await reviewGeneratedPhrases(phrases, lang, provider);
+  console.log(`Reviewed ${reviewedByKey.size} unique entry keys through parser/unity/familiarity`);
+
+  const shortPhraseResults = phrases.map((phrase) => {
     const entryKey = entryToAllCaps(phrase);
-    if (entryKey && !uniqueByEntryKey.has(entryKey)) {
-      uniqueByEntryKey.set(entryKey, phrase);
-    }
-  }
-  const entryKeys = [...uniqueByEntryKey.keys()];
-  console.log(`Normalized ${entryKeys.length} unique ALLCAPS entries for entry parser`);
-
-  const parsedByEntry = await parseEntriesWithEntryParser3(entryKeys, provider);
-  console.log(`Parsed ${parsedByEntry.size}/${entryKeys.length} entries with entry_parser_prompt_3`);
-
-  const displayByEntry = new Map<string, string>();
-  const classificationByEntry = new Map<string, string>();
-  const baseFormByEntry = new Map<string, string>();
-  let failedParseCount = 0;
-  for (const entryKey of entryKeys) {
-    const parsed = parsedByEntry.get(entryKey);
-    if (parsed && displayTextMatchesEntry(entryKey, parsed.displayText)) {
-      classificationByEntry.set(entryKey, parsed.classification);
-      displayByEntry.set(entryKey, parsed.displayText);
-      if (parsed.baseForm) {
-        baseFormByEntry.set(entryKey, parsed.baseForm);
-      }
-    } else {
-      if (parsed) {
-        failedParseCount++;
-        console.warn(
-          `Failed parse for ${entryKey}: AI display "${parsed.displayText}" does not match entry key`,
-        );
-      }
-      displayByEntry.set(entryKey, uniqueByEntryKey.get(entryKey)!);
-    }
-  }
-  if (failedParseCount > 0) {
-    console.log(`Rejected ${failedParseCount} entry parser results whose display text did not match the entry key`);
-  }
-
-  const unityEntryKeys = entryKeys.filter((entryKey) => {
-    const classification = classificationByEntry.get(entryKey);
-    return classification != null && !REJECTED_ENTRY_TYPES.has(classification);
-  });
-  const unityByDisplay = await scorePhrasesForUnityBucket(
-    unityEntryKeys.map((entryKey) => displayByEntry.get(entryKey)!),
-    provider,
-    { promptVersion: 3 },
-  );
-  const unityByEntry = new Map<string, { parsedForm: string; bucket: string }>();
-  for (const entryKey of unityEntryKeys) {
-    const unity = unityByDisplay.get(displayByEntry.get(entryKey)!);
-    if (unity) {
-      unityByEntry.set(entryKey, unity);
-    }
-  }
-
-  const familiarityEntryKeys = unityEntryKeys.filter((entryKey) => {
-    const unity = unityByEntry.get(entryKey);
-    return unity != null && unity.bucket !== 'Nonsense';
-  });
-  const familiarityByDisplay = await scorePhrasesForFamiliarityBucket(
-    familiarityEntryKeys.map((entryKey) => ({
-      phrase: displayByEntry.get(entryKey)!,
-      classification: classificationByEntry.get(entryKey)!,
-      unityBucket: unityByEntry.get(entryKey)!.bucket,
-    })),
-    provider,
-  );
-  const familiarityByEntry = new Map<string, { parsedForm: string; bucket: string; domain?: string }>();
-  for (const entryKey of familiarityEntryKeys) {
-    const familiarity = familiarityByDisplay.get(displayByEntry.get(entryKey)!);
-    if (familiarity) {
-      familiarityByEntry.set(entryKey, familiarity);
-    }
-  }
-
-  const shortPhraseResults = entryKeys.map((entryKey) => ({
-    prompt: queuePrompt,
-    entry: entryKey,
-    lang,
-    classification: classificationByEntry.get(entryKey),
-    displayText: displayByEntry.get(entryKey),
-    baseForm: baseFormByEntry.get(entryKey),
-    unityBucket: unityByEntry.get(entryKey)?.bucket,
-    familiarityBucket: familiarityByEntry.get(entryKey)?.bucket,
-  }));
+    const reviewed = reviewedByKey.get(entryKey);
+    return {
+      prompt: queuePrompt,
+      entry: entryKey,
+      lang,
+      classification: reviewed?.classification,
+      displayText: reviewed?.displayText ?? phrase,
+      baseForm: reviewed?.baseForm,
+      isVulgar: reviewed?.isVulgar,
+      unityBucket: reviewed?.unityBucket,
+      familiarityBucket: reviewed?.familiarityBucket,
+      secondaryClasses: reviewed?.secondaries,
+    };
+  }).filter((result) => result.entry !== '');
 
   await addShortPhraseResults(shortPhraseResults);
   console.log(
     `Saved ${shortPhraseResults.length} phrases to short_phrase_result for "${parsedPrompt.query}"`,
   );
 
-  const qualifyingEntries = entryKeys.filter((entryKey) => {
-    const classification = classificationByEntry.get(entryKey);
-    const unity = unityByEntry.get(entryKey);
-    const familiarity = familiarityByEntry.get(entryKey);
-    return (
-      classification != null &&
-      !REJECTED_ENTRY_TYPES.has(classification) &&
-      unity != null &&
-      !REJECTED_UNITY_BUCKETS.has(unity.bucket) &&
-      familiarity != null &&
-      !REJECTED_FAMILIARITY_BUCKETS.has(familiarity.bucket)
-    );
-  });
+  const qualifyingItems = [...reviewedByKey.values()].filter(isVettablePipelineItem);
   console.log(
-    `Qualified ${qualifyingEntries.length}/${entryKeys.length} phrases ` +
-      `(classification not Nonsense; unity not Variant/Formulaic/Non-unit/Nonsense; ` +
-      `familiarity not Obscure/Barely Exists/Nonsense)`,
+    `Qualified ${qualifyingItems.length}/${reviewedByKey.size} unique keys for entry insert ` +
+      `(classification not Nonsense; unity not Non-unit/Nonsense; ` +
+      `familiarity not Obscure/Nonsense; not Failed parse)`,
   );
 
   let newlyInsertedMatching = 0;
 
-  if (qualifyingEntries.length > 0) {
-    const candidatesByKey = new Map<
-      string,
-      {
-        entryKey: string;
-        displayText: string;
-        classification: string;
-        baseForm?: string;
-        unityBucket: string;
-        unityScore: number;
-        familiarityBucket: string;
-        familiarityScore: number;
-        domain?: string;
-      }
-    >();
-
-    for (const entryKey of qualifyingEntries) {
-      const unity = unityByEntry.get(entryKey)!;
-      const unityScore = UNITY_SCORES[unity.bucket];
-      if (unityScore == null) {
-        continue;
-      }
-
-      const familiarity = familiarityByEntry.get(entryKey)!;
-      const familiarityScore = FAMILIARITY_SCORES[familiarity.bucket];
-      if (familiarityScore == null) {
-        continue;
-      }
-
-      if (!candidatesByKey.has(entryKey)) {
-        candidatesByKey.set(entryKey, {
-          entryKey,
-          displayText: displayByEntry.get(entryKey)!,
-          classification: classificationByEntry.get(entryKey)!,
-          baseForm: baseFormByEntry.get(entryKey),
-          unityBucket: unity.bucket,
-          unityScore,
-          familiarityBucket: familiarity.bucket,
-          familiarityScore,
-          domain: familiarity.domain,
-        });
-      }
-    }
-
-    const candidates = [...candidatesByKey.values()];
+  if (qualifyingItems.length > 0) {
     const existingEntries = await getEntries(
-      candidates.map((item) => ({ entry: item.entryKey, lang })),
+      qualifyingItems.map((item) => ({ entry: item.entryKey, lang })),
     );
     const existingEntryKeys = new Set(existingEntries.map((entry) => entry.entry));
 
-    const entriesToPersist: Entry[] = candidates.map((item) => ({
+    const entriesToPersist: Entry[] = qualifyingItems.map((item) => ({
       entry: item.entryKey,
       lang,
       displayText: item.displayText,
       classification: item.classification,
       baseForm: item.baseForm,
+      isVulgar: item.isVulgar,
       unityBucket: item.unityBucket,
       unityScore: item.unityScore,
       familiarityBucket: item.familiarityBucket,
@@ -456,7 +691,7 @@ async function processQueueItem(
     await insertEntriesOrFillNulls(entriesToPersist);
     console.log(`Inserted/filled-null ${entriesToPersist.length} qualifying phrases into entry table`);
 
-    const newEntries = candidates.filter((item) => !existingEntryKeys.has(item.entryKey));
+    const newEntries = qualifyingItems.filter((item) => !existingEntryKeys.has(item.entryKey));
     if (newEntries.length > 0) {
       await addEntryTags(
         newEntries.map((item) => ({
@@ -500,6 +735,7 @@ export async function shortPhraseGenerator(
 ): Promise<void> {
   try {
     const concurrency = Math.max(1, parallelRequests);
+    const resilientProvider = withAiFailureHandling(provider);
     const promptTemplate = await loadShortPhraseGeneratorPromptAsync();
 
     if (prompt) {
@@ -510,7 +746,7 @@ export async function shortPhraseGenerator(
       );
 
       try {
-        await processQueueItem(promptTemplate, prompt, lang, promptLength, provider);
+        await processQueueItem(promptTemplate, prompt, lang, promptLength, resilientProvider);
       } catch (error) {
         if (isGeminiTimeoutError(error)) {
           console.warn(`AI timeout processing explicit short phrase prompt "${prompt}"`);
@@ -532,9 +768,8 @@ export async function shortPhraseGenerator(
 
     let itemsCompleted = 0;
     let cycleNumber = 0;
-    let shouldStop = false;
 
-    while (itemsCompleted < maxItems && !shouldStop) {
+    while (itemsCompleted < maxItems) {
       const remainingItems = maxItems - itemsCompleted;
       const selectLimit = Math.min(concurrency, remainingItems);
 
@@ -550,6 +785,7 @@ export async function shortPhraseGenerator(
           `${itemsCompleted}/${maxItems} items completed so far`,
       );
 
+      const cycleAiErrors: unknown[] = [];
       await Promise.all(
         queueItems.map(async (queueItem, index) => {
           const itemNumber = itemsCompleted + index + 1;
@@ -564,22 +800,37 @@ export async function shortPhraseGenerator(
               queueItem.prompt,
               queueItem.lang,
               queueItem.length,
-              provider,
+              resilientProvider,
             );
           } catch (error) {
-            if (isGeminiTimeoutError(error)) {
-              console.warn(`AI timeout processing short phrase item ${itemNumber}`);
-              shouldStop = true;
+            if (isUnrecognizedPromptError(error)) {
+              console.error(
+                `Unrecognized short phrase prompt "${queueItem.prompt}"; deleting it and continuing:`,
+                error,
+              );
+              await deleteShortPhraseQueueItem(queueItem.prompt, queueItem.lang);
               return;
             }
 
-            console.error(`Error processing short phrase item ${itemNumber}:`, error);
-            shouldStop = true;
+            if (isAbandonableAiError(error)) {
+              cycleAiErrors.push(error);
+            }
+
+            console.warn(
+              `Abandoning short phrase item ${itemNumber} ("${queueItem.prompt}"); ` +
+                `leaving it in the queue to retry later and continuing:`,
+              error instanceof Error ? error.message : error,
+            );
+            await deferShortPhraseQueueItem(queueItem.prompt, queueItem.lang, queueItem.length);
           }
         }),
       );
 
       itemsCompleted += queueItems.length;
+
+      if (itemsCompleted < maxItems) {
+        await waitIfUnauthorized(cycleAiErrors, `Cycle ${cycleNumber}`);
+      }
     }
 
     if (itemsCompleted >= maxItems) {

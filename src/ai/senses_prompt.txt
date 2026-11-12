@@ -66,7 +66,7 @@ GUIDELINES
     adverb, interjection, preposition, etc. Don't stop at the part of speech that the HINT points to.
     (e.g. "ram" is both a noun and a verb; "fast" is a noun, verb, adjective, and adverb.)
 - Different part of speech → different sense.
-- Different classification → different sense. Consider each of Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+- Different classification → different sense. Consider each of Word, Phrase, Contraction, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
     - Only output a sense when the item is actually used in the language in that classification. 
     - Also consider plural acronyms. (e.g. DMs)
 - Each generated sense has its own natural form i.e. the usual way that it is written in that specific sense. 

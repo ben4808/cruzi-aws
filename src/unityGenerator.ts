@@ -8,7 +8,8 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update the unity_bucket and unity_score fields in the entry table with the results.
       The unity_score is a direct mapping of the unity_bucket to a number:
-      Concept = 5, Collocation = 4, Formula = 3, Partial = 2, Variant = 2, Formulaic = 2, Non-unit = 2, Nonsense = 1.
+      Concept = 5, Collocation = 4, Formula = 3,
+      Partial = 2, Variant = 2, Formulaic = 2, Non-unit = 2, Nonsense = 1.
       If the (final) unity_bucket is Nonsense, also set familiarity_bucket, familiarity_score,
       quality_bucket, and quality_score to null.
    c. If any secondary classes get rated as Non-unit or Nonsense, delete them from the entry_secondary_class table.
@@ -70,7 +71,8 @@ function isGoodUnityBucket(bucket: string): boolean {
 }
 
 function isBadUnityBucket(bucket: string): boolean {
-  return bucket === 'Partial' || bucket === 'Variant' || bucket === 'Formulaic' || bucket === 'Non-unit' || bucket === 'Nonsense';
+  return bucket === 'Partial' || bucket === 'Variant' || bucket === 'Formulaic'
+    || bucket === 'Non-unit' || bucket === 'Nonsense';
 }
 
 function isDeletableUnityBucket(bucket: string): boolean {

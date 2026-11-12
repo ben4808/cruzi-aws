@@ -78,7 +78,6 @@ const FAMILIARITY_BUCKETS = new Set([
   'Inferred',
   'Niche',
   'Obscure',
-  'Barely Exists',
   'Nonsense',
 ]);
 
@@ -274,8 +273,8 @@ function stripTrailingFamiliarityPromptAnnotations(text: string): string {
   while (result !== previous) {
     previous = result;
     result = result
-      .replace(/\s*\((Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i, '')
-      .replace(/\s*\((Word|Phrase|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
+      .replace(/\s*\((Contraction|Inflection|Derivation|Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i, '')
+      .replace(/\s*\((Word|Phrase|Contraction|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
       .trim();
   }
   return result;
@@ -291,9 +290,6 @@ export function matchFamiliarityBucketResultsToPhrases(
 }
 
 const QUALITY_BUCKETS = new Set([
-  'Non-unit',
-  'Uncommon Derivation',
-  'Clunky',
   'Idiomatic',
   'Interesting',
   'Feel-Good',
@@ -319,21 +315,22 @@ function stripTrailingQualityPromptAnnotations(text: string): string {
     previous = result;
     result = result
       .replace(
-        /\s*\((Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i,
+        /\s*\((Contraction|Inflection|Derivation|Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i,
         '',
       )
       .replace(
-        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Regionalism|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Barely Exists|Nonsense)\)\s*$/i,
+        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Regionalism|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Nonsense)\)\s*$/i,
         '',
       )
-      .replace(/\s*\((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?\)\s*$/i, '')
+      .replace(/\s*\((?:vulgar|sensitive|gross)(?:\s*,\s*(?:vulgar|sensitive|gross))*\)\s*$/i, '')
       .trim();
   }
   return result;
 }
 
+const QUALITY_FLAGS = new Set(['vulgar', 'sensitive', 'gross']);
 const QUALITY_FLAG_SUFFIX =
-  /\s*\(((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?)\)\s*$/i;
+  /\s*\(((?:vulgar|sensitive|gross)(?:\s*,\s*(?:vulgar|sensitive|gross))*)\)\s*$/i;
 
 function splitQualityBucketAndFlags(raw: string): { bucket: string; flags: string[] } {
   const match = raw.match(QUALITY_FLAG_SUFFIX);
@@ -345,7 +342,7 @@ function splitQualityBucketAndFlags(raw: string): { bucket: string; flags: strin
     match[1]
       .split(',')
       .map((flag) => flag.trim().toLowerCase())
-      .filter((flag) => flag === 'vulgar' || flag === 'sensitive'),
+      .filter((flag) => QUALITY_FLAGS.has(flag)),
   )];
   return { bucket: raw.slice(0, match.index).trim(), flags };
 }

@@ -89,22 +89,21 @@ Loop through the steps until all eligible senses have been scored.
 - After the familiarity prompt, update the reviewed_status to "23" and set sense.domain from the parenthetical domain/area when the prompt returns one.
   - Common Name is only for names shared by a wide variety of people; uncommon names get a different bucket.
   - Foreign words in actual use in US English-speaking culture (siesta, quid pro quo) are not Obscure.
-- Personal Name senses (given names, surnames) are never rated Clunky for quality.
 - After the quality prompt, update the reviewed_status to "234".
-   - Vulgar and Sensitive are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
-     'vulgar' and 'sensitive' with the flags on this result.
+   - Vulgar, Sensitive, and Gross are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
+     'vulgar', 'sensitive', and 'gross' with the flags on this result.
 - When a sense has been scored successfully for unity, familiarity, and quality, count how many senses for that entry have been scored. 
   If 2 or more senses are scored, or if the scored sense is the only sense (scored or not) that exists for the entry, update the entry 
   record to match the selected scored sense. 
   Fields to update: display_text, classification (from sense.classification), unity_bucket, familiarity_bucket, quality_bucket, domain. 
   Also set the corresponding scores from UNITY_SCORES / FAMILIARITY_SCORES / QUALITY_SCORES.
-  Replace the entry's entry_tags rows for 'vulgar' and 'sensitive' so they match that sense's sense_tags.
+  Replace the entry's entry_tags rows for 'vulgar', 'sensitive', and 'gross' so they match that sense's sense_tags.
   The sense to use to update the entry is selected as follows:
-  1. Highest unity_bucket: Concept > Collocation > Formula > Formulaic > Variant > Partial > Non-unit > Nonsense.
+  1. Highest unity_bucket: Concept > Collocation > Formula >
+     Formulaic > Variant > Partial > Non-unit > Nonsense.
   2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal > Common Name >
-     Regionalism > General Knowledge > Inferred > Niche > Obscure > Barely Exists > Nonsense.
-  3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Feel-Good >
-     Trendy > Normal > Uncommon Derivation > Clunky > Non-unit.
+     Regionalism > General Knowledge > Inferred > Niche > Obscure > Nonsense.
+  3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Feel-Good > Trendy > Normal.
   4. Tiebreaker: pick one at random.
 
 STEP 6 (Sense References):
@@ -213,14 +212,10 @@ const SENSE_FAMILIARITY_BUCKETS = new Set([
   'Inferred',
   'Niche',
   'Obscure',
-  'Barely Exists',
   'Nonsense',
 ]);
 
 const SENSE_QUALITY_BUCKETS = new Set([
-  'Non-unit',
-  'Uncommon Derivation',
-  'Clunky',
   'Idiomatic',
   'Interesting',
   'Feel-Good',
@@ -228,8 +223,9 @@ const SENSE_QUALITY_BUCKETS = new Set([
   'Normal',
 ]);
 
+const QUALITY_FLAGS = new Set(['vulgar', 'sensitive', 'gross']);
 const QUALITY_FLAG_SUFFIX =
-  /\s*\(((?:vulgar|sensitive)(?:\s*,\s*(?:vulgar|sensitive))?)\)\s*$/i;
+  /\s*\(((?:vulgar|sensitive|gross)(?:\s*,\s*(?:vulgar|sensitive|gross))*)\)\s*$/i;
 
 const REFERENCE_TYPES = new Map<string, string>([
   ['literature', 'Literature'],
@@ -640,7 +636,7 @@ function splitBucketAndFlags(raw: string): { bucket: string; flags: string[] } {
     match[1]
       .split(',')
       .map((flag) => flag.trim().toLowerCase())
-      .filter((flag) => flag === 'vulgar' || flag === 'sensitive'),
+      .filter((flag) => QUALITY_FLAGS.has(flag)),
   )];
   return { bucket: raw.trim().slice(0, match.index).trim(), flags };
 }

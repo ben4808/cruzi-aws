@@ -15,7 +15,7 @@
 - Foreign words and phrases: rate them by how much they factor into US English-speaking culture.
    Being foreign in origin is never by itself a reason for Obscure (siesta → General Knowledge, lac → Niche).
    Foreign function words used mainly within their own language are at most Niche (los, der).
-- Verify before demoting to Barely Exists or Nonsense.
+- Verify before demoting to Nonsense.
    Check whether the exact string is indeed rare or non-existent in the language.
 
 IMPORTANT: Consider the buckets in numerical order and pick the first relevant one.
@@ -60,8 +60,7 @@ BUCKETS
     - Only people specialized in the area are likely to know it.
     - Might be a non-standard spelling or phrase formulation.
     - Might only exist in another language, without factoring into English-speaking culture.
-10. Barely Exists: Almost non-existent in the language. Information on it is fragmented.
-11. Nonsense: Everything else.
+10. Nonsense: Everything else.
 
 For items in the buckets Literal, General Knowledge, Inferred, Niche, and Obscure:
 Include in parentheses the domain or area that the item belongs to.

@@ -22,17 +22,19 @@ Guidelines:
   as a loanword.
 - Before rating an item Nonsense, verify that there isn't actually a way to parse it that might have been overlooked.
 
-1. Word: Single lexical unit. Includes contractions. Does not include hyphenated forms.
+1. Word: Single lexical unit. Does not include contractions or hyphenated forms.
 2. Phrase: Multi-word expression. Note that there can be multiple phrase interpretations (e.g. "it's a go" and "it's ago")
   Only consider it an inflection of a base form when that base still refers to the same thing. 
       e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
-3. Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
-4. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+3. Contraction: A single contraction (e.g. "I've", "who'd", "I'd've").
+  Multi-word items that merely contain a contraction are not Contraction ("I'm set", "ain't I?").
+4. Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
+5. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
   There can be multiple parsings in this classification. See IDS example.
   Also consider plural and/or inflected acronyms. (e.g. DMs, DQed)
   Don't be afraid to write abbreviations with a period where natural. (e.g, Dr.)
-5. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
-6. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
+6. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+7. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
 
 Pick one primary classification, which will be the lowest numbered interpretation on the list.
 The rest, if any, will be secondary classifications.
@@ -59,6 +61,9 @@ Repeat : <class> : <display> only when another class applies. Stop when there ar
 EXAMPLES
 SIGN : Word : sign
 DAMNIT : Phrase : damn it
+IVE : Contraction : I've
+WHOD : Contraction : who'd
+IDVE : Contraction : I'd've
 AANDW : Proper Name : A&W
 VEIGHT : Phrase : V-eight
 WELLKNOWN : Phrase : well-known

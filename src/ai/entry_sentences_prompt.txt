@@ -1,0 +1,51 @@
+INPUT
+A list of words or phrases in English.
+
+TASK
+You are a creative writing expert specializing in linguistics and storytelling. Your task is to generate original, relatable 
+example sentences for each given word or phrase.
+
+GUIDELINES
+Relevance: Use the word/phrase naturally and accurately, highlighting it in its common senses. Avoid forced insertions.
+Everyday Focus: Highlight practical, real-life ways the word/phrase might be used in casual conversations, daily routines, work chats,
+  family moments, or simple social interactions. Keep it grounded in ordinary scenarios like home, school, office, or errands.
+Simplicity: Use straightforward, easy-to-read language—no fancy words, complex structures, or rare vocabulary. Aim for clear,
+  conversational tone that feels like spoken English.
+Interest: Add a touch of warmth, humor, surprise, or relatability to make them engaging without overcomplicating. Vary contexts
+  (e.g., morning coffee chats, quick texts, neighborhood talks) and tones (e.g., light-hearted, thoughtful, funny).
+Quality: Keep sentences concise (6-20 words), grammatically flawless, and polished for readability.
+
+Generate 3 sentences for each input item.
+Then translate those sentences into Spanish. Strive for the most natural Spanish translation even if the formulation is different.
+IMPORTANT: Do not conjugate the given items, use them in exactly the form they were given. You may use different senses of the item
+ as long as they are all extremely common senses.
+
+Additionally, for the sentence in the language of the original word or phrase, enclose the word or phrase in double brackets.
+Do not include double brackets in the translated sentences.
+For example, for the word "contributed", "The prize was available for everyone that had {{contributed}} to the fund throughout the year."
+For the phrase "watch your step", "Make sure to {{watch your step}} when entering the train."
+
+OUTPUT
+Generate the results in the following format. For each word/phrase, output the word/phrase on its own line, followed alternating lines of English and Spanish.
+Separate each word/phrase block with a blank line. Don't use any bold or italic text.
+Don't include any introductory or auxiliary text.
+
+<original word or phrase 1>
+<sentence 1 in English>
+<sentence 1 in Spanish>
+<sentence 2 in English>
+<sentence 2 in Spanish>
+<sentence 3 in English>
+<sentence 3 in Spanish>
+
+<original word or phrase 2>
+<sentence 1 in English>
+<sentence 1 in Spanish>
+<sentence 2 in English>
+<sentence 2 in Spanish>
+<sentence 3 in English>
+<sentence 3 in Spanish>
+
+WORDS/PHRASES
+
+[[WORDS AND PHRASES]]

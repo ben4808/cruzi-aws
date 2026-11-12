@@ -3,7 +3,7 @@ You are given a list of words and phrases.
 
 Each item is given as: <item> (<classification>) (<unity bucket>)
 The classification will be one of:
-  Word, Phrase, Proper Name, Acronym/Abbreviation, Prefix/Suffix
+  Word, Phrase, Contraction, Proper Name, Acronym/Abbreviation, Prefix/Suffix
 
 The unity bucket will be one of:
   Concept, Collocation, Formula, Partial, Variant, Formulaic, Non-unit, Nonsense

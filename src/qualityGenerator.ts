@@ -10,11 +10,10 @@ Keep looping through the following steps until maxItems AI requests have been se
       Send the prompt to the AIProvider (make this a parameter).
    b. Update a few fields in the entry table with the results:
       - quality_bucket
-      - quality_score (Pass 1 buckets = 20, Pass 2 buckets = 40, Normal = 30).
-        Pass 1: Non-unit, Uncommon Derivation, Clunky.
-        Pass 2: Idiomatic, Interesting, Feel-Good, Trendy.
-        Vulgar and Sensitive are parenthetical flags, not buckets. Replace the entry's
-        entry_tags rows for 'vulgar' and 'sensitive' with the flags on this result.
+      - quality_score (Pass 1 buckets = 40, Normal = 30).
+        Pass 1: Idiomatic, Interesting, Feel-Good, Trendy.
+        Vulgar, Sensitive, and Gross are parenthetical flags, not buckets. Replace the entry's
+        entry_tags rows for 'vulgar', 'sensitive', and 'gross' with the flags on this result.
       - reviewed_status = "1234"
 3. maxItems is the total number of AI requests to send before quitting (not the number of entries
    processed, and not the number of DB cycles).
@@ -51,9 +50,6 @@ const DEFAULT_MAX_ITEMS = 100;
 const DEFAULT_PARALLEL_REQUESTS = 1;
 
 export const QUALITY_SCORES: Record<string, number> = {
-  'Non-unit': 20,
-  'Uncommon Derivation': 20,
-  Clunky: 20,
   Idiomatic: 40,
   Interesting: 40,
   'Feel-Good': 40,
