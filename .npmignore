@@ -1,0 +1,15 @@
+node_modules
+.git
+.serverless
+.env
+.env.*
+*.local
+*.log
+.gemini-user-data
+.gemini-user-data*
+*.puz
+.vscode
+.idea
+src
+!src/ai/
+!src/ai/**

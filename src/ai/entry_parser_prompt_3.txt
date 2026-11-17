@@ -7,7 +7,7 @@ TASKS
 Try parsing the item as each of the following (there may be multiple that apply).
 
 Guidelines:
-- Do not consider proper names, abbreviations, or acronyms as Word or Phrase for this classification.
+- Do not consider personal names, proper names, abbreviations, or acronyms as Word or Phrase for this classification.
   Of course, some items can be both words/phrases and other classification(s).
 - An item can be an inflection of a base form -- verb conjugations, noun plurals, or adjective 
   comparatives/superlatives. Derivational forms (agent nouns, possessives, deverbal nouns, etc.) should
@@ -28,13 +28,16 @@ Guidelines:
       e.g. arc welders (arc welder), argued over (argue over), but not branding iron (brand iron).
 3. Contraction: A single contraction (e.g. "I've", "who'd", "I'd've").
   Multi-word items that merely contain a contraction are not Contraction ("I'm set", "ain't I?").
-4. Proper Name: Non-acronym/abbreviation proper names (person, place, brand, organization, etc.).
-5. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
+4. Personal Name: A single given name or surname that names people in general, not one specific person
+    (Sarah, Mike, Smith, Garcia). Includes uncommon names (Thaddeus, Ione) and plurals (Ryans).
+    - A name mainly known as one famous person is Proper Name as well or instead (Adele, Oprah).
+5. Proper Name: Non-acronym/abbreviation proper names (specific person, place, brand, organization, etc.).
+6. Acronym/Abbreviation: Shortened forms (e.g., NASA, Dr.).
   There can be multiple parsings in this classification. See IDS example.
   Also consider plural and/or inflected acronyms. (e.g. DMs, DQed)
   Don't be afraid to write abbreviations with a period where natural. (e.g, Dr.)
-6. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
-7. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
+7. Prefix/Suffix: Bound morphemes (e.g., un-, -ism).
+8. Nonsense: Random character strings, uninterpretable gibberish, or deliberate typos/misspellings.
 
 Pick one primary classification, which will be the lowest numbered interpretation on the list.
 The rest, if any, will be secondary classifications.
@@ -48,7 +51,7 @@ Preserve the input sequence of letters and numbers exactly, in order. Only capit
 - "DOT" may be transformed to "." where appropriate.
 - "AT" may be transformed to "@" where appropriate.
 - Don't be afraid to output hyphenated display text where it is natural to do so (well-known, x-ray, catch-22).
-Don't automatically capitalize the first word. (except when conventional, e.g. a proper name)
+Don't automatically capitalize the first word. (except when conventional, e.g. a personal name or proper name)
 
 OUTPUT
 Output the items according to the following output examples. Don't include any explanatory or auxiliary text.
@@ -65,6 +68,8 @@ IVE : Contraction : I've
 WHOD : Contraction : who'd
 IDVE : Contraction : I'd've
 AANDW : Proper Name : A&W
+SARAH : Personal Name : Sarah
+ADELE : Personal Name : Adele : Proper Name : Adele
 VEIGHT : Phrase : V-eight
 WELLKNOWN : Phrase : well-known
 CROCS : Word : crocs (croc) : Proper Name : Crocs

@@ -3,7 +3,7 @@ You are given a list of words and phrases.
 
 Each item is given as: <item> (<classification>) (<unity bucket>)
 The classification will be one of:
-  Word, Phrase, Contraction, Proper Name, Acronym/Abbreviation, Prefix/Suffix
+  Word, Phrase, Contraction, Personal Name, Proper Name, Acronym/Abbreviation, Prefix/Suffix
 
 The unity bucket will be one of:
   Concept, Collocation, Formula, Partial, Variant, Formulaic, Non-unit, Nonsense
@@ -11,7 +11,8 @@ The unity bucket will be one of:
 Your task is to classify each item into buckets according to its familiarity.
 
 GUIDELINES
-- For names, score based on the most famous person, place, thing, or idea with that name.
+- For Personal Name classification, rate the name itself, not a famous person who has it.
+- For Proper Name classification, score based on the most famous person, place, thing, or idea with that name.
 [[INCLUDE shared/familiarity_buckets.txt]]
 
 WORDS/PHRASES

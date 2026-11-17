@@ -35,7 +35,6 @@ cruzi-db/sql/schema.sql is the source of truth for the database schema.
 Keep these requirements in the file.
 */
 
-import fs from 'fs';
 import {
   getEntriesForEntryParser,
   upsertEntryParserResults,
@@ -43,6 +42,7 @@ import {
   EntryParserResult,
   EntryParserSecondaryClass,
 } from 'cruzi-db';
+import { readPromptFile, resolveAiPromptPath } from './ai/common';
 import { CursorAiProvider } from './ai/cursor';
 import {
   ParsedEntryParser3Result,
@@ -69,7 +69,7 @@ const cursorProvider = new CursorAiProvider();
 
 async function loadEntryParserPrompt3Async(): Promise<string> {
   try {
-    return await fs.promises.readFile('./src/ai/entry_parser_prompt_3.txt', 'utf-8');
+    return await readPromptFile(resolveAiPromptPath('entry_parser_prompt_3.txt'));
   } catch (err) {
     console.error('Error reading entry parser prompt 3 file:', err);
     throw err;

@@ -66,7 +66,7 @@ GUIDELINES
     adverb, interjection, preposition, etc. Don't stop at the part of speech that the HINT points to.
     (e.g. "ram" is both a noun and a verb; "fast" is a noun, verb, adjective, and adverb.)
 - Different part of speech → different sense.
-- Different classification → different sense. Consider each of Word, Phrase, Contraction, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
+- Different classification → different sense. Consider each of Word, Phrase, Contraction, Personal Name, Proper Name, Acronym/Abbreviation, Prefix/Suffix.
     - Only output a sense when the item is actually used in the language in that classification. 
     - Also consider plural acronyms. (e.g. DMs)
 - Each generated sense has its own natural form i.e. the usual way that it is written in that specific sense. 
@@ -77,7 +77,7 @@ GUIDELINES
   - Includes descriptive phrases and conversational formulas.
   - Items can have both a literal sense and a non-literal sense(s). (e.g. blue sky is descriptive, BlueSky is a company)
 - Personal names: When the item is a single given name or surname, it must have a general sense "Personal Name"
-    (Proper Name classification; use "Personal Name" for the summary and the definition). Add it if it isn't among the existing senses.
+    (Personal Name classification; use "Personal Name" for the summary and the definition). Add it if it isn't among the existing senses.
   - The "Personal Name" sense covers every person who has that name. Don't generate a separate sense for an individual person,
       even when the HINT refers to a specific person with that name. The HINT is then covered by "Personal Name".
   - Exception: When the single name on its own is very strongly affiliated with one specific person, so that most people would
@@ -135,7 +135,7 @@ Alternatives: fixing to, thinking about, about to
 
 EXAMPLE (item: "Adele", hint: "Singer Adkins")
 
-ADD (Noun, Proper Name) Adele
+ADD (Noun, Personal Name) Adele
 Personal Name : Personal Name
 Regionality: Widespread
 Natural: Adela
@@ -151,7 +151,7 @@ Alternatives: (None)
 
 EXAMPLE (item: "Michael", hint: "Jordan of the Bulls")
 
-ADD (Noun, Proper Name) Michael
+ADD (Noun, Personal Name) Michael
 Personal Name : Personal Name
 Regionality: Widespread
 Natural: Miguel

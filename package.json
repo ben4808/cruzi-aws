@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
+  "files": [
+    "dist",
+    "src/ai"
+  ],
   "scripts": {
     "start": "ts-node src\\index.ts",
     "debug": "SET SLS_DEBUG=* && node --inspect node_modules\\serverless\\bin\\serverless offline",
     "build": "tsc && npm run copy-prompts",
-    "copy-prompts": "node -e \"const fs = require('fs'); const path = require('path'); if (!fs.existsSync('dist/ai')) fs.mkdirSync('dist/ai', { recursive: true }); fs.readdirSync('src/ai').filter(f => f.endsWith('.txt')).forEach(f => fs.copyFileSync(path.join('src/ai', f), path.join('dist/ai', f)));\"",
+    "copy-prompts": "node -e \"const fs=require('fs');const path=require('path');function copy(src,dest){fs.mkdirSync(dest,{recursive:true});for(const entry of fs.readdirSync(src,{withFileTypes:true})){const from=path.join(src,entry.name);const to=path.join(dest,entry.name);if(entry.isDirectory()) copy(from,to); else if(entry.name.endsWith('.txt')) fs.copyFileSync(from,to);}} copy('src/ai','dist/ai');\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "serverless deploy"
   },

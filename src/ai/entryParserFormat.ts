@@ -2,6 +2,7 @@ export const ENTRY_PARSER_CATEGORIES = new Set([
   'Word',
   'Phrase',
   'Contraction',
+  'Personal Name',
   'Proper Name',
   'Acronym/Abbreviation',
   'Prefix/Suffix',

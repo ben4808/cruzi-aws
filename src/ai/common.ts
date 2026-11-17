@@ -6,6 +6,21 @@ import path from 'path';
 
 const PROMPT_INCLUDE_REGEX = /\[\[INCLUDE ([^\]]+)\]\]/g;
 
+/** Locate a prompt in src/ai when running via ts-node, or dist/ai after the build copy. */
+export function resolveAiPromptPath(fileName: string): string {
+  const candidates = [
+    path.join(__dirname, fileName),
+    path.resolve(process.cwd(), 'src', 'ai', fileName),
+    path.join(__dirname, '..', '..', 'src', 'ai', fileName),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error(`Prompt file not found: ${fileName} (looked in ${candidates.join(', ')})`);
+}
+
 // Expands [[INCLUDE <path>]] directives, with paths relative to the including file.
 export async function readPromptFile(promptPath: string): Promise<string> {
   let content = await fs.promises.readFile(promptPath, 'utf-8');

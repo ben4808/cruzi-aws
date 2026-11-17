@@ -78,6 +78,7 @@ const ENTRY_TYPES = new Set([
   'Inflected Word',
   'Phrase',
   'Inflected Phrase',
+  'Personal Name',
   'Proper Name',
   'Acronym/Abbreviation',
   'Prefix/Suffix',

@@ -87,7 +87,6 @@ Loop through the steps until all eligible senses have been scored.
 - After the unity prompt, update the unity_bucket and set the reviewed_status of the sense to "2".
   - Senses that score Non-unit or Nonsense are kept (not deleted) and continue through the pipeline.
 - After the familiarity prompt, update the reviewed_status to "23" and set sense.domain from the parenthetical domain/area when the prompt returns one.
-  - Common Name is only for names shared by a wide variety of people; uncommon names get a different bucket.
   - Foreign words in actual use in US English-speaking culture (siesta, quid pro quo) are not Obscure.
 - After the quality prompt, update the reviewed_status to "234".
    - Vulgar, Sensitive, and Gross are parenthetical flags, not buckets. Replace the sense's sense_tags rows for
@@ -101,7 +100,7 @@ Loop through the steps until all eligible senses have been scored.
   The sense to use to update the entry is selected as follows:
   1. Highest unity_bucket: Concept > Collocation > Formula >
      Formulaic > Variant > Partial > Non-unit > Nonsense.
-  2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal > Common Name >
+  2. Tiebreaker: highest familiarity_bucket: Ubiquitous > Active > Literal >
      Regionalism > General Knowledge > Inferred > Niche > Obscure > Nonsense.
   3. Tiebreaker: highest quality_bucket: Idiomatic > Interesting > Feel-Good > Trendy > Normal.
   4. Tiebreaker: pick one at random.
@@ -172,7 +171,7 @@ import {
   updateSenseSummaries,
 } from 'cruzi-db';
 import { LanguageNames } from 'cruzi-models';
-import { readPromptFile } from './ai/common';
+import { readPromptFile, resolveAiPromptPath } from './ai/common';
 import { CursorAiProvider } from './ai/cursor';
 import { IAiProvider } from './ai/IAiProvider';
 import { parseProvidedEntries } from './entryParser';
@@ -205,7 +204,6 @@ const SENSE_UNITY_BUCKETS = new Set([
 const SENSE_FAMILIARITY_BUCKETS = new Set([
   'Literal',
   'Ubiquitous',
-  'Common Name',
   'Regionalism',
   'Active',
   'General Knowledge',
@@ -326,8 +324,8 @@ function fillPrompt(template: string, values: Record<string, string>): string {
   return result;
 }
 
-async function readPrompt(relativePath: string): Promise<string> {
-  return readPromptFile(relativePath);
+async function readPrompt(fileName: string): Promise<string> {
+  return readPromptFile(resolveAiPromptPath(fileName));
 }
 
 function removeParenthesizedComments(text: string): string {
@@ -1685,14 +1683,14 @@ async function processPuzzle(
   provider: IAiProvider,
   concurrency: number,
 ): Promise<boolean> {
-  const inflectionsPrompt = await readPrompt('./src/ai/inflections_prompt.txt');
-  const sensesPrompt = await readPrompt('./src/ai/senses_prompt.txt');
-  const matchingPrompt = await readPrompt('./src/ai/crossword_matching_prompt.txt');
-  const unityPrompt = await readPrompt('./src/ai/sense_unity_prompt.txt');
-  const familiarityPrompt = await readPrompt('./src/ai/sense_familiarity_prompt.txt');
-  const qualityPrompt = await readPrompt('./src/ai/sense_quality_prompt.txt');
-  const referencePrompt = await readPrompt('./src/ai/sense_reference_prompt.txt');
-  const lorePrompt = await readPrompt('./src/ai/sense_lore_prompt.txt');
+  const inflectionsPrompt = await readPrompt('inflections_prompt.txt');
+  const sensesPrompt = await readPrompt('senses_prompt.txt');
+  const matchingPrompt = await readPrompt('crossword_matching_prompt.txt');
+  const unityPrompt = await readPrompt('sense_unity_prompt.txt');
+  const familiarityPrompt = await readPrompt('sense_familiarity_prompt.txt');
+  const qualityPrompt = await readPrompt('sense_quality_prompt.txt');
+  const referencePrompt = await readPrompt('sense_reference_prompt.txt');
+  const lorePrompt = await readPrompt('sense_lore_prompt.txt');
 
   const steps: Array<[string, () => Promise<boolean>]> = [
     ['Step 1: generating inflections', () =>
@@ -1746,6 +1744,25 @@ async function processPuzzle(
 
   console.log(`Finished all steps for puzzle ${puzzleId}`);
   return false;
+}
+
+/** Run every processing step for one puzzle. Does not read or write crossword_processing_queue. */
+export async function processCrosswordPuzzle(
+  puzzleId: string,
+  provider: IAiProvider = cursorProvider,
+  parallelRequests: number = DEFAULT_PARALLEL_REQUESTS,
+): Promise<boolean> {
+  const concurrency = Math.max(1, parallelRequests);
+  console.log(
+    `Processing puzzle ${puzzleId} with provider ${provider.sourceAI} (${concurrency} parallel)`,
+  );
+  const needsRetry = await processPuzzle(puzzleId, provider, concurrency);
+  if (needsRetry) {
+    console.warn(`Puzzle ${puzzleId} still needs processing`);
+  } else {
+    console.log(`Finished processing puzzle ${puzzleId}`);
+  }
+  return needsRetry;
 }
 
 export async function crosswordProcessor(

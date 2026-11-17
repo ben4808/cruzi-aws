@@ -3,7 +3,7 @@ You are given a list of words and phrases along with the senses that they must b
 
 Each item is given as: <item> (<classification>) (<unity bucket>) (<sense summary>)
 The classification will be one of:
-  Word, Phrase, Contraction, Proper Name, Acronym/Abbreviation, Prefix/Suffix
+  Word, Phrase, Contraction, Personal Name, Proper Name, Acronym/Abbreviation, Prefix/Suffix
 
 The unity bucket will be one of:
   Concept, Collocation, Formula, Partial, Variant, Formulaic, Non-unit, Nonsense
@@ -18,9 +18,8 @@ GUIDELINES
    pass as "mountain route") are rated on their own familiarity.
 - For names, score the specific referent described in the sense summary.
    - If the referent is a brand, institution, or famous person, rate that referent (Levi as "jeans company" → General Knowledge).
-   - Common Name only if the name is frequent and the referent isn't independently famous (Ann as "Ann Packer" → Common Name).
-   - A "Personal Name" sense is Common Name only when the name is genuinely common, shared by a wide variety of people.
-     A "Personal Name" sense of an uncommon name gets a different bucket based on how recognizable the name is.
+   - A "Personal Name" sense is the name itself, not any one person who has it. Rate it by how familiar that name is
+     (Sarah → Active, Thaddeus → General Knowledge, Ione → Obscure).
 [[INCLUDE shared/familiarity_buckets.txt]]
 
 ITEMS TO CLASSIFY

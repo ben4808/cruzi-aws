@@ -17,7 +17,7 @@ Keep looping through the following steps until maxItems AI requests have been se
       from the sense that was deemed Primary (display_text and classification). If that Primary sense has a
       base form, write it to inflected_entry rather than entry.base_form.
       If a Word or Phrase sense has Base form, set that sense's classification to Inflected Word or Inflected Phrase.
-      Proper Name, Acronym/Abbreviation, and Prefix/Suffix are left unchanged.
+      Personal Name, Proper Name, Acronym/Abbreviation, and Prefix/Suffix are left unchanged.
       If that sense is Primary, classification follows it.
       If the AI returns Nonsense, still update the entry but set classification to "Nonsense".
    d. Set the entry's loading_status to "Senses" and reviewed_status to "1".

@@ -13,7 +13,7 @@ Pick the first level of gettability that applies to the entry. All criteria must
    Entry does not have a Classification of Contraction.
 - Likely Gettable (lg):
    Entry has unity bucket of Concept, Collocation, Formula, Variant, Partial, Formulaic
-   Entry has familiarity bucket of Ubiquitous, Active, Literal, Common Name, Regionalism, General Knowledge, Inferred
+   Entry has familiarity bucket of Ubiquitous, Active, Literal, Regionalism, General Knowledge, Inferred
 - Maybe Gettable (mg):
    Entry has familiarity bucket of Niche, or a familiarity bucket of Literal and the unity bucket is not Concept, Collocation, or Formula.
 - Not Gettable (ng):
@@ -94,7 +94,6 @@ const LIKELY_GETTABLE_FAMILIARITY = new Set([
   'Ubiquitous',
   'Active',
   'Literal',
-  'Common Name',
   'Regionalism',
   'General Knowledge',
   'Inferred',

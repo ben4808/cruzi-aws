@@ -25,6 +25,7 @@ const ENTRY_PARSER_CATEGORIES = new Set([
   'Inflected Word',
   'Phrase',
   'Inflected Phrase',
+  'Personal Name',
   'Proper Name',
   'Acronym/Abbreviation',
   'Prefix/Suffix',
@@ -71,7 +72,6 @@ const UNITY_BUCKETS = new Set([
 const FAMILIARITY_BUCKETS = new Set([
   'Literal',
   'Ubiquitous',
-  'Common Name',
   'Regionalism',
   'Active',
   'General Knowledge',
@@ -274,7 +274,7 @@ function stripTrailingFamiliarityPromptAnnotations(text: string): string {
     previous = result;
     result = result
       .replace(/\s*\((Contraction|Inflection|Derivation|Concept|Collocation|Formula|Partial|Variant|Formulaic|Non-unit|Nonsense)\)\s*$/i, '')
-      .replace(/\s*\((Word|Phrase|Contraction|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
+      .replace(/\s*\((Word|Phrase|Contraction|Personal Name|Proper Name|Acronym\/Abbreviation|Prefix\/Suffix)\)\s*$/i, '')
       .trim();
   }
   return result;
@@ -319,7 +319,7 @@ function stripTrailingQualityPromptAnnotations(text: string): string {
         '',
       )
       .replace(
-        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Common Name|Regionalism|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Nonsense)\)\s*$/i,
+        /\s*\((Literal|Easy Collocation|Beginner Core|Ubiquitous|Regionalism|Active|Colloquial|General Knowledge|Inferred|Niche|Obscure|Nonsense)\)\s*$/i,
         '',
       )
       .replace(/\s*\((?:vulgar|sensitive|gross)(?:\s*,\s*(?:vulgar|sensitive|gross))*\)\s*$/i, '')

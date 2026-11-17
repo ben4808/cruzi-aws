@@ -56,14 +56,14 @@ First part of a quote : LASTCHRISTMAS
 Wham! song : Last Christmas : Proper Name : noun
 
 Jordan of the Bulls : MICHAEL
-Personal Name : Michael : Proper Name : noun
+Personal Name : Michael : Personal Name : noun
 
 "Hello" singer : ADELE
-Personal Name : Adele : Proper Name : noun
+Personal Name : Adele : Personal Name : noun
 British singer Adele Adkins : Adele : Proper Name : noun
 
 Actress Kidman : NICOLE
-Personal Name : Nicole : Proper Name : noun
+Personal Name : Nicole : Personal Name : noun
 
 OUTPUT
 List the items in the following format, one per line. N clue blocks in -> N output lines
@@ -77,9 +77,9 @@ Like upper-level courses : ADVANCED : high in level, complexity, or difficulty :
 Wine china? : GLASSES : Unclear
 Sunny day feature : BLUESKY : Literal : blue sky : Phrase : noun
 First part of a quote : LASTCHRISTMAS : Unclear
-Jordan of the Bulls : MICHAEL : Personal Name : Michael : Proper Name : noun
+Jordan of the Bulls : MICHAEL : Personal Name : Michael : Personal Name : noun
 "Hello" singer : ADELE : British singer Adele Adkins : Adele : Proper Name : noun
-Actress Kidman : NICOLE : Personal Name : Nicole : Proper Name : noun
+Actress Kidman : NICOLE : Personal Name : Nicole : Personal Name : noun
 
 
 ITEMS TO MATCH

@@ -1,5 +1,6 @@
 - Interpret the item strictly according to its given classification
    - Word or Phrase classification cannot be interpreted as a proper name.
+   - Personal Name classification must be interpreted as a given name or surname, not as a specific famous person.
    - Proper Name classification must be interpreted as a proper name.
 - Target audience: A well-rounded, educated adult native speaker from the US.
 - Judge the language as it is used in real life. Many items come from crossword puzzles; how often an item appears
@@ -28,39 +29,37 @@ BUCKETS
 2. Ubiquitous: Core everyday vocabulary that comes up in nearly anyone's daily life regardless of topic, including ordinary
     inflections and longer everyday words (ant, toss, nor, because, freedom, tomato, islands, hoped).
     - Words that come up mainly when a particular topic arises are Active (venue, panic, carbs, eager).
-3. Common Name: Frequent single given name or surname, shared by a wide variety of people, that doesn't refer to anyone in particular
-    (Sarah, Mike, Smith, Garcia). Includes moderately common modern names (Jalen, Carli, Alaina) and plurals (Ryans).
-    - A name mainly known through one famous person is rated by that person (Farr → Jamie Farr → Niche).
-    - Uncommon names don't qualify (Thaddeus, Ione). Rate them by how recognizable the name is: General Knowledge if nearly
-      anyone would recognize it as a name, Niche if recognized mostly within a specific culture or group, Obscure if rare.
-    - Possessive forms don't qualify.
-4. Regionalism: Would be Active for a typical adult in some regions of the world, but is less known in other regions.
+3. Regionalism: Would be Active for a typical adult in some regions of the world, but is less known in other regions.
     The target audience is a US adult. Use this when the exact form is everyday speech somewhere, and a typical American
     would be unlikely to know it or would know a different word (lorry, courgette, zed).
     If a typical US adult would say this exact form whenever the topic comes up → Active, not Regionalism.
     A form that is nonstandard in every region is not Regionalism; that is a Variant unity bucket.
-5. Active: Words a typical adult actually says, in this exact canonical form, whenever the topic comes up —
+4. Active: Words a typical adult actually says, in this exact canonical form, whenever the topic comes up —
     including everyday concrete nouns (pita, ore, rose, pistol, foe, par) and major places and brands people talk about (Japan, Texas, Honda, iPhone).
     Ask: "Would this come out of an average person's mouth in normal daily life?"
     If they would merely understand it, or would say a different form (bus station, not bus depot) → General Knowledge.
-6. General Knowledge: Nearly any US adult would recognize it immediately without context, but it isn't part of their active speech.
+    Frequent given names and surnames people actually use are Active (Sarah, Mike, Smith).
+5. General Knowledge: Nearly any US adult would recognize it immediately without context, but it isn't part of their active speech.
     Ask: "If you said it to a random person in a grocery store, would they know what it is?"
     - Includes literary/SAT vocabulary that people recognize but don't say (tress, lithe, irate), and things known by everyone
       but rarely said (tart, lemur, uke).
     - Being culturally important or a classic trivia answer is NOT enough — that's usually Niche.
-7. Inferred: Not commonly encountered, but an adult could work out the meaning from familiar parts — words, roots, or affixes
+    - A name nearly anyone would recognize as a name, but wouldn't commonly use, is General Knowledge (Thaddeus).
+6. Inferred: Not commonly encountered, but an adult could work out the meaning from familiar parts — words, roots, or affixes
     (astern, aero, impiety, bang on, corer, recut).
     - If commonly encountered, use Active or General Knowledge instead. If the parts don't give the meaning away, use Niche.
-8. Niche: Well-known within a specific subculture, generational cohort, hobby area, trade, etc.
+7. Niche: Well-known within a specific subculture, generational cohort, hobby area, trade, etc.
     - Includes highbrow or trivia knowledge (mythology, opera, classic literature, foreign landmarks) and public figures
       known mostly to older generations or trivia fans (Chaucer, Leto, Ed Asner, Gotti).
     - Includes tech acronyms people see but couldn't explain (HTTPS, GFCI).
     - Might make a good difficult trivia answer.
-9. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche (Ione, Bysshe).
+    - A name recognized mostly within a specific culture or group is Niche.
+    - A name mainly known through one famous person is rated by that person (Farr → Jamie Farr → Niche).
+8. Obscure: Not well-known. The information that exists on it may be archaic, technical, and/or hyper-niche (Ione, Bysshe).
     - Only people specialized in the area are likely to know it.
     - Might be a non-standard spelling or phrase formulation.
     - Might only exist in another language, without factoring into English-speaking culture.
-10. Nonsense: Everything else.
+9. Nonsense: Everything else.
 
 For items in the buckets Literal, General Knowledge, Inferred, Niche, and Obscure:
 Include in parentheses the domain or area that the item belongs to.
@@ -73,6 +72,6 @@ Output according to the following format, one item per line. Don't include any e
 Examples:
 bear : Ubiquitous
 Ursa Major : Niche (astronomy)
-Sarah : Common Name
+Sarah : Active
 lorry : Regionalism
 Sri Lanka : General Knowledge (geography)
